@@ -1,5 +1,6 @@
 ;for pasmo assembler
-;it is for CP/M 3 for Amstrad CPC6128, it uses Amstrad CPC6128 firmware
+;it is for CP/M 2.2 for Tiki-100 KM/M and Amstrad CPC6128
+;it uses Tiki-100 timer or Amstrad CPC firmware
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -27,12 +28,24 @@
 ;   }
 ;}
 
-;the time of the calculation is quadratic, so if T is time to calculate N digits
+;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-TXT_OUTPUT equ $BB5A    ;print char in A
-KM_WAIT_CHAR equ $bb06  ;get char in A
-kl_time_please equ &bd0d
+BIOS_OUTPUT equ 1
+TIKI100 equ 0
+AMSTRADCPC equ 1
+
+if TIKI100 + AMSTRADCPC > 1
+show ERROR
+endif
+
+;Tiki-100
+TIKI100_TIMER_LO equ $FF8C
+TIKI100_TIMER_HI equ $FF8E
+;Amstrad CPC
+ENTER_FIRMWARE equ $BE9B
+KL_TIME_PLEASE equ $BD0D
+
 BDOS equ 5
 
 ;N equ 3500   ;1000 digits
@@ -154,11 +167,13 @@ exitdiv
       ORG 0100h
 start    proc
          local lf0,loop,l4,loop2,m1,l1
-;; get address of routine to call to execute a firmware function
-  ld hl,(1)   ;setup firmware services: timer, ...
-  ld de,&57
-  add hl,de
-  ld (firm_jump+1),hl
+
+if BIOS_OUTPUT
+   ld hl,(1) ;BIOS base table
+   ld de,9   ;conout offset
+   add hl,de
+   ld (PRS+1),hl
+endif
 
     ld hl,0f6d0h  ;48 bytes for stack and 6 first bytes of BDOS area
     ld de,(6)
@@ -215,11 +230,18 @@ l1  ld d,h
     rr l
     push hl
 
-    call firm_jump
-    dw kl_time_please
+if TIKI100
+    ld hl,(TIKI100_TIMER_LO)
+    ld (time),hl
+    ld hl,(TIKI100_TIMER_HI)
+    ld (time+2),hl
+endif
+if AMSTRADCPC
+    call ENTER_FIRMWARE
+    dw KL_TIME_PLEASE
     ld (time),hl
     ld (time+2),de
-
+endif
         ;ld e,12  ;clear screen
         ;ld c,2
         ;call BDOS
@@ -349,15 +371,27 @@ showtimer
         ld c,2
         call BDOS
 
-        call firm_jump
-    dw kl_time_please
+if TIKI100
+    ld hl,(TIKI100_TIMER_LO)
+    ld de,(TIKI100_TIMER_HI)
+endif
+if AMSTRADCPC
+    call ENTER_FIRMWARE
+    dw KL_TIME_PLEASE
+endif
+
     ld bc,(time)
     xor a
     sbc hl,bc
     ex de,hl
     ld bc,(time+2)
     sbc hl,bc
+if TIKI100
+    ld bc,125              ;timer freq, Hz
+endif
+if AMSTRADCPC
     ld bc,300
+endif
     call div32x16r
 	PUSH HL
 	EX DE,HL
@@ -366,12 +400,19 @@ showtimer
         ld c,2
         call BDOS
 	POP hl
-        push hl     ;*100/3
-        add hl,hl
+        push hl     ;*10000/freq
+        add hl,hl   ;*5
         add hl,hl
         pop de
         add hl,de
-        push hl
+if TIKI100
+        add hl,hl  ;*16 -> *80
+        add hl,hl
+        add hl,hl
+        add hl,hl
+endif
+if AMSTRADCPC
+        push hl   ;*20/3 -> *100/3
         add hl,hl
         add hl,hl
         pop de
@@ -387,6 +428,7 @@ showtimer
         jr c,$+3
         inc de
         ex de,hl
+endif
 	jr PR0000
          endp
 
@@ -400,10 +442,15 @@ PR0000  ld de,-1000
 	CALL PR0
 	ld A,L
 PRD	add a,$30
+        push hl
+if BIOS_OUTPUT
+        ld c,a
+PRS     call 0
+else
         ld e,a
         ld c,2
-        push hl
         call BDOS
+endif
         pop hl
         ret
 
@@ -443,9 +490,6 @@ t3
      RET
      endp
 
-firm_jump
-  jp 0
-
 cv dw 0
 kv dw 0
 time dw 0,0
@@ -454,9 +498,22 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v3',13,10
-      db 'it may give 4000 digits in less than an hour!'
-      db 13,10,'number of digits (up to $'
+msg1  db 'number '
+if TIKI100
+      db 240
+endif
+if AMSTRADCPC
+      db 165
+endif
+      db ' calculator v1',13,10
+      db 'for CP/M 2.2 ('
+if TIKI100
+      db 'Tiki-100'
+endif
+if AMSTRADCPC
+      db 'Amstrad CPC'
+endif
+      db ').',13,10,'number of digits (up to $'
 msg2  db ')? $'
 msg3  db ' digits will be printed'
 msg4  db 13,10,'$'
@@ -464,17 +521,18 @@ del   db 8,' ',8,'$'
 maxnum dw 0
 getnum proc
 local l0,l1,l5,l8
-        ld b,0  ;cx - length
-        ld hl,0 ;bp - number
-l0      ;push hl
-        ;push bc
-        ;ld c,6   ;direct console i/o
-        ;ld e,0fdh
-        ;call BDOS
-        ;pop bc
-        ;pop hl
-        call firm_jump
-        dw KM_WAIT_CHAR
+        ld b,0
+        ld hl,0
+l0      push hl
+        push bc
+l00     ld c,6   ;direct console i/o
+        ld e,0ffh
+        call BDOS
+        or a
+        jr z, l00
+
+        pop bc
+        pop hl
 
         cp 13
         jr z,l5
@@ -506,9 +564,6 @@ l0      ;push hl
         pop bc
         pop hl
         push hl
-        ;call firm_jump
-        ;dw TXT_OUTPUT
-
         push hl
         add hl,hl
         add hl,hl
@@ -548,4 +603,4 @@ l8      pop de
         djnz l8
         retn
 endp
-  end start
+   end start

@@ -129,9 +129,6 @@ start
          mulu #7,d5
          move.l d5,a4
 
-         bsr gettime
-         move.l d2,time
-
          move.l a4,d2
          move.l d2,d0
          lsl.l d0
@@ -140,6 +137,14 @@ start
          jsr AllocMem(a6)
          exg.l a5,a6
          move.l d0,a2
+
+  if __VASM&28
+         bsr gettime
+         move.l d5,time
+  else
+         move.l $6c,rasterie+2
+         move.l #rasteri,$6c
+  endif
 
          subq #1,d2
          move #2000,d0
@@ -193,25 +198,31 @@ start
          move.l  #msg3,d2
          jsr     Write(a6)  ;space
 
+  if __VASM&28              ;68020?
          bsr gettime
-         sub.l time,d2
-         move.l d2,d3
-         lsl.l d2
+         sub.l time,d5
+  else
+         move.l rasterie+2,$6c
+         move.l time,d5
+  endif
+
+         move.l d5,d3
+         lsl.l d5
          cmp.b #50,VBlankFrequency(a5)
          beq .l8
 
-         lsl.l d2      ;60 Hz
-         add.l d3,d2
-         divu #3,d2
-         swap d2
-         lsr #2,d2
-         swap d2
-         negx.l d2
-         neg.l d2
+         lsl.l d5      ;60 Hz
+         add.l d3,d5
+         divu #3,d5
+         swap d5
+         lsr #2,d5
+         swap d5
+         negx.l d5
+         neg.l d5
 
 .l8      move.l #string,a3
          move #10,d4
-         move.l d2,d6
+         move.l d5,d6
          div32x16
          move.b d6,(a3)+
          divu d4,d7
@@ -276,17 +287,7 @@ PR0000     ;prints d5
 
 .l0    eori.b #'0',d5
        move.b d5,(a0)+
-       rts
-
-gettime clr d2          ;returns D2
-        move.b $bfea01,d2
-        move.b $bfe901,d1
-        move.b $bfe801,d0
-        lsl #8,d1
-        move.b d0,d1
-        swap d2
-        move d1,d2
-eos     rts
+eos    rts
 
 getnum   jsr Input(a6)          ;get stdin
          ;move.l #string,d2     ;set by previous call
@@ -308,6 +309,22 @@ getnum   jsr Input(a6)          ;get stdin
          mulu #10,d5
          bra .l1
 
+  if __VASM&28              ;68020?
+gettime clr d5          ;returns D5
+        move.b $bfea01,d5
+        swap d5
+        move.b $bfe901,d5
+        lsl #8,d5
+        move.b $bfe801,d5
+        rts
+  else
+rasteri      btst #6,$dff01e   ;blitter?
+             bne rasterie
+
+             addq.l #1,(time)
+rasterie     jmp $ffff00
+  endif
+
 cv  dc.w 0
 kv  dc.w 0
 time dc.l 0
@@ -315,7 +332,7 @@ cout dc.l 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v1',10
+msg1  dc.b 'number ',182,' calculator v2',10
   if __VASM&28              ;68020?
       dc.b 'it may give 9000 digits in about 5 minutes with the Amiga 1200!'
   else
