@@ -1,7 +1,7 @@
-30 printchr$(147)spc(7)"number p calculator v1"
-40 print"   it may give 3000 digits less than":printspc(12)"in an hour!":print
-50 input"number of digits (up to 6944)";f:d=(f+3)and-4
-60 ifd<=0ord>6944goto50
+30 printchr$(147)spc(7)"number p calculator v2"
+40 print"   it may give 6000 digits less than":printspc(12)"in 6 minutes!":print
+50 input"number of digits (up to 6972)";f:d=(f+3)and-4
+60 ifd<=0ord>6972goto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:poke@N@,fand255:poke@N@+1,f/256:poke@N16@,fand255:poke@N16@+1,f/256
 160 f=ti:sys@start@:f=(ti-f)/60

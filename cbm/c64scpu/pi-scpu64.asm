@@ -52,7 +52,6 @@ fac2 = remainder
          .include "pi-scpu64.inc"
 
          * = $a50
-         .block
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          ;lda #$b
@@ -123,7 +122,8 @@ loop2    stx i
          ldx i             ;b <- b - 1
          dex
          stx divisor
-         jsr div32x16x  ;AC = remainder at the exit, div32x16x doesn't use XR
+         ;jsr div32x16x  ;AC = remainder at the exit, div32x16x doesn't use XR
+.include "65816-div6.s"
          sta r+1,x     ;r[i] <- d%b
          dex      ;i <- i - 1
          beq l4
@@ -145,11 +145,11 @@ tl1      ;lda d
          lsr
          sta d+2
          ror d       ;sets CY = 0
-         bcc loop2   ;bra?
+         jmp loop2
 
 l4       #lda_i16 10000
          sta divisor
-         jsr div32x16x    ;c + d/10000, AC = dividend+3
+         jsr div32x16m    ;c + d/10000, AC = dividend+3
          clc
          lda quotient
          adc c
@@ -173,8 +173,42 @@ exit     sec
          lda #$37
          sta 1    ;restores Basic ROM
          rts
+
+pr0000 .block  ;prints C = B:A
+         sta d+2
+         #lda_i16 1000
+         sta d
+         jsr pr0
+         #lda_i16 100
+         sta d
+         jsr pr0
+         #lda_i16 10
+         sta d
+         jsr pr0
+         ldx d+2
+prd      txa
+         ;#regs8
+         sec
+         #xce
+         eor #$30
+         jsr BSOUT
+         clc
+         #xce
+         #regs16
+         rts
+
+pr0      #ldx_i16 65535
+prn      inx
+         lda d+2
+         cmp d
+         bcc prd
+
+         sbc d
+         sta d+2
+         bcs prn
 .bend
 
+c .byte 0,0
 
     * = (* + 256) & $ff00
 m10000
@@ -227,43 +261,8 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.include "65816-div5.s"
+.include "65816-div7.s"
 
-pr0000 .block  ;prints C = B:A
-         sta d+2
-         #lda_i16 1000
-         sta d
-         jsr pr0
-         #lda_i16 100
-         sta d
-         jsr pr0
-         #lda_i16 10
-         sta d
-         jsr pr0
-         ldx d+2
-prd      txa
-         ;#regs8
-         sec
-         #xce
-         eor #$30
-         jsr BSOUT
-         clc
-         #xce
-         #regs16
-         rts
-
-pr0      #ldx_i16 65535
-prn      inx
-         lda d+2
-         cmp d
-         bcc prd
-
-         sbc d
-         sta d+2
-         bcs prn
-.bend
-
-c .byte 0,0
          r = * + 16
 ;r = (* + 16 + 256) & $ff00
 

@@ -60,7 +60,6 @@ rbase = $dc ;$dd
          .include "pi-plus4.inc"
 
          * = $1280
-         .block
          ;sei         ;no interrupts
          lda #147    ;clear screen - @start@
          jsr BSOUT
@@ -72,6 +71,183 @@ rbase = $dc ;$dd
 ;       dex
 ;       bpl szpl
 
+.if 0   ;timings
+.block
+tdiv = 9
+       lda #$b
+       sta $ff06
+       lda #$d3
+       sta $ff13
+       lda #10
+       sta zzr
+       lda #tdiv       ;@lowinstr@
+       sta divisor
+       lda #0
+       sta divisor+1
+       lda #0
+       sta zzq
+       sta zzq+1
+       sta zzq+2
+       sta zzq+3
+loop   ldy #$28
+       sty $ff07
+       lda $ff02
+       ldx $ff03
+       ldy #$8
+       sty $ff07
+       sta zzs
+       stx zzs+1
+
+       and #3
+       sta dividend+3
+       stx dividend+2
+       ldy $ff00
+       ldx $ff04
+       sty dividend+1
+       stx dividend
+
+       jsr div32x16x
+       ldy #$28
+       sty $ff07
+       lda $ff02
+       ldx $ff03
+       ldy #$8
+       sty $ff07
+       sta fac1
+       stx fac1+1
+       lda zzs
+       sec
+       sbc fac1
+       sta zzs
+       lda zzs+1
+       sbc fac1+1
+       sta zzs+1
+       lda zzq
+       clc
+       adc zzs
+       sta zzq
+       lda zzq+1
+       adc zzs+1
+       sta zzq+1
+       lda zzq+2
+       adc #0
+       sta zzq+2
+       lda zzq+3
+       adc #0
+       sta zzq+3
+       dec zzr+1
+       bne loop
+
+       dec zzr
+       bne loop
+
+       lda #$d1
+       sta $ff13
+       lda #$1b
+       sta $ff06
+       jmp rzpl0
+zzs .byte 0,0         ;@zzq@
+zzq .byte 0,0,0,0
+zzr .byte 0,0
+.bend
+.endif
+.if 0    ;testing
+.block
+tdiv = 9
+       lda #$28
+       sta $ff07
+       ldx #1
+       stx d
+       ldx #0
+       stx d+1
+       stx d+2
+       stx d+3
+xl1    lda #0
+       sta divisor+1
+       lda #tdiv
+       sta divisor
+       lda d
+       sta dividend
+       lda d+1
+       sta dividend+1
+       lda d+2
+       sta dividend+2
+       lda d+3
+       sta dividend+3
+       jsr div32x16x
+       lda quotient
+       sta zzq
+       lda quotient+1
+       sta zzq+1
+       lda quotient+2
+       sta zzq+2
+       lda quotient+3
+       sta zzq+3
+       lda remainder
+       sta zzr
+       lda remainder+1
+       sta zzr+1
+       lda #0
+       sta divisor+1
+       lda #tdiv
+       sta divisor
+       lda d
+       sta dividend
+       lda d+1
+       sta dividend+1
+       lda d+2
+       sta dividend+2
+       lda d+3
+       sta dividend+3
+
+       ldy #0
+       jsr div32x8f
+       ;jsr div32x16
+       lda quotient
+       cmp zzq
+       bne err
+       lda quotient+1
+       cmp zzq+1
+       bne err
+       lda quotient+2
+       cmp zzq+2
+       bne err
+       lda quotient+3
+       cmp zzq+3
+       bne err
+       lda remainder
+       cmp zzr
+       bne err
+       lda remainder+1
+       cmp zzr+1
+       bne err
+       inc d
+       bne xl1j
+       inc d+1
+       bne xl1j
+       inc d+2
+       bne xl1j
+       inc d+3
+       lda d+3
+       cmp #4
+       bne xl1j
+       lda #8
+       sta $ff07
+       jmp rzpl0
+xl1j   jmp xl1
+err    ldx #0
+rzpl
+       pla
+       sta $2b,x
+       inx
+       cpx #8
+       bne rzpl
+       stx $ff07
+       brk
+zzq .byte 0,0,0,0
+zzr .byte 0,0
+.bend
+.endif
          ldy #<irqh
          ldx #>irqh
          lda $ff07
@@ -177,7 +353,8 @@ loop2    ldy i
 l1       dex
          stx divisor
          sty divisor+1
-         jsr div32x16x   ;AC = dividend+3
+         ;jsr div32x16z   ;AC = dividend+3
+.include "6502-div6.s"
          ldy i
          lda remainder    ;r[i] <- d%b
          sta (rbase),y
@@ -230,7 +407,7 @@ l4       lda #>10000
          lda #<10000
          sta divisor
          lda dividend+3   ;dividend = quotient
-         jsr div32x16x    ;c + d/10000, AC = dividend+3
+         jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
          lda quotient
          adc c
@@ -270,8 +447,6 @@ rzpl0
 ;       cpx #8
 ;       bne rzpl
          rts
-.bend
-
 irqh
        dec $7fd
        bpl intsc
@@ -347,7 +522,7 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.include "6502-div5.s"
+.include "6502-div7.s"
 
 pr0000 .block
          sta d+2

@@ -195,9 +195,9 @@ cnt  .var cnt-1
      .ifne cnt
      .goto loop3
      .endif
-        rol dividend
-        sta remainder
-        rts
+        ;rol dividend
+        ;sta remainder
+        jmp enddivision4
         .bend
 
 div32x8f
@@ -276,105 +276,10 @@ cnt  .var cnt-1
      .ifne cnt
      .goto loop3
      .endif
-        rol dividend
-        sta remainder
-        rts
+        ;rol dividend
+        ;sta remainder
+        jmp enddivision4
         .bend
-
-div32x8           ;dividend+3 < divisor
-        ldx divisor
-        sty remainder+1
-        stx mjmp+1
-mjmp    jmp (divjmp)
-
-div32x16x
-.block
-        ldy divisor+1    ; AC =  dividend+3 !
-        beq div32x8
-        bpl lplus
-        jmp div16minus   ;CY=0 !
-lplus
-        ;;lda dividend+3
-        cmp divisor+1
-        bcc div16
-        bne lj
-
-        ldx dividend+2
-        cpx divisor
-        bcc div16
-lj      jmp div32
-.bend
-
-;.repeat 4,0  ;alignment
-
-div16            ;dividend+2 < divisor, CY = 0
-.block
-cnt  .var 8
-loop3 .lbl
-.block
-	rol dividend+1
-       	rol dividend+2	;dividend lb & hb*2, msb -> Carry
-	rol	
-	cmp divisor+1
-        bcc l1
-        bne l2
-
-        ldx dividend+2
-        cpx divisor
-        bcc l1
-
-l2      tax
-        lda dividend+2
-        sbc divisor
-        sta dividend+2
-        txa
-        sbc divisor+1
-	;inc quotient	;and INCrement quotient cause divisor fit in 1 times
-l1
-.bend
-cnt  .var cnt-1
-     .ifne cnt
-     .goto loop3
-     .endif
-.bend
-        rol dividend+1
-.block
-cnt  .var 8
-loop3 .lbl
-.block
-        rol dividend	;remainder lb & hb * 2 + msb from carry
-       	rol dividend+2	;dividend lb & hb*2, msb -> Carry
-	rol	
-	cmp divisor+1
-        bcc l1
-        bne l2
-
-        ldx dividend+2
-        cpx divisor
-        bcc l1
-
-l2      tax
-        lda dividend+2
-        sbc divisor
-        sta dividend+2
-        txa
-        sbc divisor+1
-	;inc quotient	;and INCrement quotient cause divisor fit in 1 times
-l1
-.bend
-cnt  .var cnt-1
-     .ifne cnt
-     .goto loop3
-     .endif
-.bend
-        rol dividend
-        sta remainder+1
-        lda dividend+2
-        sta remainder
-        lda #0
-        sta dividend+2
-	sta dividend+3
-	rts
 
 div16minus            ;dividend+2 < divisor
 .block
@@ -442,14 +347,14 @@ cnt  .var cnt-1
      .goto loop3
      .endif
 .bend
-        rol dividend
-        sta remainder+1
-        lda dividend+2
-        sta remainder
-        lda #0
-        sta dividend+2
-	sta dividend+3
-	rts
+        ;rol dividend
+        ;sta remainder+1
+        ;lda #0
+        ;sta dividend+2
+	;sta dividend+3
+        ;lda dividend+2
+        ;sta remainder
+	jmp enddivision3
 
 div32          ;it may be wrong if divisor>$7fff
         ldy #0	        ;preset remainder to 0
@@ -527,12 +432,12 @@ cnt  .var cnt-1
      .goto loop4
      .endif
         sta remainder+1
-	rts
+	jmp enddivision
         .bend
 
 div32_1
       sty remainder
-      rts
+      jmp enddivision
 
 
 div32_3
@@ -595,9 +500,9 @@ l9    adc div_au3,y
       sta dividend
       lda div5t,x
       and #3
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_5
 .block
@@ -668,9 +573,9 @@ l9    clc
       sta dividend
       lda div17t,x
       and #7
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_7
 .block
@@ -738,9 +643,9 @@ l9    adc div_au7,y
       sta dividend
       lda div15t,x
       and #7
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_15
 .block
@@ -843,9 +748,9 @@ l9    clc
       txa
       sec
       sbc t
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_17
 .block
@@ -948,9 +853,9 @@ l9    clc
       txa
       sec
       sbc t
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_253
 .block
@@ -1075,9 +980,9 @@ l54   cmp #253
 l55   inx
       sbc #253
 l32   stx dividend
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
 
 div32_255
 .block
@@ -1122,7 +1027,220 @@ l6    txa
       clc
       adc dividend
       stx dividend
-      sta remainder
 .bend
-      rts
+      ;sta remainder
+      jmp enddivision2
+
+.if 0
+div32x16z
+        ldy #0	        ;preset remainder to 0
+	sty remainder
+	sty remainder+1
+        tya
+        ldy #32
+.block
+l3      asl dividend
+        rol dividend+1
+        rol dividend+2
+        rol dividend+3
+	rol remainder
+	rol
+        ;bcs l2   ;for divisor>$7fff
+
+        cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx remainder
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda remainder
+        sbc divisor
+        sta remainder
+        txa
+        sbc divisor+1
+	inc quotient
+l1      dey
+        bne l3
+.bend
+        sta remainder+1
+	rts
+.endif
+
+;.if 0
+div32x16w        ;dividend+2 < divisor, divisor < $8000
+        ;;lda dividend+3
+        ldy #16
+.block
+l3      asl dividend
+        rol dividend+1
+        rol dividend+2
+	rol
+        ;bcs l2   ;for divisor>$7fff
+
+        cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+	inc quotient
+l1      dey
+        bne l3
+.bend
+        sta remainder+1
+        lda dividend+2
+        sta remainder
+        ;lda #0
+        ;sta dividend+2
+	;sta dividend+3
+	rts
+
+;.endif
+
+.if 0
+div32x16m
+.block
+        ;;lda dividend+3
+        cmp divisor+1
+        bcc div16minus
+        bne div32x16z
+
+        ldx dividend+2
+        cpx divisor
+        bcs div32x16z
+.bend
+
+div16minus            ;dividend+2 < divisor, CY=0
+        ldy #8
+.block
+l3	rol dividend+1
+       	rol dividend+2	;dividend lb & hb*2, msb -> Carry
+	rol	
+        bcs l2
+
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+        sec
+l1      dey
+        bne l3
+.bend
+        rol dividend+1
+        ldy #8
+.block
+l3      rol dividend	;remainder lb & hb * 2 + msb from carry
+       	rol dividend+2	;dividend lb & hb*2, msb -> Carry
+	rol	
+        bcs l2
+
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+        sec
+l1      dey
+        bne l3
+.bend
+        rol dividend
+        sta remainder+1
+        lda dividend+2
+        sta remainder
+        lda #0
+        sta dividend+2
+	sta dividend+3
+	rts
+.endif
+
+.if 0
+div32x16s            ;dividend+2 < divisor, divisor < $8000, CY=0
+        ;;lda dividend+3
+        clc
+        ldy #8
+.block
+l3	rol dividend+1
+       	rol dividend+2
+	rol	
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+        sec
+l1      dey
+        bne l3
+.bend
+        rol dividend+1
+        ldy #8
+.block
+l3      rol dividend
+       	rol dividend+2
+	rol	
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+        sec
+l1      dey
+        bne l3
+.bend
+        rol dividend
+        sta remainder+1
+        lda dividend+2
+        sta remainder
+        lda #0
+        sta dividend+2
+	sta dividend+3
+	rts
+.endif
 

@@ -1,4 +1,4 @@
-30 scnclr:printspc(7)"number p calculator v2"
+30 scnclr:printspc(7)"number p calculator v3"
 40 print"   it may give 4000 digits less than":printspc(12)"in an hour!":print
 50 input"number of digits (up to 5008)";f:d=(f+3)and-4
 60 ifd<=0ord>5008goto50

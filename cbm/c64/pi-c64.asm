@@ -52,7 +52,6 @@ rbase = $3f ;$40
          .include "pi-c64.inc"
 
          * = $a50
-         .block
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          lda #$b
@@ -146,7 +145,8 @@ loop2    ldy i
 l1       dex
          stx divisor
          sty divisor+1
-         jsr div32x16x   ;AC = dividend+3
+         ;jsr div32x16x   ;AC = dividend+3
+.include "6502-div6.s"
          ldy i
          lda remainder    ;r[i] <- d%b
          sta (rbase),y
@@ -199,7 +199,7 @@ l4       lda #>10000
          lda #<10000
          sta divisor
          lda dividend+3   ;dividend = quotient
-         jsr div32x16x    ;c + d/10000, AC = dividend+3
+         jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
          lda quotient
          adc c
@@ -229,7 +229,6 @@ exit     lda #$1b
          lda #$37
          sta 1    ;restores Basic ROM
          rts
-.bend
 
 
     * = (* + 256) & $ff00
@@ -283,7 +282,7 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.include "6502-div5.s"
+.include "6502-div7.s"
 
 pr0000 .block
          sta d+2
