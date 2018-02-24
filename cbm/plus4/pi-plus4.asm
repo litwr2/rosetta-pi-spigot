@@ -37,11 +37,22 @@
 ;INT2STR = $A45F  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
-N = 350   ;100 digits
+DIV8OPT = 1           ;it slightly slower for 7532 or more digits but faster for 7528 or less
+;OPT = 0 is not implemented, only 31 bit dividends are supported
+;OPT = 1               ;limits dividend to $7f'ff'ff'ff, up to 15448 digits
+OPT = 2               ;limits dividend to $3f'ff'ff'ff, up to 7792
+;OPT = 3               ;limits dividend to $1f'ff'ff'ff, up to 4072
+;OPT = 4               ;limits dividend to $f'ff'ff'ff, up to 2024
+;OPT = 5               ;limits dividend to $7'ff'ff'ff, up to 1104
+;OPT = 6               ;limits dividend to $3'ff'ff'ff, up to 560
+
+;N = 350   ;100 digits
 ;N = 700   ;200 digits
 ;N = 2800  ;800 digits
 ;N = 3500  ;1000 digits
 ;N = 10500  ;3000 digits
+;N = 21000  ;6000 digits
+N = 7792*7/2
 d = $d8   ;$d9..$db
 i = $d4 ;$d5
 ;b = $d6 ;$d7
@@ -64,7 +75,12 @@ rbase = $dc ;$dd
          * = $1001
          .include "pi-plus4.inc"
 
+.if DIV8OPT
          * = $120f + $2b
+.endif
+.ifeq DIV8OPT
+         * = $120f + $34
+.endif
          ldy #<irqh    ;@start@
          ldx #>irqh
          lda $ff07
@@ -84,6 +100,7 @@ nontsc   sty $fffe
          ;jsr BSOUT
 
          sta $ff3f   ;selects RAM
+
          ldy #0
          lda #2
          sta d
@@ -172,7 +189,8 @@ loop2    ldy i      ;@mainloop@
          lda product+2
          adc d+2
          sta d+2
-         sta dividend+2
+         ;sta dividend+2
+         sta remainder
          tya            ;lda product+3
          adc d+3
          sta d+3
@@ -187,10 +205,9 @@ loop2    ldy i      ;@mainloop@
 l1       dex
          stx divisor
          sty divisor+1
-         ;jsr div32x16z   ;AC = dividend+3, CY=0
+         ;IN: AC = dividend+3, YR = divisor+1; OUT: AC = remainder
 .include "6502-div6.s"
-         ldy i
-         lda remainder    ;r[i] <- d%b
+         ldy i            ;r[i] <- d%b
          sta (rbase),y
          lda remainder+1
          iny
@@ -297,6 +314,46 @@ uptime inc $a5
 l1     rts
 .bend
 
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0
+         lda #10
+         sta d
+         jsr pr0
+         txa
+         tay
+prd      tya
+         eor #$30
+         jmp BSOUT
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
     * = (* + 256) & $ff00
 m10000
  .byte 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
@@ -348,47 +405,10 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
+.if DIV8OPT
+.include "6502-div8.s"
+.endif
 .include "6502-div7.s"
-
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp BSOUT
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
 
 c .byte 0,0
 

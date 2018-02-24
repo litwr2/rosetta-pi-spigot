@@ -6,7 +6,7 @@ fi
 echo -n '['$2'] '
 gawk 'BEGIN{sx = "@'$2'loop@"}
 {
-   c += index($0, sx) > 0
+   c += (index($0, sx) > 0 && substr($0,7,1) != " ")
    if(" b"==substr($0,31,2) && substr($0,7,1)!=" "){
        n = n + 0
        fi[n] = strtonum("0x"$2)
@@ -42,7 +42,11 @@ END {
   min = 255
   for(d = 0; d < 256; d++) if (r[d] < min) min = r[d]
   print "The number of to other page branches - " min " (" r[0] " - for current)"
-  printf "offsets:";
-  for(d = 0; d < 256; d++) if (r[d] == min) printf " %x", d
+  for (z = 0; z < r[0]; z++) 
+     if (z >= min) {
+     printf "offsets[%d]:", z
+     for(d = 0; d < 256; d++) if (r[d] == z) printf " %x", d
+     printf "\n"
+  }
   printf "\n"
 }' $1

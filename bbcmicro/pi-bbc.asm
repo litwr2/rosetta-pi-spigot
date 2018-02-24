@@ -36,6 +36,15 @@
 
 OSWRCH = $FFEE    ;print char in AC
 
+DIV8OPT = 1           ;it slightly slower for 7532 or more digits but faster for 7528 or less
+;OPT = 0 is not implemented, only 31 bit dividends are supported
+;OPT = 1               ;limits dividend to $7f'ff'ff'ff, up to 15448 digits
+OPT = 2               ;limits dividend to $3f'ff'ff'ff, up to 7792
+;OPT = 3               ;limits dividend to $1f'ff'ff'ff, up to 4072
+;OPT = 4               ;limits dividend to $f'ff'ff'ff, up to 2024
+;OPT = 5               ;limits dividend to $7'ff'ff'ff, up to 1104
+;OPT = 6               ;limits dividend to $3'ff'ff'ff, up to 560
+
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
 d = $70   ;..$73
@@ -140,7 +149,8 @@ loop2    ldy i      ;@mainloop@
          lda product+2
          adc d+2
          sta d+2
-         sta dividend+2
+         ;sta dividend+2
+         sta remainder
          tya            ;lda product+3
          adc d+3
          sta d+3
@@ -287,6 +297,9 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
+.if DIV8OPT
+.include "6502-div8.s"
+.endif
 .include "6502-div7.s"
 
 pr0000 .block
