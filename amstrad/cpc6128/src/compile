@@ -1,0 +1,3 @@
+pasmo6 --listing pi-cpc.lst pi-cpc.asm calcpi.bin
+iDSK pi.dsk -r calcpi.bin
+iDSK pi.dsk -i calcpi.bin -e 2800 -c 2800 -t 1

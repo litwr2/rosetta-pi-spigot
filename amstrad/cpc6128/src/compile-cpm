@@ -1,0 +1,2 @@
+pasmo6 --listing pi-cpm.lst pi-cpc-cpm.asm pi-cpm.com
+cpcxfs cpm+1.dsk -p pi-cpm.com

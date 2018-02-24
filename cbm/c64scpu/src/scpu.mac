@@ -1,0 +1,67 @@
+xce .macro
+.byte $fb
+.endm
+
+xba .macro
+.byte $eb
+.endm
+
+rep .macro
+.byte $c2,\1
+.endm
+
+sep .macro
+.byte $e2,\1
+.endm
+
+regs8 .macro
+   #sep %00110000
+.endm
+
+regs16 .macro
+   #rep %00110000
+.endm
+
+txy .macro
+.byte $9b
+.endm
+
+tyx .macro
+.byte $bb
+.endm
+
+stz_a .macro
+.byte $9c,<\1,>\1
+.endm
+
+stz_z .macro
+.byte $64,\1
+.endm
+
+stz_ax .macro
+.byte $9e,<\1,>\1
+.endm
+
+stz_zx .macro
+.byte $74,\1
+.endm
+
+lda_i16 .macro
+   lda #<\1
+   .byte >\1
+.endm
+
+ldx_i16 .macro
+   ldx #<\1
+   .byte >\1
+.endm
+
+ldy_i16 .macro
+   ldy #<\1
+   .byte >\1
+.endm
+
+adc_i16 .macro
+   adc #<\1
+   .byte >\1
+.endm

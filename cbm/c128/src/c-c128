@@ -1,0 +1,9 @@
+echo RUN IT TWICE!
+tmpx pi-c128.asm -l pi-c128.lst
+gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
+/@N@/{print "s/@N@/"strtonum("0x"$2)+1"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}' pi-c128.lst >z.sed
+sed -f z.sed pi-c128.cbas >pi-c128.bas
+petcat -w70 pi-c128.bas | od -t x1 | sed 's/50 20 43/ff 20 43/' | awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-c128.inc
+tmpx pi-c128.asm -l pi-c128.lst

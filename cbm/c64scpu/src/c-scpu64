@@ -1,0 +1,9 @@
+echo RUN IT TWICE!
+tmpx pi-scpu64.asm -l pi-scpu64.lst
+gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
+/@N@/{print "s/@N@/"strtonum("0x"$2)+1"/g"}
+/@N16@/{print "s/@N16@/"strtonum("0x"$2)+1"/g"}' pi-scpu64.lst >z.sed
+sed -f z.sed pi-scpu64.cbas >pi-scpu64.bas
+petcat -w2 pi-scpu64.bas | od -t x1 | sed 's/20 50 20/20 ff 20/' | awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-scpu64.inc
+tmpx pi-scpu64.asm -l pi-scpu64.lst
+

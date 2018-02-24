@@ -1,0 +1,19 @@
+D=PI.IMG       #name of the disk image file
+M=/mnt/loop                          #mount point
+MD=`date +%m%d`
+T=${MD}0016.00              #start address = $200 as the timestamp for AnDOS
+F=pi-bk10.
+AWKHEX=~/bk/xlife-bk0011/lst2hex.awk
+E=macro11.errs
+macro11 -yus -ysl 16 -o ${F}z.obj -l ${F}lst ${F}asm 2>$E || echo Errors found >> $E
+if [ -s $E ]; then cat $E; rm $E; exit 8; else rm -f $E; fi && \
+dumpobj ${F}z.obj >${F}dump && \
+bk-obj2bin <${F}dump >${F}bin
+gawk -f $AWKHEX ${F}lst > ${F}hex.lst
+dd if=${F}bin of=${F}com bs=1 skip=4 && \
+sudo mount -t msdos -o loop,fmask=111,dmask=000,rw $D $M && \
+cp ${F}com $M && \
+touch -t $T /mnt/loop/${F}com && \
+ls $M/${F}com && \
+sudo sync
+sudo umount /mnt/loop

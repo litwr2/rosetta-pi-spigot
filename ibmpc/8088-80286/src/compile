@@ -1,0 +1,14 @@
+#D=XLIFE3.IMG               #name of the disk image file
+#M=/mnt/loop                #mount point
+fasm pi-ibmpc.asm -s pi-ibmpc.fas && \
+fasm-listing pi-ibmpc.fas pi-ibmpc.lst # &&\
+#sudo mount -t msdos -o loop,fmask=111,dmask=000,rw $D $M && \
+#rm -f $M/xlife?.com $M/cr.txt $M/manpage.com && \
+#awk -bf xlife.man.awk xlife.man.txt >manpage.s && \
+#compile manpage.asm && \
+#dd if=manpage.bin of=manpage.com bs=1 skip=4 && \
+#cp xlife[012].com cr.txt manpage.com $M && \
+#sudo sync
+#ls -l $M/xlife*.com $M/manpage.com
+#sudo umount $M
+grep -n ': 0F' *.lst

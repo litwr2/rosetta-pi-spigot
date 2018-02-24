@@ -1,0 +1,13 @@
+30 scnclr:printspc(7)"number p calculator v2"
+40 print"   it may give 4000 digits less than":printspc(12)"in an hour!":print
+50 input"number of digits (up to 5008)";f:d=(f+3)and-4
+60 ifd<=0ord>5008goto50
+70 iff<>dthenprintd;"digits will be printed"
+80 f=d/2*7:poke@N@,f/128-(int(f/128)<>f/128):poke@lowN@,fand255:poke@highN@,f/256
+90 input"fast mode (110% speed up)";r$
+100 ifleft$(r$,1)="n"then160
+110 ifleft$(r$,1)<>"y"then90:elsefast:x=1
+160 f=ti:sys@start@:f=(ti-f)/60
+170 ifxthenslow
+180 ifd>868thenwait212,88,88
+190 printf
