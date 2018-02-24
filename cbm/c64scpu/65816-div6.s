@@ -2,11 +2,11 @@ div32x16x
 .block
         bpl lplus    ;N-flag must be set by the divisor! CY = 0 for divisor < 0!
 
-        lda dividend+2
+        ;lda dividend+2
         ;clc
         jmp div16minus
 lplus
-        lda dividend+2
+        ;lda dividend+2
         cmp divisor
         bcc div16
         jmp div32

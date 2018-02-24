@@ -117,7 +117,7 @@ loop2    stx i
          lda product+2
          adc d+2
          sta d+2
-         sta dividend+2
+         ;sta dividend+2
 
          ldx i             ;b <- b - 1
          dex

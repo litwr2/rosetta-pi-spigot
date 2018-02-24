@@ -134,7 +134,7 @@ loop2    ldy i
          tya            ;lda product+3
          adc d+3
          sta d+3
-         sta dividend+3
+         ;sta dividend+3
 
          ldy i+1
          ldx i             ;b <- b - 1

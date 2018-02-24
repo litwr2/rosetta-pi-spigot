@@ -1,4 +1,4 @@
-30 printchr$(147)spc(7)"number p calculator v2"
+30 printchr$(147)spc(7)"number p calculator v3"
 40 print"   it may give 6000 digits less than":printspc(12)"in 6 minutes!":print
 50 input"number of digits (up to 6972)";f:d=(f+3)and-4
 60 ifd<=0ord>6972goto50
