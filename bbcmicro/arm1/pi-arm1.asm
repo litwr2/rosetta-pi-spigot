@@ -29,15 +29,13 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+
 processor cpu32_v1
-off equ $ff0
 
-BBC_OSWORD equ $4A
-
-macro div32 { ;R0 >= R1, R12 = R0/R1, R0 = R0%R1, used: R13
-local .div2,.l1,.l4,.l5,.l7,.l0,.l8,.l6,.l3
+macro div32 { ;R0 >= R1, R1 is 16 bits; R12 = R0/R1, R0 = R0%R1, used: R13
+local .exitdiv,.l1,.l4,.l5,.l7,.l0,.l8,.l6,.l3
         MOV R13,1     ;bit to control the division
-        CMP R0,R1,lsl 16
+        CMP R0,R1,lsl 16  ;limit to 16 bits of R1 is used
         bcc .l4
 
         MOV R1,R1,LSL 16
@@ -77,18 +75,32 @@ local .div2,.l1,.l4,.l5,.l7,.l0,.l8,.l6,.l3
 .l0:    SUB R0,R0,R1    ;R0 >= R1 is used
         MOV R12,R13
         MOVS R13,R13,LSR 1 ;shift control bit
-        MOVNE R1,R1,LSR 1  ;halve unless finished
-.div2:  CMP R0,R1       ;test for possible subtraction
+        BEQ .exitdiv      ;divide result in R12, remainder in R0
+
+        MOV R1,R1,LSR 1  ;halve unless finished
+
+   repeat 26           ;up to 30 if no 64 KB limit
+        CMP R0,R1       ;test for possible subtraction
         SUBCS R0,R0,R1  ;subtract if ok
         ADDCS R12,R12,R13  ;put relevant bit into result
         MOVS R13,R13,LSR 1 ;shift control bit
-        MOVNE R1,R1,LSR 1  ;halve unless finished
-        BNE .div2      ;divide result in R12, remainder in R0
+        BEQ .exitdiv      ;divide result in R12, remainder in R0
+   
+        MOV R1,R1,LSR 1  ;halve unless finished
+   end repeat
+
+        CMP R0,R1       ;2
+        SUBCS R0,R0,R1
+        ADDCS R12,R12,R13
+        MOVS R13,R13,LSR 1
+        MOVNE R1,R1,LSR 1
+.exitdiv:
 }
 
          org $1000
-start:   mov r0,#msg1-off
-         add r0,r0,off
+start:   ;adr r0,msg1
+         mov r0,msg1 and $fffffc00
+         add r0,msg1 and $3ff
          swi 2
          bl getnum
          ;mov r7,#1000
@@ -114,8 +126,10 @@ start:   mov r0,#msg1-off
 
          add r3,r9,#1   ;fill r-array
          mov r1,#2000
-         mov r6,#ra-off
-         add r6,r6,#off
+         ;adr r6,ra
+         mov r6,ra and $fffffc00
+         add r6,ra and $3ff
+         mov r2,r6
 .l8:     str r1,[r6],#4
          subs r3,r3,#1
          bne .l8
@@ -124,9 +138,8 @@ start:   mov r0,#msg1-off
 .l0:     mov r6,#0    ;d = R6 <- 0
 
          mov r5,r9,lsl 1      ;i <-k*2
-         add r7,r5,#ra-off
-         add r7,r7,r5
-.l2:     ldr r1,[r7,off]        ;r[i],  main loop start
+         add r7,r2,r5,lsl 1
+.l2:     ldr r1,[r7,0]        ;r[i],  main loop start
          add r0,r1,r1,lsl 9  ;r[i]*10000
          add r0,r0,r1,lsl 7
          sub r0,r0,r1,lsl 4
@@ -135,7 +148,7 @@ start:   mov r0,#msg1-off
          sub r1,r5,#1      ;b <- 2*i-1
          mov r0,r6
          div32
-         str r0,[r7,off]       ;r[i] <- d%b
+         str r0,[r7,0]       ;r[i] <- d%b
          subs r5,r5,#2   ;i <- i - 1
          beq .l4
 
@@ -158,16 +171,15 @@ start:   mov r0,#msg1-off
 
 .l5:     mov r0,' '
          swi 0
-         mov r7,#time-off
-         ldr r2,[r7,off]
+         adr r7,time
+         ldr r2,[r7,0]
          bl gettime
-         ldr r3,[r7,off]
+         ldr r3,[r7,0]
          sub r1,r3,r2
          add r3,r1,r1,lsl 2
          mov r0,r3,lsl 1   ;*10 = 1000/100
 
-         mov r6,#string-off
-         add r6,r6,off
+         adr r6,string
          mov r8,r6
          mov r1,#10
          bl div32s
@@ -198,30 +210,30 @@ start:   mov r0,#msg1-off
 
          swi 17
 
-PR0000:     ;prints r3
-        mov r2,#1000
+PR0000:     ;prints r3, uses r0,r6
+        mov r6,#1000
         mov r0,'0'-1
 .l41:	add r0,r0,#1
-	subs r3,r3,r2
+	subs r3,r3,r6
 	bcs .l41
 
-    	add r3,r3,r2
+    	add r3,r3,r6
         swi 0
-        mov r2,#100
+        mov r6,#100
         mov r0,'0'-1
 .l42:	add r0,r0,#1
-	subs r3,r3,r2
+	subs r3,r3,r6
 	bcs .l42
 
-    	add r3,r3,r2
+    	add r3,r3,r6
         swi 0
-        mov r2,#10
+        mov r6,#10
         mov r0,'0'-1
 .l43:	add r0,r0,#1
-	subs r3,r3,r2
+	subs r3,r3,r6
 	bcs .l43
 
-    	add r3,r3,r2
+    	add r3,r3,r6
         swi 0
 .l2:   	add r0,r3,'0'
         swi 0
@@ -229,8 +241,7 @@ PR0000:     ;prints r3
 
 getnum: mov r3,0    ;length
         mov r7,0    ;number
-        mov r6,#ra-off
-        add r6,r6,off
+        adr r6,ra
 .l0:    swi 4
         cmp r0,13
         beq .l5
@@ -270,15 +281,14 @@ getnum: mov r3,0    ;length
         beq .l0
 
         mov r8,4608
-        add r8,r8,8   ;r8 <- 4616
+        sub r8,r8,36   ;r8 <- 4572
         cmp r7,r8
         bhi .l0
         mov r15,r14
 
 gettime:
         mov r0,#1
-        mov r1,#time-off
-        add r1,r1,off
+        adr r1,time
         swi 7
         mov r15,r14
 
@@ -309,8 +319,8 @@ div32s:   ;enter with numbers in R1 (divisor) and R0 (dividend)
 time  db 0,0,0,0,0
       align 4
 ra:
-msg1  db 'number Pi calculator v1 for ARM Evaluation System'
+msg1  db 'number Pi calculator v2 for ARM Evaluation System'
       db 13,10
-      db 'number of digits (up to 4616)? ',0
+      db 'number of digits (up to 4572)? ',0
       align 4
 string rb 6
