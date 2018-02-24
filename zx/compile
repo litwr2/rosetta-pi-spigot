@@ -1,0 +1,11 @@
+sed 's/iy/ix/' pi-zx.asm >pi-zx-ix.asm
+pasmo6 --listing pi-zx.lst pi-zx-ix.asm calcpi.bin || exit
+gawk '/@entry@/{
+   printf "s/@page@/%d/\n", 4*int((0xff58-strtonum("0x"$1))/28)
+   printf "s/@ml-len@/%d/\n", int((strtonum("0x"$1)-0x8000)/40 + 1)
+}' pi-zx.lst >z.sed || exit
+sed -f z.sed pi.cbas >pi.bas
+gcc bin2basic.c || exit
+./a.out <calcpi.bin >>pi.bas || exit
+bas2tap/bas2tap pi.bas pi.tap
+rm a.out pi-zx-ix.asm   #calcpi.bin
