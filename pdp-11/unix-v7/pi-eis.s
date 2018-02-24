@@ -1,3 +1,39 @@
+/for PDP-11 Unix 7 as
+/it calculates pi-number using the next C-algorithm
+/https://crypto.stanford.edu/pbc/notes/pi/code.html
+/#include <stdio.h>
+/#define N 2800
+/main() {
+/   long r[N + 1], i, k, b, c;
+/   c = 0;
+/   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
+/      r[i] = 2000;
+/   for (k = N; k > 0; k -= 14) {
+/      d = 0;
+/      i = k;
+/      for(;;) {
+/         d += r[i]*10000;
+/         b = i*2 - 1;
+/         r[i] = d%b;
+/         d /= b;
+/         i--;
+/         if (i == 0) break;
+/         d *= i;
+/      }
+/      printf("%.4d", (int)(c + d/10000));
+/      c = d%10000;
+/   }
+/}
+
+/the time of the calculation is quadratic, so if T is time to calculate N digits
+/then 4*T is required to calculate 2*N digits
+/main loop count is 7*(4+D)*D/16, D - number of digits
+
+/litwr has written this for PDP-11/Unix
+/tricky provided some help
+/MMS gave some support
+/Thorham and meynaf helped a lot
+
 .globl _pistart, _ra, _N
 
 kv = kvs + 2

@@ -35,7 +35,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 
-FREEBYTES=64877   ;65536-ra
+FREEBYTES=64621   ;65536-ra
 useEDIV=1            ;use EDIV or DIVL and MULL
 
 cho:        .BLKL       1
@@ -77,21 +77,22 @@ delims: .ascii ". "
 
          ashl #-1,r7,r0  ;fill r-array
          movl #65537*2000,r1
-         movl #ra+2,r2
+         movl #ra,r2
 1$:      movl r1,(r2)+
          sobgtr r0,1$
 
-         clrw @#cv
+         ;clrw @#cv
          clrl r6         ;high dword for ediv dividend
          movl #10000,r8
 mloop:   clrl r5       ;d <- 0
          addl3 r7,r7,r1   ;i <- 2k
+         addl3 #ra,r1,r10
          brb 4$
 
 77$:     addl2 r3,r2       ;d <- d/b*i
          subl2 r2,r5
          ashl #-1,r5,r5
-4$:      movzwl ra(r1),r2
+4$:      movzwl -(r10),r2
          mull2 r8,r2   ;r[i]*10000
          addl2 r2,r5
          decl r1          ;b <- 2*i-1
@@ -102,7 +103,7 @@ mloop:   clrl r5       ;d <- 0
          mull3 r1,r2,r3
          subl3 r3,r5,r3
    .endc
-         movw r3,ra+1(r1)      ;r[i] <- d%b
+         movw r3,(r10)      ;r[i] <- d%b
          decl r1        ;i <- i - 1
          bneq 77$
 
@@ -213,7 +214,7 @@ prdel:
     $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=delstr,P2=#3
         rsb
 
-msg1: .ascii "number pi calculator v1" <13> <10> "number of digits (up to "
+msg1: .ascii "number pi calculator v2" <13> <10> "number of digits (up to "
 msg2: .ascii ")? "
 msg3: .ascii " digits will be printed" <13> <10>
 delstr: .byte 8,32,8
