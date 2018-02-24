@@ -34,15 +34,15 @@
 ;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
 
 TIKI100 equ 0
-AMSTRADCPC equ 0
+AMSTRADCPC equ 1
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
 ACORNBBCZ80 equ 0
-TORCHBBCZ80 equ 1
+TORCHBBCZ80 equ 0
 
 if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 != 1
 show ERROR
@@ -191,9 +191,10 @@ start    proc
 
 if BIOS_OUTPUT
    ld hl,(1) ;BIOS base table
+   push hl
    ld de,9   ;conout offset
    add hl,de
-   ld (PRS+1),hl
+   ld (bios4+1),hl
 endif
 
 if MSX
@@ -208,8 +209,13 @@ if MSX
       ld (msx_vsync),a
 endif
 
-    ld hl,-(ra+48)  ;48 bytes for stack and 6 first bytes of BDOS area
-    ld de,(6)
+    ld de,-(ra+48)  ;48 bytes for stack
+if BIOS_OUTPUT
+    pop hl
+else
+    ld hl,(6)
+endif
+    push hl
     add hl,de
     ld de,0
     ex de,hl
@@ -319,8 +325,9 @@ vicsave
     in a,(c)
     ld (hl),a
 endif
-
          pop bc      ;fill r-array
+         pop hl
+         ld sp,hl
          push bc
          ld de,2000
          ld hl,ra
@@ -451,9 +458,14 @@ endif
          jp loop
 
 showtimer
+if BIOS_OUTPUT
+        ld c,' '
+        call bios4
+else
         LD  e,' '
         ld c,2
         call BDOS
+endif
 
 if TIKI100
     ld hl,(TIKI100_TIMER_LO)
@@ -669,9 +681,14 @@ endif
 	PUSH HL
 	EX DE,HL
 	call PR00000
+if BIOS_OUTPUT
+        ld c,'.'
+        call bios4
+else
 	LD  e,'.'
         ld c,2
         call BDOS
+endif
 	POP hl
                       ;*10000/freq
 if TIKI100
@@ -718,7 +735,8 @@ vsync50 ld bc,200    ;10000/50 =  200
 vsync0
 endif
         ex de,hl
-	jr PR0000
+	call PR0000
+        rst 0
          endp
 
 PR00000 ld de,-10000
@@ -734,7 +752,7 @@ PRD	add a,$30
         push hl
 if BIOS_OUTPUT
         ld c,a
-PRS     call 0
+        call bios4
 else
         ld e,a
         ld c,2
@@ -753,6 +771,10 @@ PR0	ld A,$FF
 	ld H,B
 	ld L,C
 	JR PRD
+
+if BIOS_OUTPUT
+bios4   JP 0
+endif
 
 div32x16r proc
      local t,t0,t1,t2,t3
@@ -875,7 +897,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80
       db 'Pi'
 endif
 
-      db ' calculator v3',13,10
+      db ' calculator v4',13,10
       db 'for CP/M 2.2 ('
 
 if TIKI100

@@ -158,8 +158,9 @@ start    proc
   add hl,de
   ld (firm_jump+1),hl
 
-    ld hl,0f6d0h  ;48 bytes for stack and 6 first bytes of BDOS area
-    ld de,(6)
+    ld de,-(ra+48)  ;48 bytes for stack
+    ld hl,(6)
+    ld sp,hl
     add hl,de
     ld de,0
     ex de,hl
@@ -382,7 +383,8 @@ showtimer
         jr c,$+3
         inc de
         ex de,hl
-	jr PR0000
+	call PR0000
+        rst 0
          endp
 
 PR00000 ld de,-10000
@@ -449,7 +451,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v3',13,10
+msg1  db 'number ',165,' calculator v4',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'
