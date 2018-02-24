@@ -1,0 +1,9 @@
+asm6809 -3 -l pi-dragon-6309.lst pi-dragon-6309.asm -D -o pi-dragon-6309.bin
+gawk 'BEGIN{print "s/V2/V1/;s/PI.BIN/PI6309.BIN/"}
+/@start@/{print "s/@start@/"strtonum("0x"$1)"/\ns/@start1@/"and(0xff00,strtonum("0x"$1))-1"/"}
+/@EOP@/{print "s/@MEM@/"strtonum("0x"substr($2,5))-254"/"}
+/@OUT@/{print "s/@OUT@/"strtonum("0x"$1)+1"/"}
+/@timer@/{print "s/@hitimer@/"strtonum("0x"$1)"/"}
+/@N@/{print "s/@highN@/"strtonum("0x"$1)+2"/\ns/@lowN@/"strtonum("0x"$1)+3"/"}' pi-dragon-6309.lst >z.sed
+sed -f z.sed pi-dragon.cbas >pi-dragon-6309.asc
+

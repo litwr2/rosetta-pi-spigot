@@ -30,6 +30,7 @@ div1 macro
         addd <neg_divisor
      endm
 
+   if DIVNOMINUS=0
 div16minus            ;dividend < divisor > $7fff, it used only if number of digits > 4704
         ldd <dividend
 	asl <dividend+2
@@ -66,6 +67,7 @@ div16minus            ;dividend < divisor > $7fff, it used only if number of dig
 	rol <dividend+3
         div1
 	jmp enddivision3
+   endif
 
    if DIV8OPT
 div32          ;it may be wrong if divisor>$7fff

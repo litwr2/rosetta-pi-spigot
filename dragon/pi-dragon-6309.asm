@@ -1,4 +1,4 @@
-;for asm6809 assembler
+;for asm6809 assembler (6309 mode)
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -29,33 +29,21 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
-;litwr converted it to 6502 and 6809
-;tricky provided some help
-;MMS gave some support
+;litwr had made this port for 6309 based on 6809 port
+;thanks to zephyr
 
 OPCHR equ $800C    ;print char in AC
 
-DIV8OPT equ 0      ;1 is slower
-;OPT equ 0 is not implemented, only 31 bit dividends are supported
-;OPT equ 1               ;limits dividend to $7f'ff'ff'ff, up to 15448 digits
-OPT equ 2               ;limits dividend to $3f'ff'ff'ff, up to 7792
-;OPT equ 3               ;limits dividend to $1f'ff'ff'ff, up to 4072
-;*OPT equ 4               ;limits dividend to $f'ff'ff'ff, up to 2024 (not supported)
-;*OPT equ 5               ;limits dividend to $7'ff'ff'ff, up to 1104 (not supported)
-;*OPT equ 6               ;limits dividend to $3'ff'ff'ff, up to 560 (not supported)
-DIVNOMINUS equ 0   ;limits to 4704 digits, this may shrink size, not increase speed
-
 ;N equ 350    ;100 digits
-;N equ 2800   ;800 digits
-N equ 3500   ;1000 digits
+;N equ 2800  ;800 digits
+N equ 3500    ;1000 digits
 
          org $2800
          setdp dpage/256
 dpage
 divisor fcb 0,0
-neg_divisor fcb 0,0
-dividend fcb 0,0,0,0
+const10000 fcb 10000/256,10000%256
+dividend fcb 0,0
 remainder fcb 0,0
 quotient equ dividend ;save memory by reusing divident to store the quotient
 dv fcb 0,0,0,0
@@ -94,13 +82,11 @@ prn      leax 1,x
 
          subd <dv
          std <dv+2
-         bra prn
-
-;         lda #12    ;clear screen
-;         jsr OPCHR   ;check dp=0 and Basic relocation!!!
+         jmp <prn
 
          lda #dpage/256    ;@start@ of the execution
          tfr a,dp
+         ldmd #1     ;to native mode
 
          clr >$113    ;init timer
          clr >$112
@@ -124,56 +110,31 @@ loop     stu <dv    ;d <- 0
          addd <k
          tfr d,x
          leay r,x    ;@EOP@ - end of program
-loop2    lda #10000%256   ;low(10000)
-         ldb 1,y
-         mul
-         addd <dv+2
-         std <dv+2
-         stb <dividend+3
-         bcc ll1
-
-         inc <dv+1
-         bne ll1
-
-         inc <dv
-ll1      lda #10000/256  ;high(10000)
-         ldb ,y
-         mul
-         addd <dv
+loop2    leax -1,x           ;b <- b - 1
+         stx <divisor
+         ldd ,y
+         muld #10000
+         addw <dv+2
+         stw <dv+2
+         adcd <dv
          std <dv
-         sta <dividend
-         lda #10000%256
-         ldb ,y
-         mul
-         addd <dv+1
-         std <dv+1
-         bcc ll2
+         cmpr x,d
+         bcs div32
 
-         inc <dv
-         inc <dividend
-ll2      lda #10000/256
-         ldb 1,y
-         mul
-         addd <dv+1
-         std <dv+1
-         std <dividend+1
-         bcc ll3
+         tfr d,w
+         clrd
+         divq <divisor       ;signed division limits to 4704 digits
+         stw <quotient
+         ldw <dv+2
+         jmp <exitdiv
 
-         inc <dv
-         inc <dividend
-ll3      tfr x,d
-         subd #1           ;b <- b - 1
-         std <divisor
-
-       include "6809-div6.s"
-
-         ;ldd <remainder
+div32    stu <quotient
+exitdiv  divq <divisor
          std ,y
-         leax -2,x         ;i <- i - 1
+         leax -1,x         ;i <- i - 1
          beq l4
 
-         ldd <dv+2   ;d <- (d - r[i] - new_d)/2 = d*i
-         ;subd <remainder
+         ldd <dv+2         ;d <- (d - r[i] - new_d)/2 = d*i
          subd ,y
          leay -2,y
          std <dv+2
@@ -183,28 +144,21 @@ ll3      tfr x,d
          subd #1
          std <dv
 tl1      ldd <dv+2
-         sbcb <quotient+3
-         sbca <quotient+2
-         std <dv+2
+         sbcr w,d
+         tfr d,w
          ldd <dv
-         sbcb <quotient+1
-         sbca <quotient
-         lsra
-         rorb
+         sbcd <quotient
+         lsrd
          std <dv
-         ror <dv+2
-         ror <dv+3
+         rorw
+         stw <dv+2
          jmp <loop2
 
-l4       ldd #10000
-         std <divisor
-         ldd <dividend    ;dividend = quotient
-         jsr div32x16w    ;c + d/10000
-         ldd <quotient+2
-         addd <c
+l4       divq <const10000
+         addw <c          ;c + d/10000
+         std <c           ;c <- d%10000
+         tfr w,d
          jsr <pr0000
-         ldd <remainder
-         std <c             ;c <- d%10000
          ldd >$112
          stu >$112
          addd <timer+1
@@ -217,18 +171,14 @@ l8       ldd <k      ;k <- k - 14
          beq exit
 
          std <k
-         jmp loop
+         jmp <loop
 
 exit     ldd <timer+1
          std >$112
          clra
          tfr a,dp
+         ldmd #0   ;to emulation mode
          rts
-
-       include "6809-div7.s"
-   if DIV8OPT
-       include "6809-div8.s"
-   endif
 
 r equ *-2
 

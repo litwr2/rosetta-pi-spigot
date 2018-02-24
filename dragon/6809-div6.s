@@ -16,7 +16,9 @@ div32x16x     ;D=A:B - divisor (A - high!)
         coma
         std <neg_divisor
         bmi lplus
+   if DIVNOMINUS=0
         jmp div16minus
+   endif
         ;lbpl div16minus  ;slower!
 
    if DIV8OPT
@@ -74,6 +76,6 @@ enddivision3
         stu <dividend
 enddivision2
         rol <dividend+3
-        std <remainder
+        ;std <remainder
 enddivision
 
