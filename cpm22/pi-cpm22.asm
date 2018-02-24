@@ -1,7 +1,7 @@
 ;for pasmo assembler
-;it is for CP/M 2.2 for Tiki-100, Amstrad CPC6128, 
-;MSX-DOS, Commodore 128
-;it uses Tiki-100 timer, Amstrad CPC firmware, MSX timer,
+;it is for Tiki-100 KP/M, Amstrad CPC6128 CP/M 2.2, 
+;Amstrad PCW8xxx/9xxx CP/M 3, MSX-DOS, Commodore 128 CP/M 3
+;it uses Tiki-100 timer, Amstrad CPC firmware, MSX or Amstrad PCW timer,
 ;Commodore 128 Time of Day of CIA1
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
@@ -33,14 +33,16 @@
 ;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX or C128
+BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
 
-TIKI100 equ 1
+TIKI100 equ 0
 AMSTRADCPC equ 0
+AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
+ACORNBBCZ80 equ 1
 
-if TIKI100 + AMSTRADCPC + MSX + C128 != 1
+if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 != 1
 show ERROR
 endif
 
@@ -56,6 +58,8 @@ MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 MSX_INTR_VECTOR equ $38
 ;Commodore-128
 CIA1TOD equ $DC08
+;Acorn BBC Micro z80
+OSWORD equ $FFF1
 
 BDOS equ 5
 
@@ -265,11 +269,16 @@ if AMSTRADCPC
     ld (time),hl
     ld (time+2),de
 endif
+if ACORNBBCZ80
+    ld a,2
+    ld hl,time
+    call OSWORD
+endif
 if MSX and MSX_INTR=0
     ld hl,(MSX_TIMER)
     ld (prevtime),hl
 endif
-if MSX and MSX_INTR=1
+if MSX and MSX_INTR=1 or AMSTRADPCW
 	LD	HL,(MSX_INTR_VECTOR + 1)    ;interrupt mode 1
 	LD	(msx_intr_save + 1),hl
 	LD	HL,msx_timer_intr
@@ -301,12 +310,8 @@ vicsave
     in a,(c)
     ld (hl),a
 endif
-        ;ld e,12  ;clear screen
-        ;ld c,2
-        ;call BDOS
 
-    pop bc      ;fill r-array
-         ;di         ;no interrupts
+         pop bc      ;fill r-array
          push bc
          ld de,2000
          ld hl,ra
@@ -449,11 +454,21 @@ if AMSTRADCPC
     call ENTER_FIRMWARE
     dw KL_TIME_PLEASE
 endif
-if MSX and MSX_INTR=1
+if ACORNBBCZ80
+    ld a,1
+    ld hl,time
+    call OSWORD
+    ld hl,(time)
+    ld de,(time+2)
+    ld bc,0
+    ld (time),bc
+    ld (time+2),bc
+endif
+if MSX and MSX_INTR=1 or AMSTRADPCW
 	LD	hl,(msx_intr_save + 1)
 	LD	(MSX_INTR_VECTOR + 1),HL
 endif
-if MSX
+if MSX or AMSTRADPCW
      ld bc,0
      ld hl,(time)
      ld de,(time+2)
@@ -620,8 +635,11 @@ endif
 if TIKI100
      ld bc,125              ;timer freq, Hz
 endif
-if AMSTRADCPC
+if AMSTRADCPC or AMSTRADPCW
      ld bc,300
+endif
+if ACORNBBCZ80
+     ld bc,100
 endif
         call div32x16r
 	PUSH HL
@@ -636,7 +654,11 @@ if TIKI100
         ld bc,80      ;10000/125 = 80
         call mul16
 endif
-if AMSTRADCPC
+if ACORNBBCZ80
+        ld bc,100     ;10000/100 = 100
+        call mul16
+endif
+if AMSTRADCPC or AMSTRADPCW
         ld bc,100   ;10000/300 = 100/3
         call mul16
         ld hl,0
@@ -737,8 +759,9 @@ include "mul16.s"
 
 if MSX
 msx_vsync db 0,0
+endif
 
-if MSX_INTR=1
+if MSX and MSX_INTR=1 or AMSTRADPCW
 msx_timer_intr
       push af
       push hl
@@ -757,14 +780,16 @@ msx_intr_save
       jp 0
 endif
 
-if MSX_INTR=0
+if MSX and MSX_INTR=0
 prevtime dw 0
-endif
 endif
 
 cv dw 0
 kv dw 0
 time dw 0,0
+if ACORNBBCZ80
+   db 0
+endif
 
          org ($ + 256) and $ff00
 include "../cpc6128/mul10000.s"
@@ -778,11 +803,11 @@ endif
 if AMSTRADCPC
       db 165
 endif
-if C128 or MSX
+if C128 or MSX or AMSTRADPCW or ACORNBBCZ80
       db 'Pi'
 endif
 
-      db ' calculator v2',13,10
+      db ' calculator v3',13,10
       db 'for CP/M 2.2 ('
 
 if TIKI100
@@ -790,6 +815,12 @@ if TIKI100
 endif
 if AMSTRADCPC
       db 'Amstrad CPC'
+endif
+if AMSTRADPCW
+      db 'Amstrad PCW'
+endif
+if ACORNBBCZ80
+      db 'Acorn BBC Micro TUBE Z80'
 endif
 if MSX
       db 'Generic MSX'

@@ -29,9 +29,16 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+TIKI100 equ 0
+BBC80186 equ 1
+
+if TIKI100 + BBC80186 <> 1
+ERROR
+end if
 
 TIKI100_TIMER_LO equ $FF8C
 TIKI100_TIMER_HI equ $FF8E
+BBC_OSWORD equ $4A
 
 ;N = 3500   ;1000 digits
 N = 2800  ;800 digits
@@ -151,7 +158,11 @@ start:
          sub bx,[time]
          sbb dx,[time+2]
          mov ax,dx
+if TIKI100
          mov di,8      ;1000/125
+else if BBC80186
+         mov di,10     ;1000/100
+end if
          mul di
          mov si,ax
          mov ax,bx
@@ -256,14 +267,16 @@ getnum: xor cx,cx    ;length
 
 .l5:    jcxz .l0
 
-        cmp bp,9228+1
+        cmp bp,9232+1
         jnc .l0
 
 .l8:    pop ax
         loop .l8
         retn
 
-gettime:push	ds           ;returns timer value at dx:bx
+gettime:
+if TIKI100
+        push	ds           ;returns timer value at dx:bx
         mov ax,0c000h
 	mov ds,ax			; Point to Z80-memory window segment
 .wait0:	in	al,7Fh			; Wait for Z80 to be idle
@@ -285,17 +298,30 @@ gettime:push	ds           ;returns timer value at dx:bx
 	jnz	.wait2
 
 	pop	ds
+else if BBC80186
+        mov al,1
+        mov bx,string
+        int BBC_OSWORD
+        mov bx,word [string]
+        mov dx,word [string+2]
+end if
         retn
-
-string rb 6
-msg1  db 'number ',227,' calculator v1 for MS-DOS',13,10
-      db 'number of digits (up to 9228)? $'
-msg3  db ' digits will be printed'
-msg2  db 13,10,'$'
-del   db 8,' ',8,'$'
 
         align 2
 cv  dw 0
 kv  dw 0
 time dw 0,0
-ra  dw 0
+msg3  db ' digits will be printed'
+msg2  db 13,10,'$'
+del   db 8,' ',8,'$'
+ra:
+string rb 6
+msg1  db 'number Pi calculator v2 for DOS ('
+if TIKI100
+      db 'Tiki-100 8088 board'
+else if BBC80186
+      db 'Acorn BBC Micro TUBE 80186'
+end if
+      db ')',13,10
+      db 'number of digits (up to 9232)? $'
+

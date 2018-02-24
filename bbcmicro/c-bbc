@@ -1,0 +1,11 @@
+tmpx pi-bbc.asm -l pi-bbc.lst
+dd if=pi-bbc.prg of=PI bs=1 skip=2
+sed 's/\* *= *\$1000/*=$2100/' pi-bbc.asm >pi-bbc-2100.asm
+tmpx pi-bbc-2100.asm
+dd if=pi-bbc-2100.prg of=PI2 bs=1 skip=2
+tr '\n[:lower:]' '\r[:upper:]' >PILOAD <pi-bbc.bas
+sed 's/m%=&1000/m%=\&2100/;s/"pi"/"pi2"/' pi-bbc.bas >pi-bbc-2100.bas
+tr '\n[:lower:]' '\r[:upper:]' >PILOAD2 <pi-bbc-2100.bas
+beeb delete z1.ssd -y !BOOT PI PI2 PILOAD PILOAD2
+beeb putfile z1.ssd !BOOT PI PI2 PILOAD PILOAD2
+rm pi-bbc-2100.asm pi-bbc-2100.prg pi-bbc-2100.bas pi-bbc.prg

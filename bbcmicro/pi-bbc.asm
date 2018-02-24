@@ -29,38 +29,29 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-;INT2STR = $BDCD  ;print unsigned integer in AC:XR
-BSOUT = $FFD2    ;print char in AC
+OSWRCH = $FFEE    ;print char in AC
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
-;b = $8e   ;$8f
-d = $61   ;..$64
-i = $65   ;$66
-k = $8c   ;$8d
+d = $70   ;..$73
+i = $74   ;$75
+k = $76   ;$77
 
-divisor = $19     ;$1a, $1b..$1c used for hi-byte
-dividend = $1d	  ;..$1e used for hi-bytes
-remainder = $41   ;..$42 used for hi-byte
+divisor = $78     ;$79, $7a..$7b used for hi-byte
+dividend = $7c	  ;..$7f used for hi-bytes
+remainder = $82   ;..$83 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $3f ;$40
+rbase = $80 ;$81
 
-         * = $801
-         .include "pi-c64.inc"
-
-         * = $9c0
-         lda #$36 ;@start@
-         sta 1    ;disable Basic ROM, add 12KB to RAM
-         lda #$b
-         lda $d011   ;screen @blank@
+         * = $1000
          ;sei         ;no interrupts
-         lda #147    ;clear screen
-         jsr BSOUT
+         ;lda #12    ;clear screen ;@start@
+         ;jsr OSWRCH
 
-         ldx #(N+1)/128+1   ;fill r-array @N@
+         ldx #(N+1)/128+1   ;fill r-array
          ldy #0
          sty d
          lda #>r
@@ -81,9 +72,9 @@ lf0      lda #<2000
          stx c+1
          stx rbase
 
-         lda #<N        ;k <- N   @lowN@
+         lda #<N        ;k <- N
          sta k
-         lda #>N                  ;@highN@
+         lda #>N
          sta k+1
 
 loop     lda #0          ;d <- 0
@@ -222,12 +213,7 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     lda #$1b
-         sta $d011   ;screen on
-         ;cli         ;interrupts enabled
-
-         lda #$37
-         sta 1    ;restores Basic ROM
+exit     ;cli         ;interrupts enabled
          rts
 
 
@@ -303,7 +289,7 @@ pr0000 .block
          tay
 prd      tya
          eor #$30
-         jmp BSOUT
+         jmp OSWRCH
 
 pr0      ldy #255
 prn      iny
@@ -326,5 +312,5 @@ prc      txa
 
 c .byte 0,0
 
-r = (* + 16 + 256) & $ff00
+r = (* + 256) & $ff00
 

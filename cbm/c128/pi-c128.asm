@@ -51,7 +51,7 @@ rbase = $fb ;$fc
          * = $1c01
          .include "pi-c128.inc"
 
-         * = $1e00
+         * = $1db0
        lda #$e      ;@start@
        sta $ff00    ;sets MMU to use RAM to $C000
          ;sei         ;no interrupts

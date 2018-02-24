@@ -436,6 +436,7 @@ cnt  .var cnt-1
         .bend
 
 div32_1
+      sta dividend+3
       sty remainder
       jmp enddivision
 
