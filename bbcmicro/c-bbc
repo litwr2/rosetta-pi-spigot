@@ -21,6 +21,7 @@ sed -f z-2100.sed pi-bbc.cbas | sed 's/"pi"/"pi2"/' >pi-bbc-2100.bas
 dd if=pi-bbc-2100.prg of=PI2 bs=1 skip=2
 tr '\n[:lower:]' '\r[:upper:]' >PILOAD2 <pi-bbc-2100.bas
 
+sed 's/$/\r/' BOOT >'!BOOT'
 beeb delete z1.ssd -y !BOOT PI PI2 PILOAD PILOAD2
 beeb putfile z1.ssd !BOOT PI PI2 PILOAD PILOAD2
 rm *-2100.*

@@ -1,0 +1,6 @@
+f=${1%%.asm}
+fasmarm -s $f.fas $1 $f
+fasm-listing $f.fas $f.lst
+beeb delete z1.ssd -y $f
+beeb putfile z1.ssd $f
+

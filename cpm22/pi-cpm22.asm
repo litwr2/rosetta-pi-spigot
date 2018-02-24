@@ -1,6 +1,7 @@
 ;for pasmo assembler
 ;it is for Tiki-100 KP/M, Amstrad CPC6128 CP/M 2.2, 
 ;Amstrad PCW8xxx/9xxx CP/M 3, MSX-DOS, Commodore 128 CP/M 3
+;Acorn z80 2nd processor CP/M, Torch z80 2nd processor CPN
 ;it uses Tiki-100 timer, Amstrad CPC firmware, MSX or Amstrad PCW timer,
 ;Commodore 128 Time of Day of CIA1
 ;it calculates pi-number using the next C-algorithm
@@ -40,9 +41,10 @@ AMSTRADCPC equ 0
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
-ACORNBBCZ80 equ 1
+ACORNBBCZ80 equ 0
+TORCHBBCZ80 equ 1
 
-if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 != 1
+if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 != 1
 show ERROR
 endif
 
@@ -60,6 +62,10 @@ MSX_INTR_VECTOR equ $38
 CIA1TOD equ $DC08
 ;Acorn BBC Micro z80
 OSWORD equ $FFF1
+;Torch BBC Micro z80
+Cto6502 equ $FFC9
+Nto6502 equ $FFC3
+Afrom6502 equ $FFC6
 
 BDOS equ 5
 
@@ -274,6 +280,9 @@ if ACORNBBCZ80
     ld hl,time
     call OSWORD
 endif
+if TORCHBBCZ80
+    call gettimer
+endif
 if MSX and MSX_INTR=0
     ld hl,(MSX_TIMER)
     ld (prevtime),hl
@@ -464,6 +473,21 @@ if ACORNBBCZ80
     ld (time),bc
     ld (time+2),bc
 endif
+if TORCHBBCZ80
+    ld hl,(time)
+    push hl
+    ld hl,(time+2)
+    push hl
+    call gettimer
+    ld de,(time+2)
+    ld bc,(time)
+    pop hl
+    ld (time+2),hl
+    pop hl
+    ld (time),hl
+    ld h,b
+    ld l,c
+endif
 if MSX and MSX_INTR=1 or AMSTRADPCW
 	LD	hl,(msx_intr_save + 1)
 	LD	(MSX_INTR_VECTOR + 1),HL
@@ -638,7 +662,7 @@ endif
 if AMSTRADCPC or AMSTRADPCW
      ld bc,300
 endif
-if ACORNBBCZ80
+if ACORNBBCZ80 or TORCHBBCZ80
      ld bc,100
 endif
         call div32x16r
@@ -654,7 +678,7 @@ if TIKI100
         ld bc,80      ;10000/125 = 80
         call mul16
 endif
-if ACORNBBCZ80
+if ACORNBBCZ80 or TORCHBBCZ80
         ld bc,100     ;10000/100 = 100
         call mul16
 endif
@@ -784,6 +808,50 @@ if MSX and MSX_INTR=0
 prevtime dw 0
 endif
 
+if TORCHBBCZ80
+gettimer
+    call Nto6502
+    db 15           ;user command
+    call Nto6502
+    db 12           ;OSWORD
+    call Nto6502
+    db 1            ;get timer
+    call Nto6502
+    db 15
+    call Nto6502
+    db 13           ;read scratchpad
+    call Nto6502
+    db 0            ;byte #
+    call Afrom6502
+    ld l,a
+    call Nto6502
+    db 15
+    call Nto6502
+    db 13           ;read scratchpad
+    call Nto6502
+    db 1            ;byte #
+    call Afrom6502
+    ld h,a
+    ld (time),hl
+    call Nto6502
+    db 15
+    call Nto6502
+    db 13           ;read scratchpad
+    call Nto6502
+    db 2            ;byte #
+    call Afrom6502
+    ld l,a
+    call Nto6502
+    db 15
+    call Nto6502
+    db 13           ;read scratchpad
+    call Nto6502
+    db 3            ;byte #
+    call Afrom6502
+    ld h,a
+    ld (time+2),hl
+    ret
+endif
 cv dw 0
 kv dw 0
 time dw 0,0
@@ -803,7 +871,7 @@ endif
 if AMSTRADCPC
       db 165
 endif
-if C128 or MSX or AMSTRADPCW or ACORNBBCZ80
+if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80
       db 'Pi'
 endif
 
@@ -821,6 +889,9 @@ if AMSTRADPCW
 endif
 if ACORNBBCZ80
       db 'Acorn BBC Micro TUBE Z80'
+endif
+if TORCHBBCZ80
+      db 'Torch BBC Micro TUBE Z80'
 endif
 if MSX
       db 'Generic MSX'
@@ -920,3 +991,4 @@ l8      pop de
         retn
 endp
    end start
+
