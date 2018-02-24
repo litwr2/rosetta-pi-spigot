@@ -135,7 +135,7 @@ start:
 
 .l4:     mov dx,bx
          mov si,10000
-         div32x16
+         div si
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
@@ -261,7 +261,7 @@ getnum: xor cx,cx    ;length
 
 .l5:    jcxz .l0
 
-        cmp bp,9229
+        cmp bp,9232+1
         jnc .l0
 
 .l8:    pop ax
@@ -269,9 +269,9 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v1',13,10
-      db 'it may give 6000 digits in less than an hour with the first IBM PC of 1981!'
-      db 13,10,'number of digits (up to 9228)? $'
+msg1  db 'number ',227,' calculator v2',13,10
+      db 'it may give 9000 digits in less than an hour with the first IBM PC of 1981!'
+      db 13,10,'number of digits (up to 9232)? $'
 msg3  db ' digits will be printed'
 msg2  db 13,10,'$'
 del   db 8,' ',8,'$'

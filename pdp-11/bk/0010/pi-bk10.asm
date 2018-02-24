@@ -124,7 +124,17 @@ restart: call @#getnum
          mov #127,r2
          emt ^O20
 
-7$:      asr r4
+7$:      tst @#^O42
+         beq 72$
+
+         mov #140,r0    ;turn to normal screen size
+         emt ^O16
+72$:     cmp r4,#2056+1
+         bcs 71$
+
+         mov #140,r0    ;add 12 KB, reduce the screen size
+         emt ^O16 
+71$:     asr r4
          mov r4,r0
          asl r0
          add r0,r4
@@ -415,7 +425,7 @@ getnum: clr r1    ;length
 5$:     tst r1
         beq 0$
 
-        cmp #2056,r2   ;(end of memory minus end of program)/7 and down to the multiple of 4
+        cmp #3808,r2   ;(end of memory minus end of program)/7 and down to the multiple of 4
         bcs 0$
 
         mov r1,r3
@@ -428,11 +438,11 @@ time: .word 0,0
 prevtime: .word 0
 msg1: .ascii "number "
       .byte 160
-      .ascii " calculator v2"
+      .ascii " calculator v3"
       .byte 10,0
 msg2: .ascii "  it may give 2000 digits in about an hour!"
 msg4: .byte 10,10
-      .asciz "number of digits (up to 2056)? "
+      .asciz "number of digits (up to 3808)? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 

@@ -60,49 +60,137 @@ l1:  sub r1,r3
 l0:
      .endm
 
-.macro div32x16 ?div32 ?exit ?l1 ?l2 ?l3 ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
+.macro div32x16 ?div32 ?div32b ?div32n ?div32x ?exit ?l1 ?l1x ?l2 ?l3 ?l4
+    ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
 .if ne EIS
      ;tst r1
-     bpl l3
+     bpl l3           ;R3 < 0x4000
 
-     .rept 16
-     div0         ;it is not hardware division :(
-     .endm
+     ;clc
+     mov r1,r0
+     ror r1
+     mov r3,r4
+     asl r3
+     inc r3    ;?
+     cmp r3,r1
+     bcc div32n
+
+     mov r2,r3
+     mov r4,r2
+     div r1,r2
      clr r4
+     ror r2
+     bcc l1
+
+     add r1,r3
+l1:  mov r0,r1
+     sub r2,r3
+     bcc exit
+
+     dec r2
+     add r0,r3
      br exit
 
-l3:  mov r3,r4  ;may work wrong if R3>$3fff
-     inc r4
-     asl r4     ;this division implementation is limited
-     cmp r4,r1
-     bcc div32
-
-     mov r2,r4
-     mov r3,r2
-     mov r4,r3
+div32n:
+     mov r2,r3
+     mov r4,r2
+     clr r4
+     ror r2
+     ror r3
+     rol r4   ;save CF
      div r1,r2
-l1:  clr r4
-     br exit
-
-div32:         ;may work wrong if R1>$7fff
-     mov r2,r0
-     clr r2
-     div r1,r2
-
-     asl r1
-     mov r2,r4
-     mov r3,r2
-     mov r0,r3
-     div r1,r2
-
-     asr r1
      asl r2
+     asl r3
+     add r4,r3
      cmp r3,r1
      bcs l2
 
      inc r2
      sub r1,r3
-l2:
+l2:  clc
+     ror r2
+     bcc l1x
+
+     add r1,r3
+l1x: sub r2,r3
+     bcc l4
+
+     dec r2
+     add r0,r3
+l4:  mov r0,r1
+     clr r4
+     br exit
+
+div32b:
+     mov r2,r0
+     clr r2
+     div r1,r2
+     mov r2,-(sp)
+     mov r0,r2
+
+     mov r3,r4
+     asl r3
+     inc r3     ;?
+     cmp r3,r1
+     bcc div32x
+
+     mov r2,r3
+     mov r4,r2
+     div r1,r2
+     mov (sp)+,r4
+     br exit
+
+div32x:
+     clr r0
+     ror r4
+     ror r2
+     rol r0   ;save CF
+     mov r2,r3
+     mov r4,r2
+     div r1,r2
+     asl r2
+     asl r3
+     add r0,r3
+     mov (sp)+,r4
+     cmp r3,r1
+     bcs exit
+
+     inc r2
+     sub r1,r3
+     br exit
+
+l3:  cmp r3,r1
+     bcc div32b
+
+     mov r3,r4
+     asl r3
+     inc r3     ;?
+     cmp r3,r1
+     bcc div32
+
+     mov r2,r3
+     mov r4,r2
+     div r1,r2
+     clr r4
+     br exit
+
+div32:
+     clr r0
+     ror r4
+     ror r2
+     rol r0   ;save CF
+     mov r2,r3
+     mov r4,r2
+     div r1,r2
+     asl r2
+     asl r3
+     add r0,r3
+     clr r4
+     cmp r3,r1
+     bcs exit
+
+     inc r2
+     sub r1,r3
 
 .iff
      cmp r3,r1
@@ -114,7 +202,7 @@ l2:
      clr r4
      jmp @#exit
 
-OPT = 2         ;use 3 if N<=14000, limits R3 to 0x1f'ff'ff'ff
+OPT = 2         ;R3 to 0x3fff
 div32:
      mov r2,r0
 
@@ -257,7 +345,6 @@ ivs:
 
          dec r1          ;b <- 2*i-1
          div32x16
-
          mov r3,ra+1(r1)      ;r[i] <- d%b
          dec r1        ;i <- i - 1
          beq 4$
@@ -432,7 +519,7 @@ ra:
 time2: .word 0,0
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v2" <13> <10>
+      .ascii " calculator v3" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"
