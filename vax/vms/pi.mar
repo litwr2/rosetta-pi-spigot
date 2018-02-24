@@ -1,0 +1,221 @@
+;for vax macro assembler
+;it calculates pi-number using the next C-algorithm
+;https://crypto.stanford.edu/pbc/notes/pi/code.html
+
+;#include <stdio.h>
+;#define N 2800
+;main() {
+;   long r[N + 1], i, k, b, c;
+;   c = 0;
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
+;      r[i] = 2000;
+;   for (k = N; k > 0; k -= 14) {
+;      d = 0;
+;      i = k;
+;      for(;;) {
+;         d += r[i]*10000;
+;         b = i*2 - 1;
+;         r[i] = d%b;
+;         d /= b;
+;         i--;
+;         if (i == 0) break;
+;         d *= i;
+;      }
+;      printf("%.4d", (int)(c + d/10000));
+;      c = d%10000;
+;   }
+;}
+
+;the time of the calculation is quadratic, so if T is time to calculate N digits
+;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has written this for VAX/VMS
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped a lot
+
+FREEBYTES=64877   ;65536-ra
+useEDIV=1            ;use EDIV or DIVL and MULL
+
+cho:        .BLKL       1
+CHNAMEo:     .ASCID      "SYS$OUTPUT"
+chi:        .BLKL       1
+CHNAMEi:     .ASCID      "SYS$INPUT"
+ti_start:       .long 0,0
+ti_end:         .long 0,0
+delims: .ascii ". "
+
+         .entry start,0
+    $ASSIGN_S   DEVNAM=CHNAMEi,CHAN=CHi
+    $ASSIGN_S   DEVNAM=CHNAMEo,CHAN=CHo
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=msg1,P2=#msg2-msg1
+
+         movl #FREEBYTES/7,r2
+         bicl2 #3,r2
+         movw r2,@#maxnum
+         bsbw PR0000
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=msg2,P2=#msg3-msg2
+         bsbw getnum
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=delstr-2,P2=#2
+
+         addl3 #3,r7,r4
+         bicl2 #3,r4
+         cmpl r7,r4
+         beql 7$
+
+         movl r4,r7
+         movl r4,r2
+         bsbw PR0000
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=msg3,P2=#delstr-msg3
+
+7$:      ashl #-1,r7,r7
+         mull2 #7,r7  ;r7 <- r7/2*7
+
+         pushal ti_start
+         calls #1,G^sys$GETTIM
+
+         ashl #-1,r7,r0  ;fill r-array
+         movl #65537*2000,r1
+         movl #ra+2,r2
+1$:      movl r1,(r2)+
+         sobgtr r0,1$
+
+         clrw @#cv
+         clrl r6         ;high dword for ediv dividend
+         movl #10000,r8
+mloop:   clrl r5       ;d <- 0
+         addl3 r7,r7,r1   ;i <- 2k
+         brb 4$
+
+77$:     addl2 r3,r2       ;d <- d/b*i
+         subl2 r2,r5
+         ashl #-1,r5,r5
+4$:      movzwl ra(r1),r2
+         mull2 r8,r2   ;r[i]*10000
+         addl2 r2,r5
+         decl r1          ;b <- 2*i-1
+   .if ne useEDIV
+         ediv r1,r5,r2,r3
+   .iff
+         divl3 r1,r5,r2
+         mull3 r1,r2,r3
+         subl3 r3,r5,r3
+   .endc
+         movw r3,ra+1(r1)      ;r[i] <- d%b
+         decl r1        ;i <- i - 1
+         bneq 77$
+
+         ediv r8,r5,r2,r3
+         addw2 @#cv,r2    ;c + d/10000
+         movw r3,@#cv     ;c <- d%10000
+         bsbb PR0000
+         subl #14,r7      ;k <- k - 14
+         bneq mloop
+
+         pushal ti_end
+         calls #1,G^sys$GETTIM
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=delims+1,P2=#1
+         subl3 ti_start,ti_end,r2
+         movl ti_end+4,r3
+         sbwc ti_start+4,r3
+         ediv #10000000,r2,r2,r5
+         bsbb PR0000
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=delims,P2=#1
+         divl3 #1000,r5,r2
+         bsbb PR0000
+         ret
+
+PR0000:   ;prints R2
+        movl #PRBUF,r4
+        bsbb PRX
+    $QIO_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=PRBUF,P2=#4
+        rsb
+
+PRX:    movw #1000,r3
+	bsbb PRZ
+        movw #100,r3
+	bsbb PRZ
+        movw #10,r3
+	bsbb PRZ
+	movb r2,r0
+PR:	addb3 #48,r0,(r4)+
+   	rsb
+
+PRZ:	movb #255,r0
+4$:	incb r0
+	cmpw r2,r3
+	bcs PR
+
+	subw2 r3,r2
+	brb 4$
+
+PRBUF:  .blkb 4
+
+cv: .word 0
+ra:
+maxnum: .word 0
+
+getnum: clrl r4    ;length
+        clrl r7    ;number
+        clrl r3
+20$:  $QIOW_S CHAN=CHi,FUNC=#IO$_READVBLK!IO$M_NOFILTR!IO$M_NOECHO,P1=msg1,P2=#1
+        movb msg1,r3
+        cmpb r3,#13     ;CR
+        beql 5$
+
+        cmpb #127,r3   ;backspace, DEC DEL
+        beql 1$
+
+        cmpb #47,r3
+        bcc 20$
+
+        cmpb #48+9,r3
+        bcs 20$
+
+        cmpb #4,r4
+        beql 20$
+
+        movw r7,-(sp)
+        bsbb prdigi
+        incl r4
+
+        subb2 #48,r3
+        mulw2 #10,r7
+        addw2 r3,r7
+21$:    brb 20$
+
+1$:     tstb r4
+        beql 20$
+
+        decl r4
+        bsbb prdel
+        movw (sp)+,r7
+        brb 20$
+
+5$:     tstb r4
+        beql 20$
+
+        cmpw @#maxnum,r7
+        bcs 20$
+
+        tstw r7
+        beql 21$
+
+8$:     movw (sp)+,r3
+        sobgtr r4,8$
+        rsb
+
+prdigi:
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=msg1,P2=#1
+        rsb
+prdel:
+    $QIOW_S CHAN=CHo,FUNC=#IO$_WRITEVBLK,P1=delstr,P2=#3
+        rsb
+
+msg1: .ascii "number pi calculator v1" <13> <10> "number of digits (up to "
+msg2: .ascii ")? "
+msg3: .ascii " digits will be printed" <13> <10>
+delstr: .byte 8,32,8
+      .blkb FREEBYTES
+    .end start
