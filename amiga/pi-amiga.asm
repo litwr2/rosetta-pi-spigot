@@ -29,6 +29,9 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+     mc68000
+     ;mc68020
+
 OldOpenLibrary	= -408
 OpenLibrary	= -552
 CloseLibrary	= -414
@@ -159,12 +162,14 @@ start
          mulu d1,d0
          add.l d0,d5
          move.l d5,d6
-         div32x16
-
-         ;divul.l d4,d7:d6   ;68020
+  if __VASM&28              ;68020?
+         divul.l d4,d7:d6
          ;exg.l d6,d7
-
+         move d7,(a3)     ;r[i] <- d%b
+  else
+         div32x16
          move d6,(a3)     ;r[i] <- d%b
+  endif
          subq #2,d4    ;i <- i - 1
          bcs .l4
 
@@ -311,7 +316,11 @@ cout dc.l 0
 string = msg1
 libname  dc.b "dos.library",0
 msg1  dc.b 'number ',182,' calculator v1',10
+  if __VASM&28              ;68020?
+      dc.b 'it may give 9000 digits in about 5 minutes with the Amiga 1200!'
+  else
       dc.b 'it may give 9000 digits in less than half an hour with the Amiga 500!'
+  endif
       dc.b 10,'number of digits (up to 9252)? '
 msg3  dc.b ' digits will be printed'
 msg2  dc.b 10
