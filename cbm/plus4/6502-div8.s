@@ -153,18 +153,15 @@ l1
 .endm
 
 .if DIV8OPT
-;    * = * + 0;OPT=1
-    * = * + 5;OPT=2
-.endif
-.ifeq DIV8OPT
+    * = * + DIV8ADJ
 .endif
 div32x8e     ;dividend+3 < divisor
         ldx remainder
         stx dividend+2
-        sty dividend+3   ;@auxloop@
+        sty dividend+3   ;@div8loop@
 
 .block
-.if OPT-1 
+.if OPT-1
 cnt  .var OPT-1
 loop0 .lbl
         asl dividend+2
@@ -307,7 +304,7 @@ div8z
         #div2
         rol dividend
         sta remainder
-        jmp enddivision       ;@auxloop@
+        jmp enddivision       ;@div8loop@
 
 div32_1
       ldx remainder
@@ -317,11 +314,11 @@ div32_1
       tya
       jmp enddivision
 
-;    * = * + 0
+    * = * + DIV8SADJ
 div32_3
 .block
       ;ldx dividend+3
-      tax                ;@aux2loop@
+      tax                ;@div8suploop@
       lda div3t,x
       sta dividend+3
       lda div5t,x
@@ -916,12 +913,11 @@ l6    txa
       stx dividend
 .bend
       sta remainder
-      jmp enddivision   ;@aux2loop@
+      jmp enddivision   ;@div8suploop@
 
-;    * = * + 8 ;OPT=1
-    * = * + 15 ;OPT=2
+    * = * + DIV32ADJ
 div32          ;divisor<$8000
-        ldx remainder     ;@aux3loop@
+        ldx remainder     ;@div32loop@
         stx dividend+2
         ldy #0
         sta remainder
@@ -982,5 +978,5 @@ div32          ;divisor<$8000
 	#div3
         rol dividend
         sta remainder+1
-	jmp enddivision7        ;@aux3loop@
+	jmp enddivision7        ;@div32loop@
 

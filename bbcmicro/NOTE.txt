@@ -1,0 +1,27 @@
+Use *SHADOW to get more digits.  Use *FX16,0 to get them faster.
+
+A way to get 3000 digits with the expanded model B (by BigEd)
+
+*info pi1000
+$.PI1000      FF0E00 FF802B 0001C6 003
+*info pi
+$.PI          001069 001069 00185A 005
+
+*load pi1000 6000
+*load pi 4069
+*tape
+
+PA.=&7000
+NEW
+FOR I%=0 TO &200STEP4:I%!&E00=I%!&6000:N.
+FOR I%=0 TO &2000STEP4:I%!&1000=I%!&4000:N.
+PA.=&E00
+OLD
+LIST
+
+ 20 MODEF%:N%=((HIMEM-&2900)DIV7)AND-4:HIMEM=M%
+
+*fx3,4
+RUN
+
+This will require some corrections due to changes in the programs.

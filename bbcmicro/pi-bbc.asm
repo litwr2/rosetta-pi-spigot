@@ -28,22 +28,22 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr converted it to 6502
 ;tricky provided some help
 ;MMS gave some support
+;Thorham and meynaf helped too
 
 OSWRCH = $FFEE    ;print char in AC
 
 DIV8OPT = 1           ;it slightly slower for 7532 or more digits but faster for 7528 or less
-;OPT = 0 is not implemented, only 31 bit dividends are supported
-;OPT = 1               ;limits dividend to $7f'ff'ff'ff, up to 15448 digits
-OPT = 2               ;limits dividend to $3f'ff'ff'ff, up to 7792
-;OPT = 3               ;limits dividend to $1f'ff'ff'ff, up to 4072
-;OPT = 4               ;limits dividend to $f'ff'ff'ff, up to 2024
-;OPT = 5               ;limits dividend to $7'ff'ff'ff, up to 1104
-;OPT = 6               ;limits dividend to $3'ff'ff'ff, up to 560
+OPT = 5               ;it's a constant for the pi-spigot
+DIV8ADJ = 8
+DIV8SADJ = 0
+DIV32ADJ = 9
+DIVMIADJ = 16
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
@@ -60,7 +60,7 @@ fac1 = dividend
 fac2 = remainder
 rbase = $80 ;$81
 
-         * = $1000 + $5c
+         * = $1000 + $20
          ;sei         ;no interrupts
          ;lda #12
          ;jsr OSWRCH
@@ -117,7 +117,41 @@ loop     lda #0          ;d <- 0
          lda k+1
          rol       ;sets CY=0
          sta i+1
-loop2    ldy i      ;@mainloop@
+         bcc loop2
+
+l8       stx i      ;@mainloop@
+         lda d      ;d <- (d - r[i] - new_d)/2 = d*i
+         sec
+         sbc remainder
+         sta d
+         lda d+1
+         sbc remainder+1
+         sta d+1
+         bcs tl1
+
+         sec
+         lda d+2
+         bne tl2
+
+         dec d+3
+tl2      dec d+2
+tl1      lda d
+         sbc quotient
+         sta d
+         lda d+1
+         sbc quotient+1
+         sta d+1
+         lda d+2
+         sbc quotient+2
+         sta d+2
+         lda d+3
+         sbc quotient+3
+         lsr
+         sta d+3
+         ror d+2
+         ror d+1
+         ror d
+loop2    ldy i
          lda i+1    ; b <- 2*i
          adc #>r    ;sets CY=0
          sta rbase+1     ; r[i]
@@ -175,44 +209,12 @@ l1       dex
          sta (rbase),y
          ldx divisor    ;i <- i - 1
          dex
-         bne l8
+         beq l8n
+         jmp l8
 
-         lda i+1
+l8n      lda i+1
          beq l4
-
-l8       stx i
-         lda d      ;d <- (d - r[i] - new_d)/2 = d*i
-         sec
-         sbc remainder
-         sta d
-         lda d+1
-         sbc remainder+1
-         sta d+1
-         bcs tl1
-
-         sec
-         lda d+2
-         bne tl2
-
-         dec d+3
-tl2      dec d+2
-tl1      lda d
-         sbc quotient
-         sta d
-         lda d+1
-         sbc quotient+1
-         sta d+1
-         lda d+2
-         sbc quotient+2
-         sta d+2
-         lda d+3
-         sbc quotient+3
-         lsr
-         sta d+3
-         ror d+2
-         ror d+1
-         ror d
-         jmp loop2    ;@mainloop@
+         jmp l8     ;@mainloop@
 
 l4       lda #>10000
          sta divisor+1
@@ -345,4 +347,3 @@ prc      txa
 c .byte 0,0
 
 r = (* + 256) & $ff00
-

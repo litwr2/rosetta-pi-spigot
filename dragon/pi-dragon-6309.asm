@@ -28,8 +28,12 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;litwr had made this port for 6309 based on 6809 port
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 ;thanks to zephyr
 
 OPCHR equ $800C    ;print char in AC
@@ -104,31 +108,9 @@ loop     stu <dv    ;d <- 0
 
          ldx <k          ;i <- 2k
          leay r,x    ;@EOP@ - end of program
-loop2    leax -1,x           ;b <- b - 1
-         stx <divisor
-         ldd ,y
-         muld #10000
-         addw <dv+2
-         stw <dv+2
-         adcd <dv
-         std <dv
-         cmpr x,d
-         bcs div32
+         jmp <loop2
 
-         tfr d,w
-         clrd
-         divq <divisor       ;signed division limits to 4704 digits
-         stw <quotient
-         ldw <dv+2
-         jmp <exitdiv
-
-div32    stu <quotient
-exitdiv  divq <divisor
-         std ,y
-         leax -1,x         ;i <- i - 1
-         beq l4
-
-         ldd <dv+2         ;d <- (d - r[i] - new_d)/2 = d*i
+l4       ldd <dv+2         ;d <- (d - r[i] - new_d)/2 = d*i
          subd ,y
          leay -2,y
          bcc tl1
@@ -151,9 +133,31 @@ tl1      sbcr w,d
          std <dv
          rorw
          stw <dv+2
-         jmp <loop2
+loop2    leax -1,x           ;b <- b - 1
+         stx <divisor
+         ldd ,y
+         muld #10000
+         addw <dv+2
+         stw <dv+2
+         adcd <dv
+         std <dv
+         cmpr x,d
+         bcs div32
 
-l4       ldd <quotient
+         tfr d,w
+         clrd
+         divq <divisor       ;signed division limits to 4704 digits
+         stw <quotient
+         ldw <dv+2
+         jmp <exitdiv
+
+div32    stu <quotient
+exitdiv  divq <divisor
+         std ,y
+         leax -1,x         ;i <- i - 1
+         bne l4
+
+         ldd <quotient
          divq #10000
          addw <c          ;c + d/10000
          std <c           ;c <- d%10000

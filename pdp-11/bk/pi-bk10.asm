@@ -28,6 +28,12 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has written this for BK
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped a lot
 
       .radix 10
       .dsabl gbl
@@ -67,7 +73,7 @@ l0:
      clr r4
      jmp @#exit
 
-OPT = 3         ;use 3 if N<=14000, limits R3 to 0x1f'ff'ff'ff
+OPT = 5         ;It's a constant for the pi-spigot
 div32:
      mov r2,r0
 
@@ -172,55 +178,41 @@ ivs:
 
 .if eq HMUL
          mov ra(r1),r0     ;r[i]
-         clr r4         ;r[i]*10000
-         ror r0         ;check the previous CF!
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         mov r4,r2
-         mov r0,r3
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-
-         add r5,r2
-         mov r2,r5
+         clr r4            ;r[i]*10000
+         clr r2
+         mov r0,r3         ;the result in r2 - high, r3 - low
+         asl r3
+         rol r2            
+         asl r3
+         rol r2
+         asl r3
+         rol r2
+         sub r3,r0
+         sbc r4
+         sub r2,r4
+         asl r3
+         rol r2
+         sub r3,r0
+         sbc r4
+         sub r2,r4
+         sub r3,r0
+         sbc r4
+         sub r2,r4
+         swab r0
+         swab r4
+         clrb r4
+         bisb r0,r4
+         clrb r0
+         sub r0,r3
+         sbc r2
+         sub r4,r2
 .iff
          mov #10000,r2
          mul ra(r1),r2
+.endc
          add r3,r5
          mov r2,r3
          mov r5,r2
-.endc
          adc r3
          add r3,sp
          mov sp,r3
@@ -450,6 +442,6 @@ msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v4"<10>
+msg1: .ascii "number "<160>" calculator v5"<10>
       .asciz "         it may give 2000 digits in about an hour!"
 

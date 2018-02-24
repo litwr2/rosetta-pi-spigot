@@ -29,14 +29,18 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;the fast 32/16-bit division was made by Ivagor for z80
+;litwr made the spigot for Amstrad CPC
+;tricky provided some help
 ;MMS gave some support
+;Thorham and meynaf helped too
 
 kl_time_please equ &bd0d
 BDOS equ 5
-OPT equ 1       ;limits HL to 0x7f'ff'ff'ff in division
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
+OPT equ 5       ;it's a constant for the pi-spigot
 
 ;N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
@@ -151,6 +155,26 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         jp loop2
+
+l4       add hl,de
+         jr nc,lnc
+
+         inc bc
+lnc      ex de,hl
+         pop hl
+         xor a       ;sets CY=0
+         sbc hl,de
+         ex de,hl
+         pop hl
+         sbc hl,bc
+         srl h
+         rr l
+         rr d
+         rr e
+
+         push hl
+         push de
 loop2    ld c,iyl
          ld b,iyh
          ld hl,ra
@@ -196,29 +220,9 @@ loop2    ld c,iyl
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          ld a,iyl
          or iyh
-         jr z,l4
+         jp nz,l4
 
-         add hl,de
-         jr nc,lnc
-
-         inc bc
-lnc      ex de,hl
          pop hl
-         xor a       ;sets CY=0
-         sbc hl,de
-         ex de,hl
-         pop hl
-         sbc hl,bc
-         srl h
-         rr l
-         rr d
-         rr e
-
-         push hl
-         push de
-         jp loop2
-
-l4       pop hl
          pop hl
          ld h,b
          ld l,c
@@ -360,7 +364,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v5',13,10
+msg1  db 'number ',165,' calculator v6',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'

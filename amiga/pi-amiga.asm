@@ -28,8 +28,14 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - so it optimizes the memory usage by 2 bytes
+
+;litwr has written this for 680x0
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped a lot
 
      mc68000
      ;mc68020
@@ -44,6 +50,8 @@ Read = -42
 AllocMem = -198
 FreeMem = -210
 VBlankFrequency = 530
+
+MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
 
 ;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
@@ -108,7 +116,7 @@ start
          divu #7,d0
          ext.l d0
          and.b #$fc,d0
-         move.l d0,maxn        
+         move.l d0,maxn
 
 .l20     move.l cout,d1
          move.l  #msg4,d2
@@ -164,10 +172,11 @@ start
          move.l $6c,rasterie+2
          move.l #rasteri,$6c
   endif
+         lsr #1,d2
          subq #1,d2
-         move #2000,d0
+         move.l #2000*65537,d0
          move.l a2,a0
-.fill    move d0,(a0)+
+.fill    move.l d0,(a0)+
          dbra d2,.fill
 
          clr cv
@@ -180,28 +189,47 @@ start
          move.l a2,a3
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
-         move #10000,d1
-.l2      move -(a3),d0      ; r[i]
-         mulu d1,d0
-         add.l d0,d5
+  ifeq MULUopt
+         move #10000,d1   ;removed with MULU optimization
+  endif
+         bra .l4
+
+.l2      sub.l d6,d5
+         sub.l d7,d5
+         lsr.l d5
+.l4
+  if MULUopt
+         moveq.l #0,d0  ;MULU optimization
+  endif
+         move -(a3),d0      ; r[i]
+  if MULUopt
+         move.l d0,d1   ;MULU optimization
+         lsl.l #3,d0
+         sub.l d0,d1
+         add.l d0,d0
+         sub.l d0,d1
+         sub.l d0,d1
+         lsl.l #8,d1
+         sub.l d1,d0
+  else
+         mulu d1,d0       ;r[i]*10000, removed with MULU optimization
+  endif
+         add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
   if __VASM&28              ;68020?
          divul.l d4,d7:d6
-         ;exg.l d6,d7
          move d7,(a3)     ;r[i] <- d%b
   else
          div32x16
          move d6,(a3)     ;r[i] <- d%b
   endif
          subq #2,d4    ;i <- i - 1
-         bcs .l4
-
-         sub.l d6,d5
-         sub.l d7,d5
-         lsr.l d5
-         bra .l2      ;the main loop
-
-.l4      divu d1,d5
+         bcc .l2       ;the main loop
+  if MULUopt
+         divu #10000,d5  ;MULU optimization
+  else
+         divu d1,d5      ;removed with MULU optimization
+  endif
          add cv,d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
@@ -351,7 +379,7 @@ maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v3 '
+msg1  dc.b 'number ',182,' calculator v4 '
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else

@@ -5,4 +5,5 @@ The provided disk image contains a ROM image of z80 ROM Basic.  So if you have s
 SRLOAD Z80ROM 8000 4
 
 Then press CTRL-BREAK and run the program
+*DISC
 CH."PI-Z80"

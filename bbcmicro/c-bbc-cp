@@ -1,0 +1,15 @@
+#it uses z1.ssd disc image
+tmpx pi-bbc-cp.asm -l pi-bbc-cp.lst
+gawk '/@start@/{
+s=strtonum("0x"$2)
+printf "$.PI3 %x %x",s,s >"PI3.inf"
+}' pi-bbc-cp.lst
+
+dd if=pi-bbc-cp.prg of=PI3 bs=1 skip=2
+tr '\n[:lower:]' '\r[:upper:]' >PILOAD3 <pi-bbc-cp.bas
+
+beeb delete z1.ssd -y PI3 PILOAD3
+beeb putfile z1.ssd PI3 PILOAD3
+rm *.prg
+
+echo PILOAD3 is a text file and maybe converted to Basic by *EXEC and SAVE

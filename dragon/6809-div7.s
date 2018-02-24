@@ -137,10 +137,18 @@ div32          ;it may be wrong if divisor>$7fff
         div0
         rol <dividend
         div0
+        rol <dividend
+        div0
+        rol <dividend
+        div0
    endif
    if OPT==2
         asl <dividend
         asl <dividend
+        rol <dividend
+        div0
+        rol <dividend
+        div0
         rol <dividend
         div0
    endif
@@ -148,11 +156,26 @@ div32          ;it may be wrong if divisor>$7fff
         asl <dividend
         asl <dividend
         asl <dividend
+        rol <dividend
+        div0
+        rol <dividend
+        div0
    endif
+   if OPT==4
+        asl <dividend
+        asl <dividend
+        asl <dividend
+        asl <dividend
         rol <dividend
         div0
-        rol <dividend
-        div0
+   endif
+   if OPT==5
+        asl <dividend
+        asl <dividend
+        asl <dividend
+        asl <dividend
+        asl <dividend
+   endif
         rol <dividend
         div0
         rol <dividend

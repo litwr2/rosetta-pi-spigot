@@ -1,13 +1,13 @@
-#it uses z1.ssd disc image
-pasmo6 --listing pi-bbc-z80-bas.lst pi-bbc-z80-bas.asm PI
+D=z1.ssd
+pasmo6 --listing pi-bbc-z80-bas.lst pi-bbc-z80-bas.asm PIZ
 
 gawk '/@EOP@/{print "s/@EOP@/\\&"$3"/"}' pi-bbc-z80-bas.lst >z.sed
 sed -f z.sed pi-bbc-z80.cbas >pi-bbc-z80.bas
-tr '\n[:lower:]' '\r[:upper:]' >PILOAD <pi-bbc-z80.bas
+tr '\n[:lower:]' '\r[:upper:]' >PILOADZ <pi-bbc-z80.bas
 
 sed 's/$/\r/' BOOT >'!BOOT'
-beeb delete z1.ssd -y !BOOT PI PILOAD
-beeb putfile z1.ssd !BOOT PI PILOAD
+beeb delete $D -y !BOOT PIZ PILOADZ
+beeb putfile $D !BOOT PIZ PILOADZ
 
-echo PILOAD is a text file and maybe converted to Basic by *EXEC and SAVE
+echo PILOADZ is a text file and maybe converted to Basic by *EXEC and SAVE
 #rm z.sed

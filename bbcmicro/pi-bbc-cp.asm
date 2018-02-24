@@ -1,4 +1,4 @@
-;for TMPX assembler
+;for TMPX assembler, the special version for 6502 Co-Pro which allows more digits
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -36,43 +36,36 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-;INT2STR = $BDCD  ;print unsigned integer in AC:XR
-BSOUT = $FFD2    ;print char in AC
+OSWRCH = $FFEE    ;print char in AC
+OSWORD = $FFF1
 
-DIV8OPT = 1           ;it is slightly slower for 7532 or more digits but faster for 7528 or less
+DIV8OPT = 0           ;it slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
+;DIV8ADJ = 0
+;DIV8SADJ = 0
+DIV32ADJ = 12
+DIVMIADJ = 55
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
-;b = $8e   ;$8f
-d = $61   ;..$64
-i = $65   ;$66
-k = $8c   ;$8d
+d = $70   ;..$73
+i = $74   ;$75
+k = $76   ;$77
 
-divisor = $19     ;$1a, $1b..$1c used for hi-byte
-dividend = $1d	  ;..$1e used for hi-bytes
-remainder = $41   ;..$42 used for hi-byte
+divisor = $78     ;$79, $7a..$7b used for hi-byte
+dividend = $7c	  ;..$7f used for hi-bytes
+remainder = $82   ;..$83 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $3f ;$40
+rbase = $80 ;$81
 
-         * = $801
-         .include "pi-c64.inc"
-
-         * = $96a + $ad
-         lda #$36 ;@start@
-         sta 1    ;disable Basic ROM, add 12KB to RAM
-         lda #$b
-         lda $d011   ;screen @blank@
-         ;sei         ;no interrupts
-         ;lda #147    ;clear screen
-         ;jsr BSOUT
+         * = $900 + $21
+         ldx #<timer             ;@start@
+         ldy #>timer
+         lda #2
+         jsr OSWORD
 
          ldy #0
          lda #2
@@ -109,9 +102,9 @@ lf2      stx c
          stx c+1
          stx rbase
 
-         lda #<N        ;k <- N   @lowN@
+         lda #<N        ;k <- N, @lowN@
          sta k
-         lda #>N                  ;@highN@
+         lda #>N        ;@highN@
          sta k+1
 
 loop     lda #0          ;d <- 0
@@ -223,7 +216,7 @@ l1       dex
 
 l8n      lda i+1
          beq l4
-         jmp l8     ;@mainloop@
+         jmp l8    ;@mainloop@
 
 l4       lda #>10000
          sta divisor+1
@@ -253,14 +246,70 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     lda #$1b
-         sta $d011   ;screen on
-         ;cli         ;interrupts enabled
+exit     ldx #<timer
+         ldy #>timer
+         lda #1
+         jsr OSWORD
 
-         lda #$37
-         sta 1    ;restores Basic ROM
-         rts
+         lda #32
+         jsr OSWRCH
+         lda timer
+         sta dividend
+         lda timer+1
+         sta dividend+1
+         lda timer+2
+         sta dividend+2
+         lda timer+3
+         sta dividend+3
+         lda #0
+         sta divisor+1
+         lda #100
+         sta divisor
+         lda dividend+3   ;dividend = quotient
+         jsr div32x16w
+         ldx quotient
+         lda quotient+1
+         jsr pr0000
+         lda #"."
+         jsr OSWRCH
+         lda remainder  ;*100,*4
+         ldx remainder+1
+         asl
+         rol remainder+1
+         asl
+         rol remainder+1
+         adc remainder
+         sta remainder
+         txa
+         adc remainder+1
+         sta remainder+1
 
+         lda remainder  ;*5
+         ldx remainder+1
+         asl
+         rol remainder+1
+         asl
+         rol remainder+1
+         adc remainder
+         sta remainder
+         txa
+         adc remainder+1
+         sta remainder+1
+
+         lda remainder  ;*4
+         asl
+         rol remainder+1
+         asl
+         rol remainder+1
+         ;sta remainder
+         tax
+
+         lda remainder+1
+         ;ldx remainder
+         jsr pr0000
+el       jmp el
+
+.include "6502-div7.s"
 
     * = (* + 256) & $ff00
 m10000
@@ -316,7 +365,6 @@ m10000
 .if DIV8OPT
 .include "6502-div8.s"
 .endif
-.include "6502-div7.s"
 
 pr0000 .block
          sta d+2
@@ -337,7 +385,7 @@ pr0000 .block
          tay
 prd      tya
          eor #$30
-         jmp BSOUT
+         jmp OSWRCH
 
 pr0      ldy #255
 prn      iny
@@ -359,6 +407,6 @@ prc      txa
 .bend
 
 c .byte 0,0
+timer .byte 0,0,0,0,0
 
-r = (* + 16 + 256) & $ff00
-
+r = (* + 256) & $ff00

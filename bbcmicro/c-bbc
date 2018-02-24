@@ -26,7 +26,7 @@ gawk '/@start@/{print "s/@start@/\\&"$2"/"}
 /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
 /@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
 /@EOP@/{print "s/@EOP@/\\&"$4"00/"}' pi-bbc-2100.lst >z-2100.sed
-sed -f z-2100.sed pi-bbc.cbas | sed 's/"pi"/"pi2"/' >pi-bbc-2100.bas
+sed -f z-2100.sed pi-bbc.cbas | sed 's/d pi/d pi2/' >pi-bbc-2100.bas
 dd if=pi-bbc-2100.prg of=PI2 bs=1 skip=2
 tr '\n[:lower:]' '\r[:upper:]' >PILOAD2 <pi-bbc-2100.bas
 
@@ -35,5 +35,6 @@ sed 's/$/\r/' BOOT >'!BOOT'
 beeb delete z1.ssd -y !BOOT PI PI2 PILOAD PILOAD2
 beeb putfile z1.ssd !BOOT PI PI2 PILOAD PILOAD2
 rm *-2100.*
+rm *.prg
 
 echo PILOAD and PILOAD2 are text files and maybe converted to Basic by *EXEC and SAVE

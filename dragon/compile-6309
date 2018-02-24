@@ -1,5 +1,5 @@
 ./asm6809 -3 -l pi-dragon-6309.lst pi-dragon-6309.asm -D -o pi-dragon-6309.bin
-gawk 'BEGIN{print "s/V3/V2/;s/PI.BIN/PI6309.BIN/"}
+gawk 'BEGIN{print "s/    NUMBER PI CALCULATOR V4/NUMBER PI CALCULATOR V3 (6309)/;s/PI.BIN/PI6309.BIN/"}
 /@start@/{print "s/@start@/"strtonum("0x"$1)"/\ns/@start1@/"and(0xff00,strtonum("0x"$1))-1"/"}
 /@EOP@/{print "s/@MEM@/"strtonum("0x"substr($2,5))-254"/"}
 /@OUT@/{print "s/@OUT@/"strtonum("0x"$1)+1"/"}

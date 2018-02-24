@@ -28,9 +28,17 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has made it for 65816
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
+
+OPT = 5               ;it's a constant for the pi-spigot
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits

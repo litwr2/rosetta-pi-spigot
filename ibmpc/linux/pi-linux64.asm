@@ -29,8 +29,14 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;version 2, use `time pi-linux64' to get time
+;version 3, use `time pi-linux64' to get time
+
+;litwr has written this for 80x86
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 
 D=9360  ;digits, 9360 is the limit for 64 KB ra-array
 N=D*7/2
@@ -40,38 +46,36 @@ format ELF64 executable 3
 segment readable executable
 
 entry $
-         xor rsi,rsi
-         xor ecx,ecx
-         mov cx,N   ;fill r-array
-         mov ax,2000
+         xor esi,esi
+         mov ecx,N/4   ;fill r-array
+         mov rax,2000*0x1000100010001
          mov rdi,ra+2
-         rep stosw
+         rep stosq
 
          mov [cv],cx
          mov [kv],N
-
 .l0:     xor edi,edi          ;d <- 0
          mov si,[kv]
-         add si,si       ;i <-k*2
-         mov cx,10000    ;r[i]*10000, mul16x16
+         add esi,esi            ;i <-k*2
+         mov cx,10000           ;r[i]*10000, mul16x16
+         jmp .l2
+
+.l4:     sub edi,edx
+         sub edi,eax
+         shr edi,1
 .l2:     movzx eax,[rsi+ra]     ; r[i]
          mul ecx
          add eax,edi
          mov edi,eax
 
-         dec si        ;b <- 2*i-1
+         dec esi        ;b <- 2*i-1
          ;xor edx,edx
          div esi
          mov [rsi+ra+1],dx   ;r[i] <- d%b
-         dec si      ;i <- i - 1
-         je .l4
+         dec esi      ;i <- i - 1
+         jne .l4
 
-         sub edi,edx
-         sub edi,eax
-         shr edi,1
-         jmp .l2
-
-.l4:     mov eax,edi
+         mov eax,edi
          xor edx,edx
          div ecx
          add ax,[cv]  ;c + d/10000
@@ -116,8 +120,10 @@ PR0000:     ;prints cx
 	jmp .l2
 
 segment readable writeable
+    align 8
 cv  dw 0
 kv  dw 0
-wb  dw 0,0
-ra  rw N
+wb  dw 0
+ra  dw 0
+    rw N
 

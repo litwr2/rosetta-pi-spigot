@@ -28,22 +28,18 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr converted it to 6502 and 6809
 ;tricky provided some help
 ;MMS gave some support
+;Thorham and meynaf helped too
 
 OPCHR equ $800C    ;print char in AC
 
 DIV8OPT equ 0      ;1 is slower
-;OPT equ 0 is not implemented, only 31 bit dividends are supported
-;OPT equ 1               ;limits dividend to $7f'ff'ff'ff, up to 15448 digits
-OPT equ 2               ;limits dividend to $3f'ff'ff'ff, up to 7792
-;OPT equ 3               ;limits dividend to $1f'ff'ff'ff, up to 4072
-;*OPT equ 4               ;limits dividend to $f'ff'ff'ff, up to 2024 (not supported)
-;*OPT equ 5               ;limits dividend to $7'ff'ff'ff, up to 1104 (not supported)
-;*OPT equ 6               ;limits dividend to $3'ff'ff'ff, up to 560 (not supported)
+OPT equ 5          ;it's a constant for the pi-spigot, OPT=0 and OPT=6 are not supported
 DIVNOMINUS equ 0   ;limits to 4704 digits, this may shrink size, not increase speed
 
 ;N equ 350    ;100 digits

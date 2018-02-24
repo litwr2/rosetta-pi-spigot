@@ -1,7 +1,8 @@
+5 *fx16,0
 10 cls:m%=@start@:if himem=m% goto 30
 15 f%=inkey(0):p."input video mode # (7 - default)";:f%=inkey(m%):f%=f%-48:iff%<0orf%>7thenf%=7
-20 modef%:n%=((himem-@EOP@)div7)and-4:himem=m%:*load "pi"
-30 p.spc(7)"number pi calculator v4"
-50 p."number of digits (up to ";n%")";:inputf%:d%=(f%+3)and-4:ifd%<=0ord%>n%goto50
+20 modef%:n%=((himem-@EOP@)div7)and-4:himem=m%:*load pi
+30 p.spc(7)"number pi calculator v5"
+50 p."number of digits (up to ";n%;:input")? "f%:d%=(f%+3)and-4:ifd%<=0ord%>n%goto50
 70 iff%<>d%thenp.;d%" digits will be printed"
 80 f%=d%div2*7:?@high2N@=f%/128:?@lowN@=f%and255:?@highN@=f%/256:?@low2N@=f%*2and255:time=0:callm%:p.time/100

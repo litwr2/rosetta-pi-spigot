@@ -34,18 +34,25 @@
 
 ;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
-BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
+;the fast 32/16-bit division was made by Ivagor for z80
+;litwr made the spigot for several z80 based computers
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
+
+BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
 
 TIKI100 equ 0
-AMSTRADCPC equ 0
+AMSTRADCPC equ 1
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
 MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 ACORNBBCZ80 equ 0
-TORCHBBCZ80 equ 1
+TORCHBBCZ80 equ 0
 GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 
 if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + GENERIC != 1
@@ -77,8 +84,8 @@ Nto6502 equ $FFC3
 Afrom6502 equ $FFC6
 
 BDOS equ 5
-OPT equ 1       ;limits HL to 0x7f'ff'ff'ff in division
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
+OPT equ 5       ;it's a constant for the pi-spigot
 
 ;N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
@@ -266,6 +273,26 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         jp loop2
+
+l4       add hl,de
+         jr nc,lnc
+
+         inc bc
+lnc      ex de,hl
+         pop hl
+         xor a       ;sets CY=0
+         sbc hl,de
+         ex de,hl
+         pop hl
+         sbc hl,bc
+         srl h
+         rr l
+         rr d
+         rr e
+
+         push hl
+         push de
 loop2    ld c,iyl
          ld b,iyh
          ld hl,ra
@@ -311,29 +338,9 @@ loop2    ld c,iyl
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          ld a,iyl
          or iyh
-         jr z,l4
+         jp nz,l4
 
-         add hl,de
-         jr nc,lnc
-
-         inc bc
-lnc      ex de,hl
          pop hl
-         xor a       ;sets CY=0
-         sbc hl,de
-         ex de,hl
-         pop hl
-         sbc hl,bc
-         srl h
-         rr l
-         rr d
-         rr e
-
-         push hl
-         push de
-         jp loop2
-
-l4       pop hl
          pop hl
          ld h,b
          ld l,c
@@ -964,7 +971,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v6',13,10
+      db ' calculator v7',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
@@ -980,10 +987,10 @@ if AMSTRADPCW
       db 'Amstrad PCW'
 endif
 if ACORNBBCZ80
-      db 'Acorn z80 2nd co-pro'
+      db 'Acorn z80 2nd Co-Pro'
 endif
 if TORCHBBCZ80
-      db 'Torch z80 2nd co-pro'
+      db 'Torch z80 2nd Co-Pro'
 endif
 if MSX
       db 'MSX'

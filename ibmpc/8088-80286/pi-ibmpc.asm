@@ -28,27 +28,32 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
+;litwr has written this for 80x86
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 
 ;N = 3500   ;1000 digits
 N = 2800  ;800 digits
 
 macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
-     cmp dx,si
-     jc .div32
+     cmp dx,si   ;T3/3/2/2
+     jc .div32   ;T16/13/9/9  - T4/4/3/3
 
-     mov bx,ax
-     mov ax,dx
-     xor dx,dx
-     div si
-     xchg ax,bx
-     div si
-     jmp .exitdiv
+     mov bx,ax   ;T2/2/2/2
+     mov ax,dx   ;T2/2/2/2
+     xor dx,dx   ;T3/3/2/2
+     div si      ;T144-162/38/22/22
+     xchg ax,bx  ;T4/4/3/3
+     div si      ;T144-162/38/22/22
+     jmp .exitdiv  ;T15/14/8/8
 
 .div32:
-     div si
-     xor BX,BX
+     div si      ;T144-162/38/22/22
+     xor BX,BX   ;T3/3/2/2
 .exitdiv:
 }
 
@@ -123,29 +128,28 @@ start:
 
          mov si,[kv]
          add si,si       ;i <-k*2
-         mov cx,10000
-.l2:     mov ax,[si+ra]     ; r[i]
-         mul cx          ;r[i]*10000, mul16x16
-         add ax,di
-         mov di,ax
-         adc dx,bp
-         mov bp,dx
-
-         dec si        ;b <- 2*i-1
-         div32x16
-         mov [si+ra+1],dx   ;r[i] <- d%b
-         dec si      ;i <- i - 1
-         je .l4
-
-         sub di,dx
-         sbb bp,0
-         sub di,ax
-         sbb bp,bx
-         shr bp,1
-         rcr di,1
+         mov cx,10000      ;T4/4/2/2
          jmp .l2
-
-.l4:     mov dx,bx
+                     ;T - timing, 8088/80186/80286/80386
+.l4:     sub di,dx         ;T3/3/2/2
+         sbb bp,0          ;T4/4/3/2
+         sub di,ax         ;T3/3/2/2
+         sbb bp,bx         ;T3/3/2/2
+         shr bp,1          ;T2/2/2/3
+         rcr di,1          ;T2/2/2/9
+.l2:     mov ax,[si+ra]  ;r[i]   ;T21/9/5/4
+         mul cx          ;r[i]*10000  ;T118-133/35-37/21/9-22, Ta125/a36/21/20
+         add ax,di         ;T3/3/2/2
+         mov di,ax         ;T2/2/2/2
+         adc dx,bp         ;T3/3/2/2
+         mov bp,dx         ;T2/2/2/2
+         dec si        ;b <- 2*i-1  ;T3/3/2/2
+         div32x16            ;Ta165/a57/a35/a35
+         mov [si+ra+1],dx   ;r[i] <- d%b  ;T22/12/3/2
+         dec si      ;i <- i - 1   ;T3/3/2/2
+         jne .l4                   ;T16/14/9/9
+                           ;Toa382/a161/a98/a103
+         mov dx,bx
          div cx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
@@ -232,7 +236,7 @@ PR0000:     ;prints cx
 cv  dw 0
 kv  dw 0
 time dw 0,0
-label ra word
+ra = $ - 2
 maxnum dw 0
 
 getnum: xor cx,cx    ;length
@@ -290,7 +294,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v4',13,10
+msg1  db 'number ',227,' calculator v5',13,10
       db 'it may give 9000 digits in less than an hour with a first PC of 1981!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'

@@ -4,6 +4,7 @@ FILES
 ARE IN cpm22 FOLDER.  THEY ARE ALSO AT THE CORRESPONDED DISC IMAGES
    pi-acorn-cpm.dsd
    pi-torch-cpn.dsd
+THESE IMAGES ARE BOOTABLE.
 
 To start Torch CP/M (CPN) type
 *CPN

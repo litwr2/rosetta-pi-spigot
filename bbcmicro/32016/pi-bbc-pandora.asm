@@ -28,6 +28,12 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has written this for 32016
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 
 	ABSORG	32768
         ;RELORG	32768
@@ -59,6 +65,13 @@ l0       XORD R5,R5          ;d <- 0
          ADDD R4,R6
          ADDQD =-1,R4       ;b <- 2*i-1
          MOVD =10000,R7
+         BR l2
+
+l4       ADDQD =-2,R6
+         ADDQD =-2,R4         ;i <- i - 1
+         SUBD R1,R5
+         SUBD R0,R5
+         LSHD =-1,R5
 l2       MOVZWD -2(R6),R0    ;r[i]
          MULD R7,R0        ;r[i]*10000
          ADDD R0,R5
@@ -68,16 +81,9 @@ l2       MOVZWD -2(R6),R0    ;r[i]
          DEID R4,R0         ;R1:R0 is divided by R4, R0 - remainder, R1 - quotient
          MOVW R0,-2(R6)   ;r[i] <- d%b
          CMPQD =1,R4
-         BEQ l4
+         BNE l4
 
-         ADDQD =-2,R6
-         ADDQD =-2,R4         ;i <- i - 1
-         SUBD R1,R5
-         SUBD R0,R5
-         LSHD =-1,R5
-         BR l2
-
-l4       MOVD R5,R0
+         MOVD R5,R0
          XORD R1,R1
          DEID R7,R0
          ADDW cv,R1         ;c + d/10000

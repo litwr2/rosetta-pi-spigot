@@ -21,8 +21,6 @@ cnt  .var cnt-1
 .bend
         jmp enddivision2
 
-OPT = 2                 ;1 for N <= 14000, 6 for N=350, 5 - 2800 upto 3850, 4 - upto 7350, 3 - 10500
-
 div32          ;it may be wrong if divisor>$7fff
 	#stz_z remainder  ;preset remainder to 0
 .block

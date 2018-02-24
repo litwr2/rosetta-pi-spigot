@@ -28,17 +28,23 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has written this for RT-11
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped a lot
 
       .radix 10
 
-EIS = 0   ;hardware multiplication and division, 0 - no
+DEBUG = 0
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
       $JSW =: ^O44
       TTSPC$ =: ^O10000
       CONFIG = ^O300
 
-MAXD = 7792  ;limited by the division impementation
+MAXD = 7792  ;limited by the hardware division impementation
 
 ;N = 10500   ;3000 digits
 ;N = 3500   ;1000 digits
@@ -48,51 +54,44 @@ N = 350   ;100 digits
 kv = kvs + 2
 
 .macro div0 ?l0 ?l1
-     asl r2
-     rol r3
+     asl r3
+     rol r2
      bcs l1            ;for r1 > $7fff
 
-     cmp r3,r1
+     cmp r2,r1
      bcs l0
 
-l1:  sub r1,r3
-     inc r2
+l1:  sub r1,r2
+     inc r3
 l0:
      .endm
 
 .macro div32x16 ?div32 ?div32b ?divm ?div32n ?div32x ?exit ?l1 ?l1x ?l2 ?l4
-    ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
-.if ne EIS
+              ;R4:R2 = R2:R3/R1, R3 = R2:R3%R1, used: R0, R2, R3, R4
      ;tst r1
-     bmi divm           ;for R3 > 0x7fff
+     bmi divm           ;for R1 > 0x7fff
 
-     cmp r3,r1
+     asl r3
+     rol r2
+     cmp r2,r1
      bcc div32b
 
-     mov r3,r4
-     asl r3
-     inc r3     ;?
-     cmp r3,r1
-     bcc div32
-
-     mov r2,r3
-     mov r4,r2
-     div r1,r2
+     asr r2
+     ror r3
+     div r1,r2   ;r2(hi):r3(lo)/r1 -> r2 - quotient, r3 - remainder
      clr r4
      br exit
 
 divm:
-     ;clc
+     ;clc          ;check CF!
      mov r1,r0
      ror r1
-     mov r3,r4
-     asl r3
-     inc r3    ;?
-     cmp r3,r1
+     mov r2,r4
+     asl r4
+     inc r4    ;?
+     cmp r4,r1
      bcc div32n
 
-     mov r2,r3
-     mov r4,r2
      div r1,r2
      clr r4
      ror r2
@@ -108,8 +107,6 @@ l1:  mov r0,r1
      br exit
 
 div32n:
-     mov r2,r3
-     mov r4,r2
      clr r4
      ror r2
      ror r3
@@ -138,93 +135,21 @@ l4:  mov r0,r1
      br exit
 
 div32b:
-     mov r2,r0
+     mov r3,r0
+     mov r2,r3
      clr r2
      div r1,r2
-     mov r2,-(sp)
-     mov r0,r2
-
-     mov r3,r4
-     asl r3
-     inc r3     ;?
-     cmp r3,r1
-     bcc div32x
-
-     mov r2,r3
-     mov r4,r2
-     div r1,r2
-     mov (sp)+,r4
-     br exit
-
-div32x:
-     clr r0
-     ror r4
-     ror r2
-     rol r0   ;save CF
-     mov r2,r3
-     mov r4,r2
-     div r1,r2
-     asl r2
-     asl r3
-     add r0,r3
-     mov (sp)+,r4
-     cmp r3,r1
-     bcs exit
-
-     inc r2
-     sub r1,r3
-     br exit
-
-div32:
-     clr r0
-     ror r4
-     ror r2
-     rol r0   ;save CF
-     mov r2,r3
-     mov r4,r2
-     div r1,r2
-     asl r2
-     asl r3
-     add r0,r3
-     clr r4
-     cmp r3,r1
-     bcs exit
-
-     inc r2
-     sub r1,r3
-
-.iff
-     cmp r3,r1
-     bcc div32
-
-     .rept 16
-     div0
-     .endm
-     clr r4
-     jmp @#exit
-
-OPT = 2         ;R3 to 0x3fff
-div32:
-     mov r2,r0
-
-     .rept OPT
-     asl r3
-     .endm
-
-     mov r3,r2
-     clr r3
-
-     .rept 16-OPT
-     div0
-     .endm
-
      mov r2,r4
-     mov r0,r2
-
-     .rept 16
-     div0
-     .endm
-.endc
+     mov r3,r2
+     mov r0,r3
+     asr r2
+     ror r3
+     div r1,r2
+     clr r0
+     asr r4
+     ror r0
+     add r0,r2
+     adc r4
 exit:
      .endm
 
@@ -233,10 +158,9 @@ START:
          bis #TTSPC$,@#$JSW
          .settop #-2
          sub #ra-2,r0
-         mov r0,r2
-         clr r3
-         mov #7,r1
-         call @#div32x16s
+         mov r0,r3
+         clr r2
+         div #7,r2
          bic #3,r2
          cmp #MAXD,r2
          bcc 205$
@@ -283,73 +207,9 @@ mloop:   clr r5       ;d <- 0
 
 kvs:     mov #0,r1
          asl r1       ;i <- 2k
-ivs:
+         br 4$
 
-.if eq EIS
-         mov ra(r1),r0     ;r[i]
-         clr r4         ;r[i]*10000
-         ror r0         ;check the previous CF!
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         mov r4,r2
-         mov r0,r3
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         asr r0
-         ror r4
-         add r4,r2
-         adc r3
-         add r0,r3
-
-         add r5,r2
-         mov r2,r5
-.iff
-         mov #10000,r2
-         mul ra(r1),r2
-         bpl 202$
-
-         add #10000,r2
-202$:    add r3,r5
-         mov r2,r3
-         mov r5,r2
-.endc
-         adc r3
-         add @sp,r3
-         mov r3,@sp
-
-         dec r1          ;b <- 2*i-1
-         div32x16
-         mov r3,ra+1(r1)      ;r[i] <- d%b
-         dec r1        ;i <- i - 1
-         beq 4$
-
-         add r3,r2       ;d <- d/b*i
+77$:     add r3,r2       ;d <- d/b*i
          adc r4
          mov @sp,r3
          sub r2,r5
@@ -358,19 +218,32 @@ ivs:
          ror r3
          ror r5
          mov r3,@sp
-         jmp @#ivs
+4$:      mov #10000,r2
+         mul ra(r1),r2   ;the result in r2 - high, r3 - low
+         bpl 202$
 
-4$:      mov r4,r3
-         mov #10000,r1
-         call @#div32x16s
+         add #10000,r2
+202$:    add r3,r5
+         mov r5,r3
+         adc r2
+         add @sp,r2   ;sets CF=0
+         mov r2,@sp
+         dec r1          ;b <- 2*i-1, CF=0 for EIS!
+         div32x16
+         mov r3,ra+1(r1)      ;r[i] <- d%b
+         dec r1        ;i <- i - 1
+         bne 77$
+
+         mov r2,r3
+         mov r4,r2
+         div #10000,r2
          add @#cv,r2  ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
          call @#PR0000
          sub #14,@#kv      ;k <- k - 14
-         beq 5$
-         jmp @#mloop
+         bne mloop
 
-5$:      mov #time2,r1
+         mov #time2,r1
          .gtim #area,r1
          mov #32,r0
          .ttyout
@@ -378,27 +251,40 @@ ivs:
          sbc @#time2
          sub @#time,@#time2
 
-         mov @#time2,r3
-         mov @#time2+2,r2
-         asl r2
-         rol r3
+         mov @#time2,r2
+         mov @#time2+2,r3
+         asl r3
+         rol r2
          .gval #area,#CONFIG
-         bit #32,r0    ;50 or 60 Hz?
+         mov r0,r4
+         mov r3,r1
+         mov r2,r0
+         bit #32,r4    ;50 or 60 Hz?
          bne 206$
 
-         asl r2     ;*5
-         rol r3
-         add @#time2+2,r2
-         adc r3
-         add @#time2,r3
-         mov #3,r1
-         call @#div32x16s
-         asr r3
-         add r3,r2
-         mov r1,r3
-         adc r3
-206$:    mov r3,r0
-         mov r2,r1
+         asl r1     ;*5
+         rol r0
+         add @#time2+2,r1
+         adc r0
+         add @#time2,r0
+         asl r1    ;divisor is limited to 15 bits!
+         rol r0
+         mov r0,r3
+         clr r2
+         div #3,r2
+         mov r3,r0
+         asr r0
+         ror r1
+         div #3,r0
+         asr r1
+         add r0,r1
+         clr r0
+         asr r2
+         ror r0
+         add r0,r1
+         adc r2
+         mov r2,r0
+206$:
          call @#printsec   ;prints r0:r1
          tst (sp)+       ;clear the location for high(d)
          .ttinr
@@ -406,43 +292,30 @@ ivs:
          bic #TTSPC$,@#$JSW
          .exit
 
-div32x16s: ;R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
-           ;compact form - 64 bytes
-     cmp r3,r1
-     bcc 32$
+.if ne DEBUG
+PRX:mov r0,-(sp)   ;prints pdata, doesn't save flags
+    mov r2,-(sp)
+    mov r3,-(sp)
+    mov @#pdata,r2
+   call PRALL
+   mov (sp)+,r3
+   mov (sp)+,r2
+   mov (sp)+,r0
+      return
 
-     call @#3$
-     clr r1
-     return
+PRC:  mov r0,-(sp)
+   mov @#pdata,r0
+   .ttyout
+   mov (sp)+,r0
+      return
 
-32$: mov r2,r0
-     mov r3,r2
-     clr r3
-     call @#3$
-     mov r2,r4
-     mov r0,r2
-     call @#3$
-     mov r4,r1
-     return
-
-3$:  call @#.+4
-     call @#.+4
-     call @#.+4
-     call @#.+4
-     asl r2
-     rol r3
-     bcs 22$    ;for R1>$7fff
-
-     cmp r3,r1
-     bcs 20$
-
-22$: sub r1,r3
-     inc r2
-20$:  return
+pdata: .word 0
 
 PRALL:    ;prints r2, used: r0,r2,r3
         mov #10000,r3
 	CALL @#PRZ
+.endc
+
 PR0000:
         mov #1000,r3
 	CALL @#PRZ
@@ -513,18 +386,8 @@ printsec:  ;prints R0:R1/100
 
 cv: .word 0
 time: .word 0,0   ;high, low!
-
-    .even
 ra:
 time2: .word 0,0
-msg1: .ascii "number pi"
-      ;.byte 160 ;Greek pi
-      .ascii " calculator v4" <13> <10>
-      .ascii "number of digits (up to " <128>
-msg2: .ascii ")? " <128>
-msg3: .ascii " digits will be printed"
-eol: .byte 0
-delstr: .byte 8,32,8,128
 maxnum: .word 0
 area: .word 0,0
 
@@ -579,6 +442,16 @@ getnum: clr r1    ;length
 8$:     mov (sp)+,r0
         sob r3,8$
         return
+
+msg1: .ascii "number pi"
+      ;.byte 160 ;Greek pi
+      .ascii " calculator v5 (EIS)" <13> <10>
+      .ascii "number of digits (up to " <128>
+msg2: .ascii ")? " <128>
+msg3: .ascii " digits will be printed"
+eol: .byte 0
+delstr: .byte 8,32,8,128
+;    .even
 
 .End	START
 

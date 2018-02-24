@@ -1,8 +1,30 @@
+div4  .macro
+        rol remainder
+	rol	
+        bcs l2
+
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx remainder
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda remainder
+        sbc divisor
+        sta remainder
+        txa
+        sbc divisor+1
+        sec
+l1
+.endm
+
 .ifeq DIV8OPT
-   * = * + 17  ;OPT=2
-;   * = * + 19  ;OPT=1
+   * = * + DIV32ADJ
 div32          ;divisor<$8000
-        ldy remainder    ;@aux3loop@
+        ldy remainder    ;@div32loop@
         sty dividend+2
         sta dividend+3
         lda #0
@@ -85,69 +107,8 @@ cnt  .var cnt-1
         rol dividend
 
         sta remainder+1
-	jmp enddivision7        ;@aux3loop@
+	jmp enddivision7        ;@div32loop@
 .endif
-
-div4  .macro
-        rol remainder
-	rol	
-        bcs l2
-
-	cmp divisor+1
-        bcc l1
-        bne l2
-
-        ldx remainder
-        cpx divisor
-        bcc l1
-
-l2      tax
-        lda remainder
-        sbc divisor
-        sta remainder
-        txa
-        sbc divisor+1
-        sec
-l1
-.endm
-
-.if DIV8OPT
-     * = * + 5  ;OPT=2
-;     * = * + 18  ;OPT=1
-.endif
-.ifeq DIV8OPT
-     * = * + 2  ;OPT=1
-.endif
-div16minus            ;dividend+2 < divisor, for 4708 or more digits
-	asl dividend+1   ;@aux4loop@
-       	#div4
-.block
-cnt  .var 7
-loop3 .lbl
-	rol dividend+1
-        #div4
-cnt  .var cnt-1
-     .ifne cnt
-     .goto loop3
-     .endif
-.bend
-        rol dividend+1
-.block
-cnt  .var 8
-loop3 .lbl
-        rol dividend
-       	#div4
-cnt  .var cnt-1
-     .ifne cnt
-     .goto loop3
-     .endif
-.bend
-        rol dividend
-        sta remainder+1
-        ldy #0
-        sty dividend+2
-	sty dividend+3
-	jmp enddivision7   ;@aux4loop@
 
 .if 0
 div32x16z
@@ -187,7 +148,7 @@ l1      dey
 	rts
 .endif
 
-;.if 0
+.if 1
 div32x16w        ;dividend+2 < divisor, divisor < $8000
         ;;lda dividend+3
         ldy #16
@@ -224,7 +185,7 @@ l1      dey
 	;sta dividend+3
 	rts
 
-;.endif
+.endif
 
 .if 0
 div32x16s            ;dividend+2 < divisor, divisor < $8000, CY=0
@@ -286,4 +247,36 @@ l1      dey
 	sta dividend+3
 	rts
 .endif
+
+     * = * + DIVMIADJ
+div16minus            ;dividend+2 < divisor, for 4708 or more digits
+	asl dividend+1   ;@divmiloop@
+       	#div4
+.block
+cnt  .var 7
+loop3 .lbl
+	rol dividend+1
+        #div4
+cnt  .var cnt-1
+     .ifne cnt
+     .goto loop3
+     .endif
+.bend
+        rol dividend+1
+.block
+cnt  .var 8
+loop3 .lbl
+        rol dividend
+       	#div4
+cnt  .var cnt-1
+     .ifne cnt
+     .goto loop3
+     .endif
+.bend
+        rol dividend
+        sta remainder+1
+        ldy #0
+        sty dividend+2
+	sty dividend+3
+	jmp enddivision7   ;@divmiloop@
 

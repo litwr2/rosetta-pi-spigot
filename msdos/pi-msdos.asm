@@ -29,8 +29,15 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
-TIKI100 equ 1
-BBC80186 equ 0
+;main loop count is 7*(4+D)*D/16, D - number of digits
+
+;litwr has written this for 80x86
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
+
+TIKI100 equ 0
+BBC80186 equ 1
 
 if TIKI100 + BBC80186 <> 1
 ERROR
@@ -43,18 +50,17 @@ BBC_OSWORD equ $4A
 ;N = 3500   ;1000 digits
 N = 2800  ;800 digits
 
-macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI, used: cx
+macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
      cmp dx,si
      jc .div32
 
-     mov cx,ax
+     mov bx,ax
      mov ax,dx
      xor dx,dx
      div si
-     xchg ax,cx
+     xchg ax,bx
      div si
-     mov bx,cx
      jmp .exitdiv
 
 .div32:
@@ -130,9 +136,17 @@ start:
 
          mov si,[kv]
          add si,si       ;i <-k*2
+         mov cx,10000
+         jmp .l2
+
+.l4:     sub di,dx
+         sbb bp,0
+         sub di,ax
+         sbb bp,bx
+         shr bp,1
+         rcr di,1
 .l2:     mov ax,[si+ra]     ; r[i]
-         mov cx,10000    ;r[i]*10000, mul16x16
-         mul cx
+         mul cx         ;r[i]*10000, mul16x16
          add ax,di
          mov di,ax
          adc dx,bp
@@ -142,19 +156,10 @@ start:
          div32x16
          mov [si+ra+1],dx   ;r[i] <- d%b
          dec si      ;i <- i - 1
-         je .l4
+         jne .l4
 
-         sub di,dx
-         sbb bp,0
-         sub di,ax
-         sbb bp,bx
-         shr bp,1
-         rcr di,1
-         jmp .l2
-
-.l4:     mov dx,bx
-         mov si,10000
-         div si
+         mov dx,bx
+         div cx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
@@ -286,7 +291,7 @@ end if
 cv  dw 0
 kv  dw 0
 time dw 0,0
-ra:
+ra = $ - 2
 maxnum dw 0
 
 getnum: xor cx,cx    ;length
@@ -347,11 +352,11 @@ msg3  db ' digits will be printed'
 msg2  db 13,10,'$'
 del   db 8,' ',8,'$'
 string rb 6
-msg1  db 'number Pi calculator v3 for DOS ('
+msg1  db 'number Pi calculator v5 for DOS ('
 if TIKI100
       db 'Tiki-100 8088 board'
 else if BBC80186
-      db 'Acorn BBC Micro TUBE 80186'
+      db 'Acorn TUBE 80186'
 end if
       db ')',13,10
       db 'number of digits (up to $'

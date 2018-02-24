@@ -28,10 +28,12 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
+;main loop count is 7*(4+D)*D/16, D - number of digits
 
-
-;N = 3500   ;1000 digits
-N = 2800  ;800 digits
+;litwr has written this for 80x86
+;tricky provided some help
+;MMS gave some support
+;Thorham and meynaf helped too
 
          use16
          org 100h
@@ -78,8 +80,9 @@ start:
 .l7:     shr ax,1
          mov bx,7
          mul bx
-         mov [.m101+4],ax
-         mov [.m100+1],ax
+         mov [kv],ax
+         shr ax,1
+         push ax
 
          xor ax,ax
          push ax
@@ -93,37 +96,33 @@ start:
          xor ecx,ecx
          push ds
          pop es
-.m100:   mov cx,N       ;fill r-array
-         mov ax,2000
+         pop cx       ;fill r-array
+         mov eax,2000*65537
          mov di,ra+2
-         rep stosw
+         rep stosd
 
          mov [cv],cx
-.m101:   mov [kv],N
-
 .l0:     xor edi,edi          ;d <- 0
-
          mov si,[kv]
          add si,si       ;i <-k*2
          mov cx,10000
-.l2:     movzx eax,[si+ra]     ; r[i]
-         mul ecx         ;r[i]*10000, mul16x16
-         add eax,edi
-         mov edi,eax
-
-         dec si        ;b <- 2*i-1
-         ;xor edx,edx
-         div esi
-         mov [si+ra+1],dx   ;r[i] <- d%b
-         dec si      ;i <- i - 1
-         je .l4
-
-         sub edi,edx
-         sub edi,eax
-         shr edi,1
          jmp .l2
 
-.l4:     mov eax,edi
+.l4:     sub edi,edx      ;T2
+         sub edi,eax      ;T2
+         shr edi,1        ;T3
+.l2:     movzx eax,word [si+ra]     ;r[i]   ;T6
+         mul ecx         ;r[i]*10000   ;T20
+         add eax,edi      ;T2
+         mov edi,eax      ;T2
+         dec si        ;b <- 2*i-1   ;T2
+         ;xor edx,edx
+         div esi          ;T38
+         mov [si+ra+1],dx   ;r[i] <- d%b  ;T2
+         dec si      ;i <- i - 1   ;T2
+         jne .l4          ;T10
+                          ;To91
+         mov eax,edi
          xor edx,edx
          div ecx
          add ax,[cv]  ;c + d/10000
@@ -214,7 +213,7 @@ PR0000:     ;prints cx
 cv  dw 0
 kv  dw 0
 time dw 0,0
-label ra word
+ra = $ - 2
 maxnum dw 0
 
 getnum: xor cx,cx    ;length
@@ -272,7 +271,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v3',13,10
+msg1  db 'number ',227,' calculator v4',13,10
       db 'it may give 9000 digits in less than 5 minutes with a PC 386DX @25MHz!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
