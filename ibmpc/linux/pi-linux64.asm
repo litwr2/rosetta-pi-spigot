@@ -53,8 +53,8 @@ entry $
 .l0:     xor edi,edi          ;d <- 0
          mov si,[kv]
          add si,si       ;i <-k*2
-.l2:     movzx eax,[rsi+ra]     ; r[i]
          mov cx,10000    ;r[i]*10000, mul16x16
+.l2:     movzx eax,[rsi+ra]     ; r[i]
          mul ecx
          add eax,edi
          mov edi,eax
@@ -73,8 +73,7 @@ entry $
 
 .l4:     mov eax,edi
          xor edx,edx
-         mov si,10000
-         div esi
+         div ecx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax

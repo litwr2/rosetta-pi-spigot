@@ -33,18 +33,17 @@
 ;N = 3500   ;1000 digits
 N = 2800  ;800 digits
 
-macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI, used: cx
+macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
      cmp dx,si
      jc .div32
 
-     mov cx,ax
+     mov bx,ax
      mov ax,dx
      xor dx,dx
      div si
-     xchg ax,cx
+     xchg ax,bx
      div si
-     mov bx,cx
      jmp .exitdiv
 
 .div32:
@@ -124,9 +123,9 @@ start:
 
          mov si,[kv]
          add si,si       ;i <-k*2
+         mov cx,10000
 .l2:     mov ax,[si+ra]     ; r[i]
-         mov cx,10000    ;r[i]*10000, mul16x16
-         mul cx
+         mul cx          ;r[i]*10000, mul16x16
          add ax,di
          mov di,ax
          adc dx,bp
@@ -147,8 +146,7 @@ start:
          jmp .l2
 
 .l4:     mov dx,bx
-         mov si,10000
-         div si
+         div cx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
@@ -292,7 +290,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v3',13,10
+msg1  db 'number ',227,' calculator v4',13,10
       db 'it may give 9000 digits in less than an hour with a first PC of 1981!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'

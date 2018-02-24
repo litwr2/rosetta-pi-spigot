@@ -1,0 +1,28 @@
+How to run a version for PanOS supplied with `pi-32016.ssd' disc image?
+  1. Start BBC Basic;
+  2. CH."PI-BAS"
+
+How to run a version for PanOS supplied with `pi-32016.ssd' disc image?
+  1. Load PanOS;
+  2. Insert the disc;
+  3. Type 'pi' and press Enter key.
+
+How to compile and run a version for PanOS?
+  1. Move `pi-bbc-32016.asm' to ssd/dsd-disk with name, for example, `pi-asm';
+  2. Load PanOS and insert the disk;
+  3. Issue a command `asm32 pi' and then a command `link pi'.  This produced an executable 'pi-rif' file;
+  4. A command `pi' will run the demo.
+
+How to compile and run a version for Pandora?
+  1. Move `pi-bbc-pandora.asm' to ssd/dsd-disk with name, for example, `pib-asm';
+  2. Load PanOS and insert the disk;
+  3. Issue a command `asm32 pib'.  It produces a file `pib-aof';
+  4. Move `pi-aof' to your cross-platform environment;
+  5. Compile `bin2asm.c' and run it by command `bin2asm <pib-aof >data.bas';
+  6. Add `data.bas' to `pi-pandora.bas';
+  7. Move `pandora.bas' to ssd/dsd-disk with name, for example, `pi-bas';
+  8. Load Pandora and insert the disk;
+  9. Load BBC Basic by command `bas32';
+ 10. Load and run the demo by `CH."PI-BAS';
+ 11. The next run is available by just RUN.
+

@@ -55,7 +55,7 @@ start:
          mov dx,msg4
          mov ah,9
          int 21h
-         
+
          call getnum
          mov dx,msg2
          mov ah,9
@@ -105,9 +105,9 @@ start:
 
          mov si,[kv]
          add si,si       ;i <-k*2
+         mov cx,10000
 .l2:     movzx eax,[si+ra]     ; r[i]
-         mov cx,10000    ;r[i]*10000, mul16x16
-         mul ecx
+         mul ecx         ;r[i]*10000, mul16x16
          add eax,edi
          mov edi,eax
 
@@ -125,8 +125,7 @@ start:
 
 .l4:     mov eax,edi
          xor edx,edx
-         mov si,10000
-         div esi
+         div ecx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
@@ -273,8 +272,8 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v2',13,10
-      db 'it may give 9000 digits in less than 5 minutes a PC 386DX @25MHz!'
+msg1  db 'number ',227,' calculator v3',13,10
+      db 'it may give 9000 digits in less than 5 minutes with a PC 386DX @25MHz!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
 msg3  db ' digits will be printed'
