@@ -1,10 +1,9 @@
-10 poke@blank@,141:print"{clr}"spc(7)"number ~ calculator v6":print"   it may give 3000 digits less than":printspc(12)"in an hour!":print
-50 r=int((208-@EOP@)*64/7)*4:print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:ifd<=0ord>rgoto50
+10 poke@blank@,141:print"{clr}"spc(7)"number ~ calculator v7":r=@MAXMEM@
+50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:iff<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
-80 f=d/2*7:poke@N@,f/128-(int(f/128)<>f/128):poke@lowN@,fand255:poke@highN@,f/256
-90 input"blank screen (5% speed up)";r$:ifleft$(r$,1)="n"thenpoke@blank@,173:goto160
+80 f=d/2*7:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
+90 input"blank screen (5% faster)";r$:ifleft$(r$,1)="n"thenpoke@blank@,173:goto160
 110 ifleft$(r$,1)<>"y"then90
-160 f=ti:sys@start@:f=(ti-f)/60
-170 ifd>868thenwait203,64,64
+160 f=ti:sys@start@:f=(ti-f)/60:ifd>868thenwait203,64,64
 190 printf
 

@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -29,6 +29,8 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - so it optimizes the memory usage by 2 bytes
+
      mc68000
      ;mc68020
 
@@ -44,7 +46,6 @@ FreeMem = -210
 VBlankFrequency = 530
 
 ;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
-MAXN = 9252  ;add this also to the output text!
 
 div32x16o macro    ;D7=D6/D4, D6=D6%D4
      ;clr.l d7
@@ -99,17 +100,34 @@ start
          move.l  d0,cout
          move.l  d0,d1                   ;call Write(stdout,buff,size)
          move.l  #msg1,d2
-         moveq   #msg3-msg1,d3
+         moveq   #msg4-msg1,d3
          jsr     Write(a6)
+         clr.l d0
+         sub.l #endmark,d0
+         add.l #start+$10000,d0
+         divu #7,d0
+         ext.l d0
+         and.b #$fc,d0
+         move.l d0,maxn        
 
+.l20     move.l cout,d1
+         move.l  #msg4,d2
+         moveq   #msg5-msg4,d3
+         jsr     Write(a6)
+         move.l maxn,d5
+         bsr PR0000
+         move.l cout,d1
+         move.l  #msg5,d2
+         moveq   #msg3-msg5,d3
+         jsr     Write(a6)
          bsr getnum
-         cmp #MAXN+1,d5
-         bcs .l20
+         cmp maxn+2,d5    ;680x0 are Big Endian
+         bhi .l20
 
-         move #MAXN,d5
-         bra .l21
+         or d5,d5
+         beq .l20
 
-.l20     move d5,d1
+         move d5,d1
          addq #3,d5
          and #$fffc,d5
          cmp.b #10,(a0)
@@ -132,8 +150,9 @@ start
          move.l a4,d2
          move.l d2,d0
          lsl.l d0
-         clr.l d1  ;chip or fast memory
+         move.l d0,a2
          exg.l a5,a6
+         clr.l d1      ;any kind of memory
          jsr AllocMem(a6)
          exg.l a5,a6
          move.l d0,a2
@@ -145,7 +164,6 @@ start
          move.l $6c,rasterie+2
          move.l #rasteri,$6c
   endif
-
          subq #1,d2
          move #2000,d0
          move.l a2,a0
@@ -265,24 +283,24 @@ start
 
 PR0000     ;prints d5
        move.l #string,a0
-       jsr .l1
+       bsr .l1
        moveq   #4,d3
        move.l  cout,d1
        move.l  #string,d2
        jmp     Write(a6)             ;call Write(stdout,buff,size)
 
 .l1    divu #1000,d5
-       jsr .l0
+       bsr .l0
        clr d5
        swap d5
 
        divu #100,d5
-       jsr .l0
+       bsr .l0
        clr d5
        swap d5
 
        divu #10,d5
-       jsr .l0
+       bsr .l0
        swap d5
 
 .l0    eori.b #'0',d5
@@ -290,7 +308,7 @@ PR0000     ;prints d5
 eos    rts
 
 getnum   jsr Input(a6)          ;get stdin
-         ;move.l #string,d2     ;set by previous call
+         move.l #string,d2     ;set by previous call
          move.l d0,d1
          moveq.l #5,d3     ;+ newline
          jsr Read(a6)
@@ -298,7 +316,7 @@ getnum   jsr Input(a6)          ;get stdin
          beq getnum
 
          move.l d2,a0
-         clr d5
+         clr.l d5
 .l1      clr d6
          move.b (a0)+,d6
          sub.b #'0',d6
@@ -329,18 +347,21 @@ cv  dc.w 0
 kv  dc.w 0
 time dc.l 0
 cout dc.l 0
+maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v2',10
+msg1  dc.b 'number ',182,' calculator v3 '
   if __VASM&28              ;68020?
-      dc.b 'it may give 9000 digits in about 5 minutes with the Amiga 1200!'
+      dc.b '(68020)'
   else
-      dc.b 'it may give 9000 digits in less than half an hour with the Amiga 500!'
+      dc.b '(68000)'
   endif
-      dc.b 10,'number of digits (up to 9252)? '
+msg4  dc.b 10,'number of digits (up to '
+msg5 dc.b ')? '
 msg3  dc.b ' digits will be printed'
 msg2  dc.b 10
-
+msg6  dc.b 'no fast memory',10
+endmark
       end     start
 

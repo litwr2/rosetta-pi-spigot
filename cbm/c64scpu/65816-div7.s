@@ -1,4 +1,4 @@
-div16minus            ;dividend+2 < divisor
+div16minus            ;dividend+2 < divisor, CY = 0
 .block
 cnt  .var 16
 loop3 .lbl
@@ -35,10 +35,7 @@ cnt  .var cnt-1
      .endif
         sta dividend+2
 
-        #lda_i16 0 
-cnt  .var 16-OPT
-loop2 .lbl
-.block
+        #lda_i16 0
         asl dividend+2
 	rol
 
@@ -46,24 +43,33 @@ loop2 .lbl
         bcc l1
 
         sbc divisor
-	inc quotient+2	;and INCrement quotient cause divisor fit in 1 times
+l1
+cnt  .var 15-OPT
+loop2 .lbl
+.block
+        rol dividend+2
+	rol
+
+        cmp divisor
+        bcc l1
+
+        sbc divisor
 l1
 .bend
 cnt  .var cnt-1
      .ifne cnt
      .goto loop2
      .endif
-
+        rol dividend+2
 cnt  .var 16
 loop4 .lbl
 .block
-        asl dividend
+        rol dividend
 	rol
         cmp divisor
         bcc l1
 
         sbc divisor
-	inc quotient	;and INCrement quotient cause divisor fit in 1 times
 l1
 .bend
 cnt  .var cnt-1
@@ -71,26 +77,6 @@ cnt  .var cnt-1
      .goto loop4
      .endif
         .bend
-        jmp enddivision
-
-
-div32x16m       ;dividend+2 < divisor, CY = 0
-        lda dividend+2
-        clc
-        ldy #16
-        .byte 0
-.block
-l3      rol dividend
-        rol
-        cmp divisor
-        bcc l1
-
-        sbc divisor
-l1      dey
-        bne l3
-.bend
         rol dividend
-        sta remainder
-        #stz_z dividend+2
-	rts
+        jmp enddivision
 

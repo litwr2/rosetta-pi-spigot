@@ -2,7 +2,8 @@
 ;it is for Tiki-100 KP/M, Amstrad CPC6128 CP/M 2.2, 
 ;Amstrad PCW8xxx/9xxx CP/M 3, MSX-DOS, Commodore 128 CP/M 3
 ;Acorn z80 2nd processor CP/M, Torch z80 2nd processor CPN
-;it uses Tiki-100 timer, Amstrad CPC firmware, MSX or Amstrad PCW timer,
+;it uses Tiki-100 timer, Amstrad CPC firmware, MSX timer,
+;MSX (optionally) or Amstrad PCW timer interrupt,
 ;Commodore 128 Time of Day of CIA1
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
@@ -12,7 +13,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -34,17 +35,26 @@
 ;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
+CPM3TIMER equ 0
 
 TIKI100 equ 0
-AMSTRADCPC equ 1
+AMSTRADCPC equ 0
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
+MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 ACORNBBCZ80 equ 0
-TORCHBBCZ80 equ 0
+TORCHBBCZ80 equ 1
+GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 
-if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 != 1
+if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + GENERIC != 1
+show ERROR
+endif
+if AMSTRADCPC + CPM3TIMER > 1
+show ERROR
+endif
+if BIOS_OUTPUT + GENERIC + TORCHBBCZ80 > 1
 show ERROR
 endif
 
@@ -56,7 +66,6 @@ ENTER_FIRMWARE equ $BE9B
 KL_TIME_PLEASE equ $BD0D
 ;MSX
 MSX_TIMER equ $FC9E
-MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 MSX_INTR_VECTOR equ $38
 ;Commodore-128
 CIA1TOD equ $DC08
@@ -68,122 +77,14 @@ Nto6502 equ $FFC3
 Afrom6502 equ $FFC6
 
 BDOS equ 5
+OPT equ 1       ;limits HL to 0x7f'ff'ff'ff in division
+DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
 
 ;N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
 N equ 8500/2*7   ;8500 digits
 
-div macro
-     local t1,t2
-     sla e
-     rl d
-     ADC   HL, HL
-     jr c,t1
-
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     JR    NC,t2
-t1
-     ADD   HL,BC
-     INC   E
-t2
-endm
-
-divz macro
-	adc a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-endm
-
-divx macro
-	ld a,d
-	add a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-rept 7
-        divz
-endm
-	adc a,a
-	ld d,a
-
-	ld a,e
-	add a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-rept 7
-	divz
-endm
-	adc a,a
-	ld e,a
-endm
-
-div32x16 macro  ; BCDE = HLDE/BC, HL = HLDE%BC
-     local OPT,DIV320,exitdiv ;may work wrong if BC>$7fff - fixed!
-     ;DEC   BC
-     dec c
-     LD    A, B
-     or a
-;     jp z,div32x8
-     jp m,longdiv0
-
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
-
-     ADD   A, L
-     LD    A, B
-     ADC   A, H
-     JP    NC, DIV320
-
-longdiv
-     PUSH  DE
-OPT equ 1         ;3 limits HL to 0x1f'ff'ff'ff
-
-rept OPT
-     ADD HL,HL
-endm
-     EX    DE, HL
-     LD    HL, 0
-
-rept 16-OPT
-     div
-endm
-     EX    DE, HL
-     EX    (SP), HL
-     EX    DE, HL
-
-rept 16
-     div
-endm
-     POP   BC
-     jp exitdiv
-
-longdiv0
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
-     jp longdiv
-
-;div32x8
-;     jp exitdiv
-
-DIV320
-     divx
-     LD    BC, 0
-exitdiv
-     endm
+include "z80-div.s"
 
       ORG 0100h
 start    proc
@@ -191,7 +92,7 @@ start    proc
 
 if BIOS_OUTPUT
    ld hl,(1) ;BIOS base table
-   push hl
+   push hl    ;subtract 3?
    ld de,9   ;conout offset
    add hl,de
    ld (bios4+1),hl
@@ -269,6 +170,12 @@ l1  ld d,h
     rr l
     push hl
 
+if CPM3TIMER
+    ld c,69h
+    ld de,days1
+    call BDOS
+    ld (secs1),a
+endif
 if TIKI100
     ld hl,(TIKI100_TIMER_LO)
     ld (time),hl
@@ -328,22 +235,28 @@ endif
          pop bc      ;fill r-array
          pop hl
          ld sp,hl
-         push bc
+     ld (kv),bc  ;k <- N
+     dec bc
+     ld a,c
+     cpl
+     ld c,a
+     ld a,b
+     cpl
+     ld b,a
          ld de,2000
-         ld hl,ra
+         ld hl,ra+2
 
 lf0      ld (hl),e
          inc l
          ld (hl),d
          inc hl
-         dec bc
-         ld a,c
-         or b
+         inc c
+         jp nz,lf0
+
+         inc b
          jr nz,lf0
 
          ld (cv),bc
-         pop hl          ;k <- N
-         ld (kv),hl
 loop     ld hl,0          ;d <- 0
          push hl
          push hl
@@ -467,6 +380,34 @@ else
         call BDOS
 endif
 
+if CPM3TIMER
+      ld c,69h
+      ld de,days2
+      call BDOS
+      ld hl,secs1
+      sub (hl)
+      daa
+      jr nc,lct7
+
+      add a,0c0h
+lct7  ld (hl),a
+      dec hl
+      ld a,(mins2)
+      sbc a,(hl)
+      daa
+      jr nc,lct8
+
+      add a,0c0h
+lct8  ld (hl),a
+      dec hl
+      ld a,(hours2)
+      sbc a,(hl)
+      daa
+      jr nc,lct9
+
+      sub 76
+lct9  ld (hl),a
+endif
 if TIKI100
     ld hl,(TIKI100_TIMER_LO)
     ld de,(TIKI100_TIMER_HI)
@@ -654,14 +595,14 @@ if C128
     jr nc,$+3
     inc de
 endif
-
+if GENERIC = 0
      ld bc,(time)
      xor a
      sbc hl,bc
      ex de,hl
      ld bc,(time+2)
      sbc hl,bc
-
+endif
 if MSX
      ld bc,(msx_vsync)
 endif
@@ -677,6 +618,7 @@ endif
 if ACORNBBCZ80 or TORCHBBCZ80
      ld bc,100
 endif
+if GENERIC = 0
         call div32x16r
 	PUSH HL
 	EX DE,HL
@@ -690,6 +632,7 @@ else
         call BDOS
 endif
 	POP hl
+endif
                       ;*10000/freq
 if TIKI100
         ld bc,80      ;10000/125 = 80
@@ -734,10 +677,117 @@ vsync50 ld bc,200    ;10000/50 =  200
         call mul16
 vsync0
 endif
+if GENERIC = 0
         ex de,hl
 	call PR0000
+endif
+if CPM3TIMER
+      ld e,' '
+      ld c,2
+      call BDOS
+
+      ld hl,0
+      ld (ra),hl
+      ld (ra+2),hl
+      ld hl,hours1
+      ld a,(hl)
+      ld bc,ra+1
+lct2  or a
+      jr z,lct1
+
+      ld a,(bc)
+      add a,36h
+      daa
+      ld (bc),a
+      inc bc
+      ld a,(bc)
+      adc a,0
+      daa
+      ld (bc),a
+      ld a,(hl)
+      sub 1
+      daa
+      ld (hl),a
+      dec bc
+      jr lct2
+
+lct1  inc hl
+      dec bc
+      ld a,(hl)
+lct3  or a
+      jr z,lct4
+
+      ld a,(bc)
+      add a,60h
+      daa
+      ld (bc),a
+      inc bc
+      ld a,(bc)
+      adc a,0
+      daa
+      ld (bc),a
+      inc bc
+      ld a,(bc)
+      adc a,0
+      daa
+      ld (bc),a
+      ld a,(hl)
+      sub 1
+      daa
+      ld (hl),a
+      dec bc
+      dec bc 
+      jr lct3
+
+lct4  inc hl
+      ld a,(bc)
+      add a,(hl)
+      daa
+      ld (bc),a
+      inc bc
+      ld a,(bc)
+      adc a,0
+      daa
+      ld (bc),a
+      inc bc
+      ld a,(bc)
+      adc a,0
+      daa
+      ld (bc),a
+      or a
+      jr z,lct5
+
+      call print_bcd
+lct5  ld a,(ra+1)
+      push af
+      rrca
+      rrca
+      rrca
+      rrca
+      call print_bcd
+      pop af
+      call print_bcd
+      ld a,(ra)
+      push af
+      rrca
+      rrca
+      rrca
+      rrca
+      call print_bcd
+      pop af
+      call print_bcd
+endif
         rst 0
          endp
+
+if CPM3TIMER
+print_bcd
+      and 0fh
+      or 30h
+      ld e,a
+      ld c,2
+      jp BDOS
+endif
 
 PR00000 ld de,-10000
 	CALL PR0
@@ -776,6 +826,14 @@ if BIOS_OUTPUT
 bios4   JP 0
 endif
 
+if DIV8
+div32x8
+    or c
+    jp m,div32x8e
+
+include "z80-div8.s"
+endif
+
 div32x16r proc
      local t,t0,t1,t2,t3
      call t
@@ -797,11 +855,13 @@ t1
 t2
      call t3
 t3
-     div
+     div0
      RET
      endp
-
+if GENERIC = 0
 include "mul16.s"
+time dw 0,0
+endif
 
 if MSX
 msx_vsync db 0,0
@@ -810,17 +870,20 @@ endif
 if MSX and MSX_INTR=1 or AMSTRADPCW
 msx_timer_intr
       push af
-      push hl
-      ld hl,(time)
-      inc hl
-      ld (time),hl
-      ld a,l
-      or h
-      jr nz,$+9
-      ld hl,(time+2)
-      inc hl
-      ld (time+2),hl
-      pop hl
+      ld a,(time)
+      inc a
+      ld (time),a
+      jp nz,exit_intr
+
+      ld a,(time+1)
+      inc a
+      ld (time+1),a
+      jp nz,exit_intr
+
+      ld a,(time+2)
+      inc a
+      ld (time+2),a
+exit_intr      
       pop af
 msx_intr_save
       jp 0
@@ -876,11 +939,15 @@ gettimer
 endif
 cv dw 0
 kv dw 0
-time dw 0,0
 if ACORNBBCZ80
    db 0
 endif
-
+if CPM3TIMER
+days1  dw 0
+hours1 db 0
+mins1  db 0
+secs1  db 0
+endif
          org ($ + 256) and $ff00
 include "../cpc6128/mul10000.s"
 
@@ -893,13 +960,16 @@ endif
 if AMSTRADCPC
       db 165
 endif
-if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80
+if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v4',13,10
+      db ' calculator v6',13,10
       db 'for CP/M 2.2 ('
 
+if GENERIC
+      db 'Generic'
+endif
 if TIKI100
       db 'Tiki-100'
 endif
@@ -910,18 +980,20 @@ if AMSTRADPCW
       db 'Amstrad PCW'
 endif
 if ACORNBBCZ80
-      db 'Acorn BBC Micro TUBE Z80'
+      db 'Acorn z80 2nd co-pro'
 endif
 if TORCHBBCZ80
-      db 'Torch BBC Micro TUBE Z80'
+      db 'Torch z80 2nd co-pro'
 endif
 if MSX
-      db 'Generic MSX'
+      db 'MSX'
 endif
 if C128
       db 'Commodore 128'
 endif
-
+if CPM3TIMER
+      db ', CP/M+ timer'
+endif
       db ').',13,10,'number of digits (up to $'
 msg2  db ')? $'
 msg3  db ' digits will be printed'
@@ -1001,6 +1073,10 @@ l5      ld a,b
         or a    ;sets CF=0
         jr z,l0
 
+        ld a,h
+        or l
+        jr z,l0
+
         push hl
         ld de,(maxnum)
         inc de
@@ -1012,5 +1088,11 @@ l8      pop de
         djnz l8
         retn
 endp
+if CPM3TIMER
+days2  dw 0
+hours2 db 0
+mins2  db 0
+secs2  db 0
+endif
    end start
 

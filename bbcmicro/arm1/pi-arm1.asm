@@ -8,7 +8,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -85,7 +85,7 @@ local .exitdiv,.l1,.l4,.l5,.l7,.l0,.l8,.l6,.l3
         ADDCS R12,R12,R13  ;put relevant bit into result
         MOVS R13,R13,LSR 1 ;shift control bit
         BEQ .exitdiv      ;divide result in R12, remainder in R0
-   
+
         MOV R1,R1,LSR 1  ;halve unless finished
    end repeat
 
@@ -102,6 +102,21 @@ start:   ;adr r0,msg1
          mov r0,msg1 and $fffffc00
          add r0,msg1 and $3ff
          swi 2
+         swi 1
+         db 'number of digits (up to ',0
+         align 4
+
+         mov r0,($10000-msg1+start) and $fffffc00
+         add r0,($10000-msg1+start) and $3ff
+         mov r1,14
+         bl div32s
+         and r3,r12,#$fffffffc
+         mov r8,r3
+         bl PR0000
+         swi 1
+         db ')? ',0
+         align 4
+
          bl getnum
          ;mov r7,#1000
 
@@ -124,12 +139,12 @@ start:   ;adr r0,msg1
          rsb r9,r1,r1,lsl 3 ;*7, k = r9
          bl gettime
 
-         add r3,r9,#1   ;fill r-array
+         mov r3,r9       ;fill r-array
          mov r1,#2000
          ;adr r6,ra
-         mov r6,ra and $fffffc00
-         add r6,ra and $3ff
-         mov r2,r6
+         mov r6,(ra+4) and $fffffc00
+         add r6,(ra+4) and $3ff
+         sub r2,r6,4
 .l8:     str r1,[r6],#4
          subs r3,r3,#1
          bne .l8
@@ -240,7 +255,7 @@ PR0000:     ;prints r3, uses r0,r6
         mov r15,r14     ;return
 
 getnum: mov r3,0    ;length
-        mov r7,0    ;number
+        mov r7,0    ;number, r8 - limit
         adr r6,ra
 .l0:    swi 4
         cmp r0,13
@@ -280,11 +295,12 @@ getnum: mov r3,0    ;length
 .l5:    cmp r3,0
         beq .l0
 
-        mov r8,4608
-        sub r8,r8,36   ;r8 <- 4572
         cmp r7,r8
         bhi .l0
-        mov r15,r14
+
+        tst r7,r7
+        beq .l0
+        mov r15,r14    ;return
 
 gettime:
         mov r0,#1
@@ -318,9 +334,8 @@ div32s:   ;enter with numbers in R1 (divisor) and R0 (dividend)
 
 time  db 0,0,0,0,0
       align 4
-ra:
-msg1  db 'number Pi calculator v2 for ARM Evaluation System'
-      db 13,10
-      db 'number of digits (up to 4572)? ',0
+ra = $ - 4
+msg1  db 'number Pi calculator v3 for ARM Evaluation System'
+      db 13,10,0
       align 4
 string rb 6

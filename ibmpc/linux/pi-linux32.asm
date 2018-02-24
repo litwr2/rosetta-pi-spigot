@@ -1,4 +1,5 @@
 ;for fasm assembler
+;run it as 'time ./pi-linux32' to get time of the execution
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -7,7 +8,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -29,6 +30,8 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+;version 2, use `time pi-linux32' to get time
+
 D=9360  ;digits, 9360 is the limit for 64 KB ra-array
 N=D*7/2
 
@@ -39,14 +42,13 @@ segment readable executable
 entry $
          xor esi,esi
          xor ecx,ecx
-         mov cx,N+1   ;fill r-array
+         mov cx,N   ;fill r-array
          mov ax,2000
-         mov edi,ra
+         mov edi,ra+2
          rep stosw
 
          mov [cv],cx
          mov [kv],N
-
 .l0:     xor edi,edi          ;d <- 0
          mov si,[kv]
          add si,si       ;i <-k*2

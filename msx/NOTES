@@ -1,0 +1,24 @@
+FILES
+   pi-msx.com
+   pi-msx-intr.com
+ARE AT cpm22 FOLDER.  THEY ARE ALSO AT msx.dsk DISK IMAGE.
+
+
+MSX Basic program may show wrong time for 2201-2699 digits computation.  It is the problem of MSX Basic which timer is 16-bit only.
+
+
+the next models of OPENMSX had tested:
+Sanyo MPC-25FD (faster)
+Philips NMS 8250 [msx2 default] (slower)
+Philips NMS 8255 (slower)
+Philips VG 8230 (slowest?)
+Panasonic FS-A1GT [turbor default] (max)
+Panasonic FS-A1ST [turbor default] (max)
+
+
+commands:
+BASIC (DOS)
+MODE 80 (DOS)
+CLS (DOS)
+RUN"PI.BAS
+RUN

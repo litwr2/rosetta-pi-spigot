@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -51,14 +51,14 @@ fac2 = remainder
          * = $801
          .include "pi-scpu64.inc"
 
-         * = $a51
+         * = $90c
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          ;lda #$b
          ;sta $d011   ;screen @blank@
          ;sei         ;no interrupts
-         lda #147    ;clear screen
-         jsr BSOUT
+         ;lda #147    ;clear screen
+         ;jsr BSOUT
 
          sta $d07e       ; scpu-registers on
          sta $d076       ; optimization mode
@@ -68,18 +68,16 @@ fac2 = remainder
          #xce
          #regs16
          #lda_i16 2000
-         #ldx_i16 r
-         ldy #0              ;fill r-array @N@
-         .byte ((N+1)/128+1)/2
+         #ldx_i16 r+2
+         ldy #0           ;fill r-array @N2@
+         .byte 0
 lf0      sta 0,x
          inx
          inx
          dey
          bne lf0
 
-         ;sta 0,x
          sty c
-
          lda #<N        ;k <- N   @N16@
          .byte >N
          sta k
@@ -91,7 +89,7 @@ loop     #stz_z d    ;d <- 0
          asl           ;sets CY = 0
          tax
 loop2    stx i        ;@mainloop@
-         lda r,x
+         lda r,x      ;@EOP@
          #regs8
          tax            ;50 cycles, *10000
          #xba
@@ -208,6 +206,26 @@ prn      inx
          bcs prn
 .bend
 
+div32x16m       ;dividend+2 < divisor
+        lda dividend+2
+        clc
+        ldy #16
+        .byte 0
+.block
+l3      rol dividend
+        rol
+        cmp divisor
+        bcc l1
+
+        sbc divisor
+l1      dey
+        bne l3
+.bend
+        rol dividend
+        sta remainder
+        #stz_z dividend+2
+	rts
+
 c .byte 0,0
 
     * = (* + 256) & $ff00
@@ -263,6 +281,6 @@ m10000
 
 .include "65816-div7.s"
 
-         r = * + 16
+         r = * + 24
 ;r = (* + 16 + 256) & $ff00
 

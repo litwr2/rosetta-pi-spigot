@@ -1,20 +1,13 @@
-10 poke@ntsc@,173:poke@blank@,141
-20 ifpeek(65287)and64thenntsc=1:poke@ntsc-off@,173
-30 scnclr:printspc(7)"number ~ calculator v7"
-40 print"   it may give 4000 digits less than":printspc(12)"in an hour!":print
-45 r=int((peek(52)-@EOP@)*64/7)*4:print"number of digits (up to"r"{left})";
-50 inputf:d=(f+3)and65532
-60 ifd<=0ord>rgoto50
+10 poke@ntsc@,173:poke@blank@,141:ifpeek(65287)and64thenntsc=1:poke@ntsc-off@,173
+30 print"{clr}"spc(7)"number ~ calculator v8":r=(peek(52)-@EOP@)*256/7and-4
+50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:ifd<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
-80 f=d/2*7:poke@N@,f/128-(int(f/128)<>f/128):poke@lowN@,fand255:poke@highN@,f/256
-90 input"blank screen (50% speed up)";r$
+80 f=d/2*7:poke@high2N@,f/128:poke@low2N@,f*2and255:poke@lowN@,fand255:poke@highN@,f/256:input"blank screen (50% faster)";r$
 100 ifleft$(r$,1)="n"thenpoke@blank@,173:goto160
 110 ifleft$(r$,1)<>"y"then90
 120 ifntscthen160
-130 input"ntsc on (25% speed up)";r$
-140 ifleft$(r$,1)="y"thenpoke@ntsc@,141:x=1:goto160
-150 ifleft$(r$,1)<>"n"then130
-160 f=ti:sys@start@:f=(ti-f)/60
-170 ifd>868thenwait198,64,64
+130 input"ntsc on (25% faster)";r$:ifasc(r$)=89thenpoke@ntsc@,141:x=1:goto160
+150 ifasc(r$)<>78then130
+160 f=ti:sys@start@:f=(ti-f)/60:ifd>868thenwait198,64,64
 180 ifxthenf=f/1.4845
 190 printf

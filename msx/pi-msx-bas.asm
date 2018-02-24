@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -36,117 +36,9 @@ N equ 3500   ;1000 digits
 SA equ $8500  ;start address
 R800 equ 0   ;R800 MULUW is 1 t-state slower than the table multiplication but it saves 781 bytes
 
-div macro
-     local t1,t2
-     sla e
-     rl d
-     ADC   HL, HL
-     jr c,t1
-
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     JR    NC,t2
-t1
-     ADD   HL,BC
-     INC   E
-t2
-endm
-
-divz macro
-	adc a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-endm
-
-divx macro
-	ld a,d
-	add a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-rept 7
-        divz
-endm
-	adc a,a
-	ld d,a
-
-	ld a,e
-	add a,a
- adc hl,hl
- add hl,bc
- jr c, $+4
- sbc hl,bc
-rept 7
-	divz
-endm
-	adc a,a
-	ld e,a
-endm
-
-div32x16 macro  ; BCDE = HLDE/BC, HL = HLDE%BC
-     local OPT,DIV320,exitdiv,longdiv,longdiv0 ;may work wrong if BC>$7fff - fixed!
-     ;DEC   BC
-     dec c
-     LD    A, B
-     or a
-;     jp z,div32x8
-     jp m,longdiv0
-
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
-
-     ADD   A, L
-     LD    A, B
-     ADC   A, H
-     JP    NC, DIV320
-
-longdiv
-     PUSH  DE
-OPT equ 2         ;3 limits HL to 0x1f'ff'ff'ff
-
-rept OPT
-     ADD HL,HL
-endm
-     EX    DE, HL
-     LD    HL, 0
-
-rept 16-OPT
-     div
-endm
-     EX    DE, HL
-     EX    (SP), HL
-     EX    DE, HL
-
-rept 16
-     div
-endm
-     POP   BC
-     jp exitdiv
-
-longdiv0
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
-     jp longdiv
-
-;div32x8
-;     jp exitdiv
-
-DIV320
-     divx
-     LD    BC, 0
-exitdiv
-     endm
+OPT equ 2       ;limits HL to 0x3f'ff'ff'ff in division
+DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
+include "z80-div.s"
 
          org SA-7
 db $fe,low(SA),high(SA),low(ra-1),high(ra-1),low(SA),high(SA)
@@ -156,24 +48,29 @@ start    proc
          ;call CHPUT
 
          ld bc,N        ;fill r-array
-         ;di         ;no interrupts
-         push bc
+         ;di            ;no interrupts
+         ld (kv),bc     ;k <- N
+         dec bc
+     ld a,c
+     cpl
+     ld c,a
+     ld a,b
+     cpl
+     ld b,a
          ld de,2000
-         ld hl,ra
-         inc bc
+         ld hl,ra+2
 
 lf0      ld (hl),e
          inc l
          ld (hl),d
          inc hl
-         dec bc
-         ld a,c
-         or b
+         inc c
+         jp nz,lf0
+
+         inc b
          jr nz,lf0
 
          ld (cv),bc
-         pop hl          ;k <- N
-         ld (kv),hl
 loop     ld hl,0          ;d <- 0
          push hl
          push hl
@@ -185,7 +82,7 @@ loop     ld hl,0          ;d <- 0
          ld iyh,a
 loop2    ld c,iyl
          ld b,iyh
-         ld hl,ra
+         ld hl,ra     ;@EOP@
          add hl,bc
          ld (m1+1),hl
 
@@ -314,6 +211,14 @@ PR0	ld A,$FF
 	JR PRD
         endp
 
+if DIV8
+div32x8
+    or c
+    jp m,div32x8e
+
+include "z80-div8.s"
+endif
+
 div32x16r proc
      local t,t0,t1,t2,t3
      call t
@@ -335,13 +240,13 @@ t1
 t2
      call t3
 t3
-     div
+     div0
      RET
      endp
 
 cv dw 0
 kv dw 0
-dw 0   ;reserved for Basic h%
+dw 0   ;reserved for Basic h, @varh@
 
          org ($ + 256) and $ff00
 if R800=0

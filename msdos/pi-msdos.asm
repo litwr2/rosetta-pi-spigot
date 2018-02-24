@@ -8,7 +8,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -29,8 +29,8 @@
 
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
-TIKI100 equ 0
-BBC80186 equ 1
+TIKI100 equ 1
+BBC80186 equ 0
 
 if TIKI100 + BBC80186 <> 1
 ERROR
@@ -72,6 +72,20 @@ start:
          mov ah,9
          int 21h
 
+         xor ax,ax
+         sub ax,ra
+         mov bx,7
+         xor dx,dx
+         div bx
+         and al,0fch
+         mov cx,ax
+         inc ax
+         mov [maxnum],ax
+         call PR0000
+         mov dx,msg4
+         mov ah,9
+         int 21h
+
          call getnum
          mov dx,msg2
          mov ah,9
@@ -95,7 +109,6 @@ start:
          mov bx,7
          mul bx
          mov [.m101+4],ax
-         inc ax
          mov [.m100+1],ax
 
          call gettime
@@ -104,9 +117,9 @@ start:
 
          push ds
          pop es
-.m100:   mov cx,N+1   ;fill r-array
+.m100:   mov cx,N       ;fill r-array
          mov ax,2000
-         mov di,ra
+         mov di,ra+2
          rep stosw
 
          mov [cv],cx
@@ -223,57 +236,6 @@ PR0000:     ;prints cx
 	mov cx,bp
 	jmp .l2
 
-getnum: xor cx,cx    ;length
-        xor bp,bp    ;number
-.l0:    mov ah,8
-        int 21h
-        cmp al,13
-        je .l5
-
-        cmp al,8
-        je .l1
-
-        cmp al,'0'
-        jc .l0
-
-        cmp al,'9'+1
-        jnc .l0
-
-        cmp cl,4
-        je .l0
-
-        push bp
-        mov dl,al
-        mov ah,2
-        int 21h
-        inc cx
-        xor dh,dh
-        sub dl,'0'
-        mov bx,dx
-        mov ax,10
-        mul bp
-        mov bp,ax
-        add bp,bx
-        jmp .l0
-
-.l1:    jcxz .l0
-        dec cx
-        mov dx,del
-        mov ah,9
-        int 21h
-
-        pop bp
-        jmp .l0
-
-.l5:    jcxz .l0
-
-        cmp bp,9232+1
-        jnc .l0
-
-.l8:    pop ax
-        loop .l8
-        retn
-
 gettime:
 if TIKI100
         push	ds           ;returns timer value at dx:bx
@@ -324,16 +286,74 @@ end if
 cv  dw 0
 kv  dw 0
 time dw 0,0
+ra:
+maxnum dw 0
+
+getnum: xor cx,cx    ;length
+        xor bp,bp    ;number
+.l0:    xor ah,ah
+        int 16h 
+        cmp al,13
+        je .l5
+
+        cmp al,8
+        je .l1
+
+        cmp al,'0'
+        jc .l0
+
+        cmp al,'9'+1
+        jnc .l0
+
+        cmp cl,4
+        je .l0
+
+        push bp
+        mov dl,al
+        mov ah,2
+        int 21h
+        inc cx
+        xor dh,dh
+        sub dl,'0'
+        mov bx,dx
+        mov ax,10
+        mul bp
+        mov bp,ax
+        add bp,bx
+        jmp .l0
+
+.l1:    jcxz .l0
+        dec cx
+        mov dx,del
+        mov ah,9
+        int 21h
+
+        pop bp
+        jmp .l0
+
+.l5:    jcxz .l0
+
+        cmp bp,[maxnum]
+        jnc .l0
+
+        or bp,bp
+        jz .l0
+
+.l8:    pop ax
+        loop .l8
+        retn
+
 msg3  db ' digits will be printed'
 msg2  db 13,10,'$'
 del   db 8,' ',8,'$'
-ra:
 string rb 6
-msg1  db 'number Pi calculator v2 for DOS ('
+msg1  db 'number Pi calculator v3 for DOS ('
 if TIKI100
       db 'Tiki-100 8088 board'
 else if BBC80186
       db 'Acorn BBC Micro TUBE 80186'
 end if
       db ')',13,10
-      db 'number of digits (up to 9232)? $'
+      db 'number of digits (up to $'
+msg4  db ')? $'
+

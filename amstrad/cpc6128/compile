@@ -1,3 +1,11 @@
 pasmo6 --listing pi-cpc.lst pi-cpc.asm calcpi.bin
+gawk '/@entry@/{
+printf "s/@entry@/%x/\n", strtonum("0x"$1)+0x2000
+printf "s/@page@/%x/\n", strtonum("0x"$1)
+}' pi-cpc.lst >z.sed
+sed -f z.sed pi.cbas | sed 's/$/\r/' >pi.bas
+echo -ne '\x1a' >>pi.bas
+iDSK pi.dsk -r pi.bas
+cpcxfs pi.dsk -f -p pi.bas
 iDSK pi.dsk -r calcpi.bin
 iDSK pi.dsk -i calcpi.bin -e 2800 -c 2800 -t 1

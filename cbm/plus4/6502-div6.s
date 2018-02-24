@@ -19,6 +19,7 @@ lj      jmp div32
 div32x8           ;dividend+3 < divisor
         ldx divisor
         sty remainder+1
+        ;jmp (divjmp,X) ;for CMOS 6502 or 65816, 3 ticks faster,  0.5% faster for 100 digits, 0.01% faster for 3000 - recalculate branches offset!
         stx mjmp+1
 mjmp    jmp (divjmp)
 
@@ -30,7 +31,7 @@ loop3 .lbl
 .block
 	rol dividend+1
        	rol dividend+2	;dividend lb & hb*2, msb -> Carry
-	rol	
+	rol
 	cmp divisor+1
         bcc l1
         bne l2

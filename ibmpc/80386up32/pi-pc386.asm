@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -42,6 +42,20 @@ start:
          mov ah,9
          int 21h
 
+         xor ax,ax
+         sub ax,ra
+         mov bx,7
+         xor dx,dx
+         div bx
+         and al,0fch
+         mov cx,ax
+         inc ax
+         mov [maxnum],ax
+         call PR0000
+         mov dx,msg4
+         mov ah,9
+         int 21h
+         
          call getnum
          mov dx,msg2
          mov ah,9
@@ -65,7 +79,6 @@ start:
          mov bx,7
          mul bx
          mov [.m101+4],ax
-         inc ax
          mov [.m100+1],ax
 
          xor ax,ax
@@ -80,9 +93,9 @@ start:
          xor ecx,ecx
          push ds
          pop es
-.m100:   mov cx,N+1   ;fill r-array
+.m100:   mov cx,N       ;fill r-array
          mov ax,2000
-         mov di,ra
+         mov di,ra+2
          rep stosw
 
          mov [cv],cx
@@ -198,6 +211,13 @@ PR0000:     ;prints cx
 	mov cx,bp
 	jmp .l2
 
+        align 2
+cv  dw 0
+kv  dw 0
+time dw 0,0
+label ra word
+maxnum dw 0
+
 getnum: xor cx,cx    ;length
         xor bp,bp    ;number
 .l0:    xor ah,ah
@@ -242,24 +262,21 @@ getnum: xor cx,cx    ;length
 
 .l5:    jcxz .l0
 
-        cmp bp,9236+1
+        cmp bp,[maxnum]
         jnc .l0
+
+        or bp,bp
+        jz .l0
 
 .l8:    pop ax
         loop .l8
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v1',13,10
+msg1  db 'number ',227,' calculator v2',13,10
       db 'it may give 9000 digits in less than 5 minutes a PC 386DX @25MHz!'
-      db 13,10,'number of digits (up to 9236)? $'
+      db 13,10,'number of digits (up to $'
+msg4  db ')? $'
 msg3  db ' digits will be printed'
 msg2  db 13,10,'$'
 del   db 8,' ',8,'$'
-
-        align 2
-cv  dw 0
-kv  dw 0
-time dw 0,0
-ra  dw 0
-

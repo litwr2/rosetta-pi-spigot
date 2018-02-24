@@ -7,3 +7,13 @@ ARE IN cpm22 FOLDER.  THEY ARE ALSO AT THE CORRESPONDED DISC IMAGES
 
 To start Torch CP/M (CPN) type
 *CPN
+
+To copy files with Torch CPN use
+COPY src-file TO dst-file
+
+To delete a file with Torch CPN use
+DELETE file
+
+To copy files from/to DFS use RWACORN.COM utility from Torch CPN distribution.
+
+To copy files from/to DFS use DIP.COM utility from Acorn CP/M distribution.

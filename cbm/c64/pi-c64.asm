@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -56,20 +56,23 @@ rbase = $3f ;$40
          * = $801
          .include "pi-c64.inc"
 
-         * = $9b9 + $a7
+         * = $96a + 5
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          lda #$b
          lda $d011   ;screen @blank@
          ;sei         ;no interrupts
-         lda #147    ;clear screen
-         jsr BSOUT
+         ;lda #147    ;clear screen
+         ;jsr BSOUT
 
-         ldx #(N+1)/128+1   ;fill r-array @N@
          ldy #0
-         sty d
-         lda #>r      ;@EOP@ - end of program
+         lda #2
+         sta d
+         lda #>r            ;@EOP@ - end of program
          sta d+1
+         ldx #N/128   ;fill r-array @high2N@
+         beq lf3
+
 lf0      lda #<2000
          sta (d),y
          iny
@@ -82,7 +85,18 @@ lf0      lda #<2000
          dex
          bne lf0
 
-         stx c
+lf3      ldy #(2*N)&255   ;fill r-array @low2N@
+         beq lf2
+
+lf1      lda #>2000
+         dey
+         sta (d),y
+         lda #<2000
+         dey
+         sta (d),y
+         bne lf1
+
+lf2      stx c
          stx c+1
          stx rbase
 

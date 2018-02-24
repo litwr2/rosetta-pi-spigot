@@ -1,6 +1,14 @@
 A=pi-msx-bas.
-D=msk1.dsk
+D=msx1.dsk
 pasmo6 --listing ${A}lst ${A}asm calcpi.bin || exit 1
+gawk '/@varh@/{
+printf "s/@varhlo@/%x/g\n", strtonum("0x"$1)
+printf "s/@varhhi@/%x/g\n", strtonum("0x"$1)+1
+}
+/@EOP@/{
+printf "s/@PMEM@/%x/\n", strtonum("0x"$3)-0x8500-64
+}' ${A}lst >z.sed
+sed -f z.sed pi.cbas | sed 's/$/\r/' >pi.bas
 sudo mount -t msdos -o loop,fmask=111,dmask=000 $D /mnt/loop
 cp calcpi.bin pi.bas /mnt/loop
 sudo umount /mnt/loop

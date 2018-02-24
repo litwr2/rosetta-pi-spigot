@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 0; i < N; i++)
+;   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -105,13 +105,21 @@ start:   mov #12,r0    ;clear screen
          mov #127,r2
          emt ^O20
 
-         mov #9,r1
-         mov #1,r2
-         emt ^O24
-         mov #msg2,r1
+         mov #32768-ra,r2   ;$8000
+         clr r3
+         mov #7,r1
+         call @#div32x16s
+         bic #3,r2
+         mov r2,@#maxnum
+restart: mov #msg4,r1
          mov #127,r2
          emt ^O20
-restart: call @#getnum
+         mov @#maxnum,r2
+         call @#PR0000
+         mov #msg5,r1
+         mov #127,r2
+         emt ^O20
+         call @#getnum
          mov #10,r0
          emt ^O16
 
@@ -134,7 +142,6 @@ restart: call @#getnum
          asl r0
          add r0,r4   ;r4 <- r4/2*7
          mov r4,@#kv
-         inc r4
          mov r4,@#100$+2
 
          mov #todata,@#pageport
@@ -143,16 +150,15 @@ restart: call @#getnum
          mov #^B110010,@#timerport3    ;sets timer, /16
          mov @#timerport2,@#prevtime
          mtps #128
-100$:    mov #N+1,r0   ;fill r-array
+100$:    mov #N,r0   ;fill r-array
          mov #2000,r1
-         mov #ra,r2
+         mov #ra+2,r2
 1$:      mov r1,(r2)+
          sob r0,1$
 
          clr @#cv
 mloop:   clr r5       ;d <- 0
          clr sp
-
 kvs:     mov #0,r1
          asl r1       ;i <- 2k
 ivs:
@@ -276,9 +282,6 @@ ivs:
          mov #1953,r1             ;4 MHz,4000000/16/128
          call @#div32x16s
          call @#printsec
-         mov #msg4,r1
-         mov #127,r2
-         emt ^O20
          mtps #0
          jmp @#restart
 
@@ -423,8 +426,11 @@ getnum: clr r1    ;length
 5$:     tst r1
         beq 0$
 
-        cmp #4392,r2
+        cmp @#maxnum,r2
         bcs 0$
+
+        tst r2
+        beq 0$
 
         mov r1,r3
 8$:     mov (sp)+,r0
@@ -434,14 +440,13 @@ getnum: clr r1    ;length
 cv: .word 0
 time: .word 0,0
 prevtime: .word 0
-msg1: .ascii "number "
-      .byte 160
-      .ascii " calculator v2"
-      .byte 10,0
-msg2: .ascii "  it may give 3000 digits in about an hour!"
+maxnum: .word 0
 msg4: .byte 10,10
-      .asciz "number of digits (up to 4392)? "
+      .asciz "number of digits (up to "
+msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
+ra:   .word 0
+msg1: .ascii "number "<160>" calculator v3"<10>
+      .asciz "         it may give 3000 digits in about an hour!"
 
-ra: .word 0

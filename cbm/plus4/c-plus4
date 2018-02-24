@@ -1,9 +1,10 @@
 echo RUN IT TWICE!
 tmpx pi-plus4.asm -l pi-plus4.lst
 gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
-/@N@/{print "s/@N@/"strtonum("0x"$2)+1"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
 /@blank@/{print "s/@blank@/"strtonum("0x"$2)"/"}
 /@ntsc@/{print "s/@ntsc@/"strtonum("0x"$2)"/"}
 /@ntsc-off@/{print "s/@ntsc-off@/"strtonum("0x"$2)"/"}
