@@ -59,36 +59,31 @@ dividend fcb 0,0,0,0
 remainder fcb 0,0
 quotient equ dividend ;save memory by reusing divident to store the quotient
 dv fcb 0,0,0,0
-i  fcb 0,0
 k  fcb 0,0
 c  fcb 0,0
 timer fcb 0,0,0    ;@timer@
 
 pr0000   ;prints D, uses dv,X
          std <dv+2
-         ldd #1000
-         std <dv
+         ldx #1000
          jsr <pr0
-         ldd #100
-         std <dv
-         jsr <pr0
-         ldd #10
-         std <dv
-         jsr <pr0
+         ldx #100
+         jsr <pr1
+         ldx #10
+         jsr <pr1
          ldx <dv+2
 prd      tfr x,d
          tfr b,a
          eora #$30
-         pshs dp
-         clrb
-         tfr b,dp
+         exg dp,u
          jsr OPCHR    ;@OUT@
-         puls dp
+         exg dp,u
          rts
 
-pr0      ldx #$ffff
+pr1      ldd <dv+2
+pr0      stx <dv
+         ldx #$ffff
 prn      leax 1,x
-         ldd <dv+2
          cmpd <dv
          bcs prd
 
@@ -105,24 +100,26 @@ prn      leax 1,x
          clr >$113    ;init timer
          clr >$112
 
-         ldy #N    ;fill r-array @N@
-         sty <k
+         ldd #N    ;fill r-array @N@
+         aslb
+         rola
+         std <k
+         addd #r+2
+         std <m1+1
          ldx #r+2
          ldd #2000
 lf0      std ,x++
-         leay -1,y
+m1       cmpx #0
          bne lf0
 
-         leau ,y    ;U always keeps 0
+         ldu #0    ;U always keeps 0
          stu <c
          stu <timer+1
          clr <timer
 loop     stu <dv    ;d <- 0
          stu <dv+2
 
-         ldd <k          ;i <- 2k
-         addd <k
-         tfr d,x
+         ldx <k          ;i <- 2k
          leay r,x    ;@EOP@ - end of program
 loop2    lda #10000%256   ;low(10000)
          ldb 1,y
@@ -176,14 +173,19 @@ ll3      tfr x,d
          ;subd <remainder
          subd ,y
          leay -2,y
-         std <dv+2
          bcc tl1
 
-         ldd <dv
-         subd #1
-         std <dv
-tl1      ldd <dv+2
-         sbcb <quotient+3
+         sta >tl2+1
+         lda <dv+1
+         suba #1
+         sta <dv+1
+         bcc tl2
+
+         lda <dv
+         suba #1
+         sta <dv
+tl2      lda #0
+tl1      sbcb <quotient+3
          sbca <quotient+2
          std <dv+2
          ldd <dv
@@ -212,8 +214,8 @@ l4       ldd #10000
          bcc l8
 
          inc timer
-l8       ldd <k      ;k <- k - 14
-         subd #14
+l8       ldd <k      ;k <- k - 14*2
+         subd #28
          beq exit
 
          std <k
@@ -221,8 +223,7 @@ l8       ldd <k      ;k <- k - 14
 
 exit     ldd <timer+1
          std >$112
-         clra
-         tfr a,dp
+         tfr u,dp
          rts
 
        include "6809-div7.s"

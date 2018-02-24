@@ -42,41 +42,35 @@ N equ 3500    ;1000 digits
          setdp dpage/256
 dpage
 divisor fcb 0,0
-const10000 fcb 10000/256,10000%256
 dividend fcb 0,0
 remainder fcb 0,0
 quotient equ dividend ;save memory by reusing divident to store the quotient
 dv fcb 0,0,0,0
-i  fcb 0,0
 k  fcb 0,0
 c  fcb 0,0
 timer fcb 0,0,0    ;@timer@
 
 pr0000   ;prints D, uses dv,X
          std <dv+2
-         ldd #1000
-         std <dv
+         ldx #1000
          jsr <pr0
-         ldd #100
-         std <dv
-         jsr <pr0
-         ldd #10
-         std <dv
-         jsr <pr0
+         ldx #100
+         jsr <pr1
+         ldx #10
+         jsr <pr1
          ldx <dv+2
 prd      tfr x,d
          tfr b,a
          eora #$30
-         pshs dp
-         clrb
-         tfr b,dp
+         exg dp,u
          jsr OPCHR    ;@OUT@
-         puls dp
+         exg dp,u
          rts
 
-pr0      ldx #$ffff
+pr1      ldd <dv+2
+pr0      stx <dv
+         ldx #$ffff
 prn      leax 1,x
-         ldd <dv+2
          cmpd <dv
          bcs prd
 
@@ -91,24 +85,24 @@ prn      leax 1,x
          clr >$113    ;init timer
          clr >$112
 
-         ldy #N    ;fill r-array @N@
-         sty <k
+         ldd #N    ;fill r-array @N@
+         tfr d,w
+         asld
+         std <k
          ldx #r+2
          ldd #2000
 lf0      std ,x++
-         leay -1,y
+         decw
          bne lf0
 
-         leau ,y    ;U always keeps 0
+         tfr w,u    ;U always keeps 0
          stu <c
          stu <timer+1
          clr <timer
 loop     stu <dv    ;d <- 0
          stu <dv+2
 
-         ldd <k          ;i <- 2k
-         addd <k
-         tfr d,x
+         ldx <k          ;i <- 2k
          leay r,x    ;@EOP@ - end of program
 loop2    leax -1,x           ;b <- b - 1
          stx <divisor
@@ -137,14 +131,19 @@ exitdiv  divq <divisor
          ldd <dv+2         ;d <- (d - r[i] - new_d)/2 = d*i
          subd ,y
          leay -2,y
-         std <dv+2
          bcc tl1
 
-         ldd <dv
-         subd #1
-         std <dv
-tl1      ldd <dv+2
-         sbcr w,d
+         sta <tl2+1
+         lda <dv+1
+         suba #1
+         sta <dv+1
+         bcc tl2
+
+         lda <dv
+         suba #1
+         sta <dv
+tl2      lda #0
+tl1      sbcr w,d
          tfr d,w
          ldd <dv
          sbcd <quotient
@@ -154,7 +153,8 @@ tl1      ldd <dv+2
          stw <dv+2
          jmp <loop2
 
-l4       divq <const10000
+l4       ldd <quotient
+         divq #10000
          addw <c          ;c + d/10000
          std <c           ;c <- d%10000
          tfr w,d
@@ -166,8 +166,8 @@ l4       divq <const10000
          bcc l8
 
          inc timer
-l8       ldd <k      ;k <- k - 14
-         subd #14
+l8       ldd <k      ;k <- k - 14*2
+         subd #28
          beq exit
 
          std <k
@@ -175,8 +175,7 @@ l8       ldd <k      ;k <- k - 14
 
 exit     ldd <timer+1
          std >$112
-         clra
-         tfr a,dp
+         tfr 0,dp
          ldmd #0   ;to emulation mode
          rts
 
