@@ -1,6 +1,8 @@
 ;for pasmo assembler
-;it is for CP/M 2.2 for Tiki-100 KM/M and Amstrad CPC6128
-;it uses Tiki-100 timer or Amstrad CPC firmware
+;it is for CP/M 2.2 for Tiki-100, Amstrad CPC6128, 
+;MSX-DOS, Commodore 128
+;it uses Tiki-100 timer, Amstrad CPC firmware, MSX timer,
+;Commodore 128 Time of Day of CIA1
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -31,11 +33,14 @@
 ;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-BIOS_OUTPUT equ 1
-TIKI100 equ 0
-AMSTRADCPC equ 1
+BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX or C128
 
-if TIKI100 + AMSTRADCPC > 1
+TIKI100 equ 1
+AMSTRADCPC equ 0
+C128 equ 0
+MSX equ 0
+
+if TIKI100 + AMSTRADCPC + MSX + C128 != 1
 show ERROR
 endif
 
@@ -45,6 +50,12 @@ TIKI100_TIMER_HI equ $FF8E
 ;Amstrad CPC
 ENTER_FIRMWARE equ $BE9B
 KL_TIME_PLEASE equ $BD0D
+;MSX
+MSX_TIMER equ $FC9E
+MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
+MSX_INTR_VECTOR equ $38
+;Commodore-128
+CIA1TOD equ $DC08
 
 BDOS equ 5
 
@@ -175,7 +186,19 @@ if BIOS_OUTPUT
    ld (PRS+1),hl
 endif
 
-    ld hl,0f6d0h  ;48 bytes for stack and 6 first bytes of BDOS area
+if MSX
+      ld a,$54
+      ld d,$55
+      ld hl,$2b
+      call $f380
+      ld a,60
+      bit 7,e
+      jr z,$+4
+      ld a,50
+      ld (msx_vsync),a
+endif
+
+    ld hl,-(ra+48)  ;48 bytes for stack and 6 first bytes of BDOS area
     ld de,(6)
     add hl,de
     ld de,0
@@ -242,6 +265,42 @@ if AMSTRADCPC
     ld (time),hl
     ld (time+2),de
 endif
+if MSX and MSX_INTR=0
+    ld hl,(MSX_TIMER)
+    ld (prevtime),hl
+endif
+if MSX and MSX_INTR=1
+	LD	HL,(MSX_INTR_VECTOR + 1)    ;interrupt mode 1
+	LD	(msx_intr_save + 1),hl
+	LD	HL,msx_timer_intr
+	LD	(MSX_INTR_VECTOR + 1),HL
+endif
+if C128
+vicsave
+    ld bc,$d011    ;VIC-II off
+    in a,(c)
+    ld (vicsave),a
+    ld a,$b
+    out (c),a
+
+    ld bc,CIA1TOD+3
+    ld hl,time+3
+    in a,(c)
+    and $7f
+    ld (hl),a
+    dec hl
+    dec bc
+    in a,(c)
+    ld (hl),a
+    dec hl
+    dec bc
+    in a,(c)
+    ld (hl),a
+    dec hl
+    dec bc
+    in a,(c)
+    ld (hl),a
+endif
         ;ld e,12  ;clear screen
         ;ld c,2
         ;call BDOS
@@ -307,13 +366,10 @@ loop2    ld c,iyl
          ex de,hl
          pop hl
          adc hl,bc
+         dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec bc
-         dec c
-         ld iyh,b   ;i <- i - 1
-         ld iyl,c
-         inc c
+         dec iy
 
          push hl
          push de
@@ -356,6 +412,20 @@ l4       pop hl
 
          add hl,de   ;c + d/10000
          call PR0000
+if MSX and MSX_INTR=0
+     ld de,(prevtime)
+     ld hl,(MSX_TIMER)
+     ld (prevtime),hl
+     xor a
+     sbc hl,de
+     ld de,(time)
+     add hl,de
+     ld (time),hl
+     jr nc,$+9
+     ld hl,(time+2)
+     inc hl
+     ld (time+2),hl
+endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -379,20 +449,181 @@ if AMSTRADCPC
     call ENTER_FIRMWARE
     dw KL_TIME_PLEASE
 endif
+if MSX and MSX_INTR=1
+	LD	hl,(msx_intr_save + 1)
+	LD	(MSX_INTR_VECTOR + 1),HL
+endif
+if MSX
+     ld bc,0
+     ld hl,(time)
+     ld de,(time+2)
+     ld (time+2),bc
+     ld (time),bc
+endif
+if C128
+    ld a,(vicsave)   ;VIC-II on
+    ld bc,$d011
+    out (c),a
 
-    ld bc,(time)
-    xor a
-    sbc hl,bc
+    ld bc,CIA1TOD+3
+    ld hl,ra+3
+    in a,(c)
+    and $7f
+    ld (hl),a
+    dec hl
+    dec bc
+    in a,(c)
+    ld (hl),a
+    dec hl
+    dec bc
+    in a,(c)
+    ld (hl),a
+    dec bc
+    in a,(c)
+
+    ld bc,ra
+    ld hl,time
+    sub (hl)
+    daa
+    push af
+    and $f
+    ld (bc),a
+    pop af
+
+    inc hl
+    inc bc
+    ld a,(bc)
+    sbc a,(hl)
+    daa
+    push af
+    jr nc,$+4
+    sub $40
+    ld (bc),a
+    pop af
+
+    inc hl
+    inc bc
+    ld a,(bc)
+    sbc a,(hl)
+    daa
+    push af
+    jr nc,$+4
+    sub $40
+    ld (bc),a
+    pop af
+
+    inc hl
+    inc bc
+    ld a,(bc)
+    sbc a,(hl)
+    daa
+    jr nc,$+5
+    add a,$12
+    daa
+    ;ld (bc),a
+    ld h,0
+    ld l,a
+    push bc
+    ld bc,4500       ;36000/8
+    call mul16
     ex de,hl
-    ld bc,(time+2)
-    sbc hl,bc
+    pop bc
+    dec bc
+
+    push hl
+    ld a,(bc)
+    push bc
+    ld bc,375        ;6000/16
+    and $f0
+    rrca
+    rrca
+    rrca
+    ld h,0
+    ld l,a
+    call mul16
+    pop bc
+    pop hl
+    add hl,de
+    
+    push hl
+    ld a,(bc)
+    push bc
+    ld bc,75       ;600/8
+    and $f
+    ld h,0
+    ld l,a
+    call mul16
+    pop bc
+    pop hl
+    add hl,de
+    dec bc
+
+    push hl
+    ld a,(bc)
+    push bc
+    ld bc,25        ;100/4
+    and $f0
+    rrca
+    rrca
+    ld h,0
+    ld l,a
+    call mul16
+    pop bc
+
+    push de
+    ld a,(bc)
+    push bc
+    ld bc,10
+    and $f
+    ld h,0
+    ld l,a
+    call mul16
+    pop bc
+    pop hl
+    add hl,de
+    dec bc
+
+    ld a,(bc)
+    ld d,0
+    ld e,a
+    add hl,de
+    ld de,0
+    ld (time),de
+    ld (time+2),de
+    ld b,h
+    ld c,l
+    pop hl
+    add hl,hl
+    rl e
+    add hl,hl
+    rl e
+    add hl,hl
+    rl e
+    add hl,bc
+    jr nc,$+3
+    inc de
+endif
+
+     ld bc,(time)
+     xor a
+     sbc hl,bc
+     ex de,hl
+     ld bc,(time+2)
+     sbc hl,bc
+
+if MSX
+     ld bc,(msx_vsync)
+endif
+if C128
+     ld bc,10
+endif
 if TIKI100
-    ld bc,125              ;timer freq, Hz
+     ld bc,125              ;timer freq, Hz
 endif
 if AMSTRADCPC
-    ld bc,300
+     ld bc,300
 endif
-    call div32x16r
+        call div32x16r
 	PUSH HL
 	EX DE,HL
 	call PR00000
@@ -400,26 +631,14 @@ endif
         ld c,2
         call BDOS
 	POP hl
-        push hl     ;*10000/freq
-        add hl,hl   ;*5
-        add hl,hl
-        pop de
-        add hl,de
+                      ;*10000/freq
 if TIKI100
-        add hl,hl  ;*16 -> *80
-        add hl,hl
-        add hl,hl
-        add hl,hl
+        ld bc,80      ;10000/125 = 80
+        call mul16
 endif
 if AMSTRADCPC
-        push hl   ;*20/3 -> *100/3
-        add hl,hl
-        add hl,hl
-        pop de
-        add hl,de
-        add hl,hl
-        add hl,hl
-        ex de,hl
+        ld bc,100   ;10000/300 = 100/3
+        call mul16
         ld hl,0
         ld bc,3
         call div32x16r
@@ -427,8 +646,32 @@ if AMSTRADCPC
         cp 2
         jr c,$+3
         inc de
-        ex de,hl
 endif
+if C128
+        ld bc,1000   ;10000/10
+        call mul16
+endif
+if MSX
+        ld a,(msx_vsync)
+        cp 60
+        jr nz,vsync50
+
+        ld bc,500    ;10000/60 =  500/3
+        call mul16
+        ld hl,0
+        ld bc,3
+        call div32x16r
+        ld a,l
+        cp 2
+        jr c,$+3
+        inc de
+        jr vsync0
+
+vsync50 ld bc,200    ;10000/50 =  200
+        call mul16
+vsync0
+endif
+        ex de,hl
 	jr PR0000
          endp
 
@@ -490,29 +733,71 @@ t3
      RET
      endp
 
+include "mul16.s"
+
+if MSX
+msx_vsync db 0,0
+
+if MSX_INTR=1
+msx_timer_intr
+      push af
+      push hl
+      ld hl,(time)
+      inc hl
+      ld (time),hl
+      ld a,l
+      or h
+      jr nz,$+9
+      ld hl,(time+2)
+      inc hl
+      ld (time+2),hl
+      pop hl
+      pop af
+msx_intr_save
+      jp 0
+endif
+
+if MSX_INTR=0
+prevtime dw 0
+endif
+endif
+
 cv dw 0
 kv dw 0
 time dw 0,0
 
          org ($ + 256) and $ff00
-include "mul10000.s"
+include "../cpc6128/mul10000.s"
 
 ra
 msg1  db 'number '
+
 if TIKI100
       db 240
 endif
 if AMSTRADCPC
       db 165
 endif
-      db ' calculator v1',13,10
+if C128 or MSX
+      db 'Pi'
+endif
+
+      db ' calculator v2',13,10
       db 'for CP/M 2.2 ('
+
 if TIKI100
       db 'Tiki-100'
 endif
 if AMSTRADCPC
       db 'Amstrad CPC'
 endif
+if MSX
+      db 'Generic MSX'
+endif
+if C128
+      db 'Commodore 128'
+endif
+
       db ').',13,10,'number of digits (up to $'
 msg2  db ')? $'
 msg3  db ' digits will be printed'

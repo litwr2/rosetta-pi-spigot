@@ -1,0 +1,6 @@
+D=msx1.dsk
+A=pi-cpm22
+pasmo6 --listing $A.lst $A.asm pi-msx.com || exit 1
+sudo mount -t msdos -o loop,fmask=111,dmask=000 $D /mnt/loop
+cp pi-msx.com /mnt/loop
+sudo umount /mnt/loop

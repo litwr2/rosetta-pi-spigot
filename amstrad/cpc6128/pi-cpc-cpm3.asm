@@ -30,8 +30,6 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-TXT_OUTPUT equ $BB5A    ;print char in A
-KM_WAIT_CHAR equ $bb06  ;get char in A
 kl_time_please equ &bd0d
 BDOS equ 5
 
@@ -285,13 +283,10 @@ loop2    ld c,iyl
          ex de,hl
          pop hl
          adc hl,bc
+         dec iy
          ld b,iyh
          ld c,iyl
-         dec bc
-         dec c
-         ld iyh,b   ;i <- i - 1
-         ld iyl,c
-         inc c
+         dec iy
 
          push hl
          push de
@@ -466,15 +461,13 @@ getnum proc
 local l0,l1,l5,l8
         ld b,0  ;cx - length
         ld hl,0 ;bp - number
-l0      ;push hl
-        ;push bc
-        ;ld c,6   ;direct console i/o
-        ;ld e,0fdh
-        ;call BDOS
-        ;pop bc
-        ;pop hl
-        call firm_jump
-        dw KM_WAIT_CHAR
+l0      push hl
+        push bc
+        ld c,6   ;direct console i/o
+        ld e,0fdh
+        call BDOS
+        pop bc
+        pop hl
 
         cp 13
         jr z,l5
@@ -506,8 +499,6 @@ l0      ;push hl
         pop bc
         pop hl
         push hl
-        ;call firm_jump
-        ;dw TXT_OUTPUT
 
         push hl
         add hl,hl

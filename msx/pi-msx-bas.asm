@@ -29,12 +29,12 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
-TXT_OUTPUT equ $BB5A    ;print char in A
-TXT_WR_CHAR equ $bb5d   ;print char in A, corrupts the registers
+CHPUT equ $A2    ;print char in A
 
 N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
-SA equ $800  ;start address
+SA equ $8500  ;start address
+R800 equ 0   ;R800 MULUW is 1 t-state slower than the table multiplication but it saves 781 bytes
 
 div macro
      local t1,t2
@@ -148,17 +148,19 @@ DIV320
 exitdiv
      endm
 
-         org SA
+         org SA-7
+db $fe,low(SA),high(SA),low(ra-1),high(ra-1),low(SA),high(SA)
 start    proc
          local lf0,loop,l4,loop2,m1
-         ld a,12     ;clear screen
-         call TXT_OUTPUT
+         ;ld a,12     ;clear screen
+         ;call CHPUT
 
          ld bc,N        ;fill r-array
          ;di         ;no interrupts
          push bc
          ld de,2000
          ld hl,ra
+         inc bc
 
 lf0      ld (hl),e
          inc l
@@ -187,6 +189,18 @@ loop2    ld c,iyl
          add hl,bc
          ld (m1+1),hl
 
+if R800
+         ld a,(hl)
+         inc l
+         ld h,(hl)
+         ld l,a
+         ld bc,10000
+         db $ed,$c3           ;MULUW hl,bc
+         pop bc
+         add hl,bc
+         ex de,hl
+         pop bc
+else
          ld c,(hl)      ;r[i]
          inc l          ;r is at even addr
          ld b,(hl)
@@ -214,6 +228,7 @@ loop2    ld c,iyl
          add hl,de
          ex de,hl
          pop hl
+endif
          adc hl,bc
          dec iy    ;i <- i - 1
          ld b,iyh
@@ -282,11 +297,10 @@ PR0000  proc
 	CALL PR0
 	ld A,L
 PRD	add a,$30
-        ;jp TXT_OUTPUT
-        push hl
-        call TXT_WR_CHAR
-        pop hl
-        ret
+        ;push hl
+        jp CHPUT
+        ;pop hl
+        ;ret
 
 PR0	ld A,$FF
 	ld B,H
@@ -325,20 +339,14 @@ t3
      RET
      endp
 
-;div32x16e
-;     div32x16
-;     ret
-
 cv dw 0
 kv dw 0
 dw 0   ;reserved for Basic h%
 
          org ($ + 256) and $ff00
+if R800=0
 include "mul10000.s"
-
-ra       ld de,SA
-         ld hl,SA+$2000
-         ld bc,ra-SA+2
-         ldir
-         ret
+endif
+ra
   end start
+

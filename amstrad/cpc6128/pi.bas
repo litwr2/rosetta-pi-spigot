@@ -2,7 +2,7 @@
 20 h%=4*INT((HIMEM-&F00)/28)
 30 MEMORY &27FF:LOAD"calcpi.bin"
 40 MEMORY &7FF:CALL &2F00:POKE &BFE,h% AND 255:POKE &BFF,h%\256
-50 CLS:PRINT SPC(7)"number "CHR$(184)" calculator v2"
+50 CLS:PRINT SPC(7)"number "CHR$(184)" calculator v3"
 60 h%=PEEK(&BFE)+PEEK(&BFF)*256
 70 PRINT"   it may give 4000 digits less than":PRINT SPC(12)"in an hour!":PRINT
 80 PRINT"number of digits (up to"+STR$(h%)+")";:INPUT f:d=(f+3)AND-4

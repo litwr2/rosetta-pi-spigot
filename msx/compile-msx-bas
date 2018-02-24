@@ -1,0 +1,6 @@
+A=pi-msx-bas.
+D=msk1.dsk
+pasmo6 --listing ${A}lst ${A}asm calcpi.bin || exit 1
+sudo mount -t msdos -o loop,fmask=111,dmask=000 $D /mnt/loop
+cp calcpi.bin pi.bas /mnt/loop
+sudo umount /mnt/loop
