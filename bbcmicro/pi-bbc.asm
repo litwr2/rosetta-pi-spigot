@@ -29,6 +29,11 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+;the fast 32/16-bit division was made by Ivagor for z80
+;litwr converted it to 6502
+;tricky provided some help
+;MMS gave some support
+
 OSWRCH = $FFEE    ;print char in AC
 
 N = 350   ;100 digits
@@ -46,15 +51,15 @@ fac1 = dividend
 fac2 = remainder
 rbase = $80 ;$81
 
-         * = $1000
+         * = $1000 + $69
          ;sei         ;no interrupts
-         ;lda #12    ;clear screen ;@start@
-         ;jsr OSWRCH
+         lda #12    ;clear screen, @start@
+         jsr OSWRCH
 
          ldx #(N+1)/128+1   ;fill r-array
          ldy #0
          sty d
-         lda #>r
+         lda #>r    ;@EOP@
          sta d+1
 lf0      lda #<2000
          sta (d),y
@@ -89,7 +94,7 @@ loop     lda #0          ;d <- 0
          lda k+1
          rol       ;sets CY=0
          sta i+1
-loop2    ldy i
+loop2    ldy i      ;@mainloop@
          lda i+1    ; b <- 2*i
          adc #>r    ;sets CY=0
          sta rbase+1     ; r[i]
@@ -183,7 +188,7 @@ tl1      lda d
          ror d+2
          ror d+1
          ror d
-         jmp loop2
+         jmp loop2    ;@mainloop@
 
 l4       lda #>10000
          sta divisor+1

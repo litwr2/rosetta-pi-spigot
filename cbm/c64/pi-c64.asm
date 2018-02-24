@@ -29,6 +29,11 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+;the fast 32/16-bit division was made by Ivagor for z80
+;litwr converted it to 6502
+;tricky provided some help
+;MMS gave some support
+
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
@@ -51,7 +56,7 @@ rbase = $3f ;$40
          * = $801
          .include "pi-c64.inc"
 
-         * = $9c0
+         * = $9b9 + $a7
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          lda #$b
@@ -63,7 +68,7 @@ rbase = $3f ;$40
          ldx #(N+1)/128+1   ;fill r-array @N@
          ldy #0
          sty d
-         lda #>r
+         lda #>r      ;@EOP@ - end of program
          sta d+1
 lf0      lda #<2000
          sta (d),y
@@ -98,7 +103,7 @@ loop     lda #0          ;d <- 0
          lda k+1
          rol       ;sets CY=0
          sta i+1
-loop2    ldy i
+loop2    ldy i      ;@mainloop@
          lda i+1    ; b <- 2*i
          adc #>r    ;sets CY=0
          sta rbase+1     ; r[i]
@@ -192,7 +197,7 @@ tl1      lda d
          ror d+2
          ror d+1
          ror d
-         jmp loop2
+         jmp loop2    ;@mainloop@
 
 l4       lda #>10000
          sta divisor+1

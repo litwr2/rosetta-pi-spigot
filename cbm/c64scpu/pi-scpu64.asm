@@ -51,7 +51,7 @@ fac2 = remainder
          * = $801
          .include "pi-scpu64.inc"
 
-         * = $a50
+         * = $a51
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          ;lda #$b
@@ -90,7 +90,7 @@ loop     #stz_z d    ;d <- 0
          lda k          ;i <- 2k
          asl           ;sets CY = 0
          tax
-loop2    stx i
+loop2    stx i        ;@mainloop@
          lda r,x
          #regs8
          tax            ;50 cycles, *10000
@@ -145,7 +145,7 @@ tl1      ;lda d
          lsr
          sta d+2
          ror d       ;sets CY = 0
-         jmp loop2
+         jmp loop2   ;@mainloop@
 
 l4       #lda_i16 10000
          sta divisor

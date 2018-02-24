@@ -283,7 +283,31 @@ cnt  .var cnt-1
 
 div16minus            ;dividend+2 < divisor
 .block
-cnt  .var 8
+.block
+	asl dividend+1
+       	rol dividend+2	;dividend lb & hb*2, msb -> Carry
+	rol	
+        bcs l2
+
+	cmp divisor+1
+        bcc l1
+        bne l2
+
+        ldx dividend+2
+        cpx divisor
+        bcc l1
+
+l2      tax
+        lda dividend+2
+        sbc divisor
+        sta dividend+2
+        txa
+        sbc divisor+1
+        sec
+	;inc quotient	;and INCrement quotient cause divisor fit in 1 times
+l1
+.bend
+cnt  .var 7
 loop3 .lbl
 .block
 	rol dividend+1

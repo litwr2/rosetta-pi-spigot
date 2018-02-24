@@ -1,0 +1,44 @@
+echo branch analyser-optimizer
+#USAGE: branop LST-file
+gawk '{
+   c += index($0, "@mainloop@") > 0
+   if(" b"==substr($0,31,2) && substr($0,7,1)!=" "){
+       n = n + 0
+       fi[n] = strtonum("0x"$2)
+       if (c == 1) { #main loop
+#       if (c >= 0) { #all branches
+          ps[n] = int(fi[n]/256)
+          th[n] = strtonum("0x"$4)
+          if (th[n] < 128)
+             jp[n] = fi[n] + th[n] + 2
+          else
+             jp[n] = fi[n] - 254 + th[n]
+          pe[n] = int(jp[n]/256)
+          n++
+      }
+   }
+}
+END {
+  for (d = 0; d < 256; d++) {
+     for (k = 0; k < n; k++) {
+        fi1[k] = fi[k] + d
+        ps1[k] = int(fi1[k]/256)
+        if (th[k] < 128)
+           jp1[k] = fi1[k] + th[k] + 2
+        else
+           jp1[k] = fi1[k] - 254 + th[k]
+        pe1[k] = int(jp1[k]/256)
+     }
+     s = 0
+     for (k = 0; k < n; k++)
+        if (ps1[k] != pe1[k]) s++
+     r[d] = s
+  }
+  min = 255
+  for(d = 0; d < 256; d++) if (r[d] < min) min = r[d]
+  print "The number of to other page branches - " min
+  printf "offsets:";
+  for(d = 0; d < 256; d++) if (r[d] == min) printf " %x", d
+  printf "\n"
+}' $1 
+

@@ -11,7 +11,7 @@ gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@lowinstr@/{print "s/@lowinstr@/"strtonum("0x"$2)+1"/"}
 /@zzq@/{print "s/@zzq@/"strtonum("0x"$2)+2"/"}' pi-plus4.lst >z.sed
 sed -f z.sed pi-plus4.cbas >pi-plus4.bas
-petcat -w3 pi-plus4.bas | od -t x1 | sed 's/ 20 50 20/ 20 ff 20/' | 
+petcat -w3 pi-plus4.bas | od -t x1 | 
   awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-plus4.inc
 tmpx pi-plus4.asm -l pi-plus4.lst
 #rm pi-plus4.bas z.sed

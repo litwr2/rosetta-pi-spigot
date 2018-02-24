@@ -29,6 +29,11 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 
+;the fast 32/16-bit division was made by Ivagor for z80
+;litwr converted it to 6502
+;tricky provided some help
+;MMS gave some support
+
 ;INT2STR = $A45F  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
@@ -59,195 +64,11 @@ rbase = $dc ;$dd
          * = $1001
          .include "pi-plus4.inc"
 
-         * = $1280
+         * = $1279 + $ce
          ;sei         ;no interrupts
          lda #147    ;clear screen - @start@
          jsr BSOUT
 
-;       ldx #7
-;szpl
-;       lda $2b,x
-;       pha
-;       dex
-;       bpl szpl
-
-.if 0   ;timings
-.block
-tdiv = 9
-       lda #$b
-       sta $ff06
-       lda #$d3
-       sta $ff13
-       lda #10
-       sta zzr
-       lda #tdiv       ;@lowinstr@
-       sta divisor
-       lda #0
-       sta divisor+1
-       lda #0
-       sta zzq
-       sta zzq+1
-       sta zzq+2
-       sta zzq+3
-loop   ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta zzs
-       stx zzs+1
-
-       and #3
-       sta dividend+3
-       stx dividend+2
-       ldy $ff00
-       ldx $ff04
-       sty dividend+1
-       stx dividend
-
-       jsr div32x16x
-       ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta fac1
-       stx fac1+1
-       lda zzs
-       sec
-       sbc fac1
-       sta zzs
-       lda zzs+1
-       sbc fac1+1
-       sta zzs+1
-       lda zzq
-       clc
-       adc zzs
-       sta zzq
-       lda zzq+1
-       adc zzs+1
-       sta zzq+1
-       lda zzq+2
-       adc #0
-       sta zzq+2
-       lda zzq+3
-       adc #0
-       sta zzq+3
-       dec zzr+1
-       bne loop
-
-       dec zzr
-       bne loop
-
-       lda #$d1
-       sta $ff13
-       lda #$1b
-       sta $ff06
-       jmp rzpl0
-zzs .byte 0,0         ;@zzq@
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
-.if 0    ;testing
-.block
-tdiv = 9
-       lda #$28
-       sta $ff07
-       ldx #1
-       stx d
-       ldx #0
-       stx d+1
-       stx d+2
-       stx d+3
-xl1    lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-       jsr div32x16x
-       lda quotient
-       sta zzq
-       lda quotient+1
-       sta zzq+1
-       lda quotient+2
-       sta zzq+2
-       lda quotient+3
-       sta zzq+3
-       lda remainder
-       sta zzr
-       lda remainder+1
-       sta zzr+1
-       lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-
-       ldy #0
-       jsr div32x8f
-       ;jsr div32x16
-       lda quotient
-       cmp zzq
-       bne err
-       lda quotient+1
-       cmp zzq+1
-       bne err
-       lda quotient+2
-       cmp zzq+2
-       bne err
-       lda quotient+3
-       cmp zzq+3
-       bne err
-       lda remainder
-       cmp zzr
-       bne err
-       lda remainder+1
-       cmp zzr+1
-       bne err
-       inc d
-       bne xl1j
-       inc d+1
-       bne xl1j
-       inc d+2
-       bne xl1j
-       inc d+3
-       lda d+3
-       cmp #4
-       bne xl1j
-       lda #8
-       sta $ff07
-       jmp rzpl0
-xl1j   jmp xl1
-err    ldx #0
-rzpl
-       pla
-       sta $2b,x
-       inx
-       cpx #8
-       bne rzpl
-       stx $ff07
-       brk
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
          ldy #<irqh
          ldx #>irqh
          lda $ff07
@@ -302,7 +123,7 @@ loop     lda #0          ;d <- 0
          lda k+1
          rol       ;sets CY=0
          sta i+1
-loop2    ldy i
+loop2    ldy i      ;@mainloop@
          lda i+1    ; b <- 2*i
          adc #>r    ;sets CY=0
          sta rbase+1     ; r[i]
@@ -353,7 +174,7 @@ loop2    ldy i
 l1       dex
          stx divisor
          sty divisor+1
-         ;jsr div32x16z   ;AC = dividend+3
+         ;jsr div32x16z   ;AC = dividend+3, CY=0
 .include "6502-div6.s"
          ldy i
          lda remainder    ;r[i] <- d%b
@@ -400,7 +221,7 @@ tl1      lda d
          ror d+2
          ror d+1
          ror d
-         jmp loop2
+         jmp loop2   ;@mainloop@
 
 l4       lda #>10000
          sta divisor+1
@@ -438,14 +259,6 @@ exit     sta $ff3e   ;selects ROM
          lda #8
          sta $ff07   ;@ntsc-off@
          ;cli         ;interrupts enabled
-rzpl0
-;       ldx #0
-;rzpl
-;       pla
-;       sta $2b,x
-;       inx
-;       cpx #8
-;       bne rzpl
          rts
 irqh
        dec $7fd

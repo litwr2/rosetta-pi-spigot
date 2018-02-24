@@ -1,9 +1,9 @@
 div32x16x
 .block
-        ldy divisor+1    ; AC =  dividend+3 !
+        cpy #0          ; AC =  dividend+3 !
         beq div32x8
         bpl lplus
-        jmp div16minus   ;CY=0 !
+        jmp div16minus
 lplus
         ;;lda dividend+3
         cmp divisor+1
