@@ -1,0 +1,7 @@
+5 *fx16,0
+10 cls:m%=&3e00:if himem=m% goto 30
+20 n%=((himem-@EOP@)div7)and-4:himem=m%:*load "pi"
+30 p.spc(7)"number pi calculator v1":p."   it may give 3200 digits less than":p.spc(12)"in half an hour!":p.
+50 p."number of digits (up to ";n%")";:inputf%:d%=(f%+3)and-4:ifd%<=0ord%>n%goto50
+70 iff%<>d%thenp.;d%" digits will be printed"
+80 f%=(d%div2)*7:?(m%+1)=f%and255:?(m%+2)=f%div256:time=0:callm%:p.time/100

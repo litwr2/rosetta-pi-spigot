@@ -1,0 +1,13 @@
+#it uses z2.ssd disc image
+pasmo6 --listing pi-bbc-z80-bas.lst pi-bbc-z80-bas.asm PI
+
+gawk '/@EOP@/{print "s/@EOP@/\\&"$3"/"}' pi-bbc-z80-bas.lst >z.sed
+sed -f z.sed pi-bbc-z80.cbas >pi-bbc-z80.bas
+tr '\n[:lower:]' '\r[:upper:]' >PILOAD <pi-bbc-z80.bas
+
+sed 's/$/\r/' BOOT >'!BOOT'
+beeb delete z2.ssd -y !BOOT PI PILOAD
+beeb putfile z2.ssd !BOOT PI PILOAD
+
+echo PILOAD is a text file and maybe converted to Basic by *EXEC and SAVE
+#rm z.sed
