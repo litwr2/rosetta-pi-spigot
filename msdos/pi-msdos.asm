@@ -299,9 +299,22 @@ if TIKI100
 
 	pop	ds
 else if BBC80186
+        int 0feh   ;read SYSDAT address
+        push ax
+        push ds
+        mov ds,ax
+        mov al,81h
+        call dword [28h]  ;call XIOS, claim Tube
+        pop ds
         mov al,1
         mov bx,string
-        int BBC_OSWORD
+        int BBC_OSWORD  ;get timer
+        mov ax,ds
+        pop ds
+        push ax
+        mov al,82h
+        call dword [28h]  ;call XIOS, release Tube
+        pop ds
         mov bx,word [string]
         mov dx,word [string+2]
 end if
@@ -324,4 +337,3 @@ else if BBC80186
 end if
       db ')',13,10
       db 'number of digits (up to 9232)? $'
-
