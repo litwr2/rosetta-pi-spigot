@@ -1,5 +1,5 @@
 ;for fasmarm assembler
-;for Acorn ARM Evaluation System
+;for Acorn Archimedes
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
