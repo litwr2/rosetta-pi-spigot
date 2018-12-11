@@ -50,10 +50,8 @@ start:
          xor dx,dx
          div bx
          and al,0fch
-         mov cx,ax
-         inc ax
          mov [maxnum],ax
-         call PR0000
+         call pr0000
          mov dx,msg4
          mov ah,9
          int 21h
@@ -70,8 +68,7 @@ start:
          je .l7
 
          push ax
-         mov cx,ax
-         call PR0000
+         call pr0000
          mov dx,msg3
          mov ah,9
          int 21h
@@ -80,7 +77,7 @@ start:
 .l7:     shr ax,1
          mov bx,7
          mul bx
-         mov [kv],ax
+         mov bp,ax
          shr ax,1
          push ax
 
@@ -101,9 +98,9 @@ start:
          mov di,ra+2
          rep stosd
 
-         mov [cv],cx
+         mov bx,cx
 .l0:     xor edi,edi          ;d <- 0
-         mov si,[kv]
+         mov si,bp
          add si,si       ;i <-k*2
          mov cx,10000
          jmp .l2
@@ -125,15 +122,15 @@ start:
          mov eax,edi
          xor edx,edx
          div ecx
-         add ax,[cv]  ;c + d/10000
-         mov [cv],dx     ;c <- d%10000
-         mov cx,ax
-         call PR0000
-         sub [kv],14      ;k <- k - 14
+         add ax,bx  ;c + d/10000
+         mov bx,dx     ;c <- d%10000
+         call pr0000
+         sub bp,14      ;k <- k - 14
          jne .l0
 
 .l5:     mov dl,' '
-         call PR0000.le
+         mov ah,2
+   	 int 21h
 
          xor ax,ax
          mov es,ax
@@ -181,37 +178,35 @@ start:
 
 .l11:    dec di
          mov dl,[di]
-         call PR0000.l2
+         add dl,'0'
+         mov ah,2
+   	 int 21h
+
          cmp di,string
          jne .l11
          ;sti
          int 20h
 
-PR0000:     ;prints cx
-        mov bx,1000
-	CALL .l0
-        mov bx,100
-	CALL .l0
-        mov bx,10
-	CALL .l0
-	mov dl,cl
-.l2:	add dl,'0'
-.le:    mov ah,2
-   	int 21h
-        retn
+pr0000:     ;prints ax
+         mov si,prbuf+4
+         mov cx,4
+         mov di,10
+.pr:     xor dx,dx
+         div di
+         add dl,'0'
+         dec si
+         mov [si],dl
+         loop .pr
 
-.l0:    mov dl,0ffh
-.l4:	inc dl
-        mov bp,cx
-	sub cx,bx
-	jnc .l4
+         mov dx,si
+         mov ah,9
+   	 int 21h
+         retn
 
-	mov cx,bp
-	jmp .l2
+prbuf rb 4
+	db '$'
 
         align 2
-cv  dw 0
-kv  dw 0
 time dw 0,0
 ra = $ - 2
 maxnum dw 0
@@ -261,7 +256,7 @@ getnum: xor cx,cx    ;length
 .l5:    jcxz .l0
 
         cmp bp,[maxnum]
-        jnc .l0
+        ja .l0
 
         or bp,bp
         jz .l0
@@ -271,7 +266,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v4',13,10
+msg1  db 'number ',227,' calculator v5',13,10
       db 'it may give 9000 digits in less than 5 minutes with a PC 386DX @25MHz!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
