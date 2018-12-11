@@ -200,7 +200,7 @@ pr0000:     ;prints ax
 
          mov dx,si
          mov ah,9
-   	 int 21h
+	 int 21h
          retn
 
 prbuf rb 4

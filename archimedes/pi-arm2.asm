@@ -174,7 +174,7 @@ PR0000:     ;prints r3, uses r0,r6
 	subs r3,r3,r6
 	bcs .l43
 
-    	add r3,r3,r6
+	add r3,r3,r6
         swi 0
 .l2:   	add r0,r3,'0'
         swi 0

@@ -41,7 +41,6 @@
      ;mc68020
 
 OldOpenLibrary	= -408
-OpenLibrary	= -552
 CloseLibrary	= -414
 Output = -60
 Input = -54
@@ -95,14 +94,10 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
 endm
 
 
-start
-         ;;cli         ;no interrupts
-         move.l  #libname,a1         ;open the dos library
+start    lea  libname(pc),a1         ;open the dos library
          move.l  4,a5
          move.l a5,a6
          jsr     OldOpenLibrary(a6)
-         ;clr.l d0
-         ;jsr     OpenLibrary(a6)
          move.l  d0,a6
          jsr     Output(a6)          ;get stdout
          move.l  d0,cout
@@ -118,18 +113,18 @@ start
          and.b #$fc,d0
          move.l d0,maxn
 
-.l20     move.l cout,d1
+.l20     move.l cout(pc),d1
          move.l  #msg4,d2
          moveq   #msg5-msg4,d3
          jsr     Write(a6)
-         move.l maxn,d5
+         move.l maxn(pc),d5
          bsr PR0000
-         move.l cout,d1
+         move.l cout(pc),d1
          move.l  #msg5,d2
          moveq   #msg3-msg5,d3
          jsr     Write(a6)
          bsr getnum
-         cmp maxn+2,d5    ;680x0 are Big Endian
+         cmp maxn+2(pc),d5    ;680x0 are Big Endian
          bhi .l20
 
          or d5,d5
@@ -147,7 +142,7 @@ start
 .l21     move d5,a4
          bsr PR0000
          move a4,d5
-         move.l  cout,d1
+         move.l  cout(pc),d1
          move.l  #msg3,d2
          moveq   #msg2-msg3+1,d3
          jsr     Write(a6)
@@ -184,7 +179,7 @@ start
 
 .l0      clr.l d5       ;d <- 0
          clr.l d4
-         move kv,d4
+         move kv(pc),d4
          add.l d4,d4     ;i <-k*2
          move.l a2,a3
          adda.l d4,a3
@@ -230,7 +225,7 @@ start
   else
          divu d1,d5      ;removed with MULU optimization
   endif
-         add cv,d5    ;c + d/10000
+         add cv(pc),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
          clr d5
@@ -240,16 +235,16 @@ start
          bne .l0
 
          moveq   #1,d3
-         move.l  cout,d1
+         move.l  cout(pc),d1
          move.l  #msg3,d2
          jsr     Write(a6)  ;space
 
   if __VASM&28              ;68020?
          bsr gettime
-         sub.l time,d5
+         sub.l time(pc),d5
   else
          move.l rasterie+2,$6c
-         move.l time,d5
+         move.l time(pc),d5
   endif
 
          move.l d5,d3
@@ -266,7 +261,7 @@ start
          negx.l d5
          neg.l d5
 
-.l8      move.l #string,a3
+.l8      lea string(pc),a3
          move #10,d4
          move.l d5,d6
          div32x16
@@ -289,14 +284,14 @@ start
 
 .l11     add.b #'0',-(a3)
          moveq   #1,d3
-         move.l  cout,d1
+         move.l  cout(pc),d1
          move.l  a3,d2
          jsr     Write(a6)
          cmp.l #string,a3
          bne .l11
 
          ;moveq   #1,d3
-         move.l  cout,d1
+         move.l  cout(pc),d1
          move.l  #msg2,d2
          jsr     Write(a6)  ;newline
 
@@ -310,10 +305,10 @@ start
          ;rts
 
 PR0000     ;prints d5
-       move.l #string,a0
+       lea string(pc),a0
        bsr .l1
        moveq   #4,d3
-       move.l  cout,d1
+       move.l  cout(pc),d1
        move.l  #string,d2
        jmp     Write(a6)             ;call Write(stdout,buff,size)
 
