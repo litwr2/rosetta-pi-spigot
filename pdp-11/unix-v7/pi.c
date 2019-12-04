@@ -3,9 +3,10 @@
 #include <sys/timeb.h>
 struct timeb tps, tpf;
 char s[60], *ra;
+extern unsigned ver;
 unsigned digits, max = 8000, N;
 main() {
-   printf("Number pi calculator v1\n");
+   printf("Number pi calculator v%u\n", ver);
 l1:
    do {
       do {

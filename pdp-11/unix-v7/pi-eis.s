@@ -82,7 +82,7 @@ m202:    add r3,r5
          mov r2,*sp
          dec r1          /b <- 2*i-1, CF=0 for EIS!
 
-     /tst r1             /R4:R2 = R2:R3/R1, R3 = R2:R3%R1, used: R0, R2, R3, R4
+     /tst r1            /R4:R2 = R2:R3/R1, R3 = R2:R3%R1, R1 must be odd
      bmi divm           /for R1 > 0x7fff
 
      asl r3
@@ -97,12 +97,11 @@ m202:    add r3,r5
      br exitdiv
 
 divm:
-     /clc          /check CF!
-     mov r1,r0
+     /clc          /check CF = 0!
      ror r1
      mov r2,r4
      asl r4
-     inc r4    /?
+     inc r4     /this is actually required
      cmp r4,r1
      bcc div32n
 
@@ -112,12 +111,13 @@ divm:
      bcc l1
 
      add r1,r3
-l1:  mov r0,r1
+l1:  asl r1
+     inc r1
      sub r2,r3
-     bcc exitdiv
+     bcc exit
 
      dec r2
-     add r0,r3
+     add r1,r3
      br exitdiv
 
 div32n:
@@ -139,16 +139,18 @@ l2:  clc
      bcc l1x
 
      add r1,r3
-l1x: sub r2,r3
+l1x: asl r1
+     inc r1
+     sub r2,r3
      bcc l4
 
      dec r2
-     add r0,r3
-l4:  mov r0,r1
-     clr r4
+     add r1,r3
+l4:  clr r4
      br exitdiv
 
 div32b:
+     mov r0,*sp
      mov r3,r0
      mov r2,r3
      clr r2
@@ -164,6 +166,7 @@ div32b:
      ror r0
      add r0,r2
      adc r4
+     mov *sp,r0
 exitdiv:            /end of division
 
 m6:      mov r3,1(r1)      /r[i] <- d%b
@@ -207,3 +210,4 @@ l0:	inc r0
 
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
+_ver:   .word 7

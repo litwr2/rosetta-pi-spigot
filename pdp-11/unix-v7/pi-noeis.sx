@@ -215,3 +215,4 @@ l0:	inc r0
 
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
+_ver:   .word 7
