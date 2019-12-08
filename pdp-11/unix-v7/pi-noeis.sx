@@ -34,7 +34,7 @@
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
-.globl _pistart, _ra, _N
+.globl _pistart, _ra, _N, _ver
 
 kv = kvs + 2
 
@@ -215,4 +215,5 @@ l0:	inc r0
 
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .word 7
+_ver:   .byte "6","(","N","O","E","I","S",")",0
+

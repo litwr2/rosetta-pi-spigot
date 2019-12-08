@@ -6,7 +6,7 @@
 /main() {
 /   long r[N + 1], i, k, b, c;
 /   c = 0;
-/   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
+/   for (i = 1; i <= N; i++)   ;it is a fixed line, the original was (i = 0; i < N; ...
 /      r[i] = 2000;
 /   for (k = N; k > 0; k -= 14) {
 /      d = 0;
@@ -35,7 +35,7 @@
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
-.globl _pistart, _ra, _N, csv, _write
+.globl _pistart, _ra, _N, csv, _write, _ver
 
 kv = kvs + 2
 
@@ -44,7 +44,7 @@ _pistart:
          mov r5,-(sp)
          mov *$_N,r0
          mov r0,*$kv
-         tst -(sp)       /create a location for high(d)
+         tst -(sp)       /create a location for temp
          mov *$_ra,r2
          dec r2
          mov r2,*$m6+2
@@ -58,20 +58,18 @@ m1:      mov r1,(r2)+
 
          clr *$cv
 mloop:   clr r5       /d <- 0
-         clr *sp
+         clr r0
 kvs:     mov $0,r1
          asl r1       /i <- 2k
          br m4
 
 m77:     add r3,r2       /d <- d/b*i
          adc r4
-         mov *sp,r3
          sub r2,r5
-         sbc r3
-         sub r4,r3
-         ror r3
+         sbc r0
+         sub r4,r0
+         ror r0
          ror r5
-         mov r3,*sp
 m4:      mov $10000.,r2   /unsigned *10000
 m5:      mul 2(r1),r2   /the result in r2 - high, r3 - low
          bpl m202
@@ -80,8 +78,8 @@ m5:      mul 2(r1),r2   /the result in r2 - high, r3 - low
 m202:    add r3,r5
          mov r5,r3
          adc r2
-         add *sp,r2   /sets CF=0
-         mov r2,*sp
+         add r0,r2   /sets CF=0
+         mov r2,r0
          dec r1          /b <- 2*i-1, CF=0 for EIS!
 
      /tst r1            /R4:R2 = R2:R3/R1, R3 = R2:R3%R1, R1 must be odd
@@ -116,7 +114,7 @@ divm:
 l1:  asl r1
      inc r1
      sub r2,r3
-     bcc exit
+     bcc exitdiv
 
      dec r2
      add r1,r3
@@ -190,7 +188,7 @@ m6:      mov r3,1(r1)      /r[i] <- d%b
          sub $14.,*$kv      /k <- k - 14
          bne mloop
 
-         tst (sp)+       /clear the location for high(d)
+         tst (sp)+       /release the location for temp
          mov (sp)+,r5
          rts pc
 
@@ -217,3 +215,5 @@ l0:	inc r0
 .data
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
+_ver:   .byte "7","(","E","I","S",")",0
+

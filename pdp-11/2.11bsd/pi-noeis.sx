@@ -35,7 +35,7 @@
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
-.globl _pistart, _ra, _N, csv, _write
+.globl _pistart, _ra, _N, csv, _write, _ver
 
 kv = kvs + 2
 
@@ -222,3 +222,5 @@ l0:	inc r0
 .data
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
+_ver:   .byte "6","(","N","O","E","I","S",")",0
+

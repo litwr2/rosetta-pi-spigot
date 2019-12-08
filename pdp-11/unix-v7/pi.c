@@ -2,13 +2,28 @@
 #include <sys/types.h>
 #include <sys/timeb.h>
 struct timeb tps, tpf;
-char s[60], *ra;
-extern unsigned ver;
-unsigned digits, max = 8000, N;
+char *ra;
+extern char ver;
+unsigned digits, max, N;
+unsigned getfree() {
+    unsigned new, min = 0, max = 65000;
+    char *p;
+    while (max - min > 2) {
+        new = max/2 + min/2;
+        if (p = malloc(new)) {
+            free(p);
+            min = new;
+        } else
+            max = new;
+    }
+    return min + 1;
+}
 main() {
-   printf("Number pi calculator v%u\n", ver);
+   printf("Number pi calculator v%s\n", &ver);
 l1:
+   max = (getfree()/7)&~3;
    do {
+      char s[8];
       do {
          printf("Enter number of digits (up to %d): ", max);
          ra = gets(s);
