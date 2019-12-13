@@ -56,6 +56,8 @@ kv = kvs + 2
 
      asl r3
      rol r2
+     ;bmi               ;for R2 > 0x3fff
+
      cmp r2,r1
      bcc div32b
 
@@ -70,7 +72,7 @@ divm:
      ror r1
      mov r2,r4
      asl r4
-     inc r4     ;this is actually required
+     inc r4     ;this should be the highest bit of r3
      cmp r4,r1
      bcc div32n
 
