@@ -30,15 +30,26 @@
 /main loop count is 7*(4+D)*D/16, D - number of digits
 
 /litwr has written this for PDP-11/Unix
+/bqt has made an adaptation for 2.11BSD and helped much with optimization
 /tricky provided some help
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
+/#define BSD
+/#define DIVOF
+
+#ifdef BSD
+.globl _pistart, _ra, _N, _ver, csv, _write
+#else
 .globl _pistart, _ra, _N, _ver
+#endif
 
 kv = kvs + 2
 
 _pistart:
+#ifdef BSD
+         jsr r5,csv
+#endif
          mov r5,-(sp)  /this is required for Unix system 7
          mov *$_N,r0
          mov r0,*$kv
@@ -83,14 +94,21 @@ m202:    add r3,r5
      /tst r1            /R4:R2 = R2:R3/R1, R3 = R2:R3%R1, R1 must be odd
      bmi divm           /for R1 > 0x7fff
 
+#ifndef DIVOF
      asl r3
      rol r2
+     /bmi               /for R2 > 7fff
      cmp r2,r1
      bcc div32b
 
      asr r2
      ror r3
+#endif
      div r1,r2   /r2(hi):r3(lo)/r1 -> r2 - quotient, r3 - remainder
+#ifdef DIVOF
+     bvs div32b
+#endif
+
      clr r4
      br exitdiv
 
@@ -148,6 +166,11 @@ l4:  clr r4
      br exitdiv
 
 div32b:
+#ifdef DIVOF
+     asl r3
+     rol r2
+     /bmi .+2             /for R2 > 0x3fff, now it is just a stub
+#endif
      mov r0,*sp
      mov r3,r0
      mov r2,r3
@@ -177,8 +200,16 @@ m6:      mov r3,1(r1)      /r[i] <- d%b
          add *$cv,r2  /c + d/10000
          mov r3,*$cv     /c <- d%10000
          jsr pc,*$PR0000
+#ifdef BSD
+	 mov $4,-(sp)
+	 mov $buf4,-(sp)
+	 mov $1,-(sp)
+	 jsr pc,*$_write
+	 add $6,sp
+#else
          mov $1,r0
          sys 4;buf4;4    /write=4
+#endif
          sub $14.,*$kv      /k <- k - 14
          bne mloop
 
@@ -206,7 +237,8 @@ l0:	inc r0
 	sub r3,r2
 	br l0
 
+.data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "7","(","E","I","S",")",0
+_ver:   .byte "8","(","E","I","S",")",0
 

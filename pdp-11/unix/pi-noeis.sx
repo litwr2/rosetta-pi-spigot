@@ -34,11 +34,20 @@
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
+/#define BSD
+
+#ifdef BSD
+.globl _pistart, _ra, _N, _ver, csv, _write
+#else
 .globl _pistart, _ra, _N, _ver
+#endif
 
 kv = kvs + 2
 
 _pistart:
+#ifdef BSD
+         jsr r5,csv
+#endif
          mov r5,-(sp)  /this is required for Unix system 7
          mov *$_N,r0
          mov r0,*$kv
@@ -150,8 +159,16 @@ m77:     mov r3,r2
          add *$cv,r2  /c + d/10000
          mov r3,*$cv     /c <- d%10000
          jsr pc,*$PR0000
+#ifdef BSD
+	 mov $4,-(sp)
+	 mov $buf4,-(sp)
+	 mov $1,-(sp)
+	 jsr pc,*$_write
+	 add $6,sp
+#else
          mov $1,r0
          sys 4;buf4;4    /write=4
+#endif
          sub $14.,*$kv      /k <- k - 14
          beq m78
          jmp *$mloop
@@ -213,6 +230,7 @@ l0:	inc r0
 	sub r3,r2
 	br l0
 
+.data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
 _ver:   .byte "6","(","N","O","E","I","S",")",0

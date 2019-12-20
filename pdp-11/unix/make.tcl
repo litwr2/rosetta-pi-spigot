@@ -2,9 +2,9 @@
 
 #run it with parameters for LCM+L: user password
 set noeis 0
-set eis 0
-set c 1
-set v 7
+set eis 1
+set c 0
+set v 8
 #If it all goes pear shaped the script will timeout after 20 seconds.
 set timeout 16
 #Second argument is assigned to the variable user
@@ -34,7 +34,9 @@ expect timeout
 
 if $noeis {
   set fn pi-noeis
-  exec awk -f sx.awk $fn.sx >$fn.s
+  exec awk -f sx.awk $fn.sx >$fn.c
+  exec cc -E $fn.c >$fn.x
+  exec sed /^#/d $fn.x >$fn.s
   set f [open $fn.s r]
   send "rm ${fn}$v.s\n"
   send "touch ${fn}$v.s\n"
@@ -54,11 +56,14 @@ if $noeis {
     send "$s'>>${fn}$v.s\n\n"
     expect timeout
   }
-  send "as -o ${fn}$v.o ${fn}$v.s\n"
+  exec rm $fn.x $fn.c $fn.s
+  send "cc -c ${fn}$v.s\n"
   expect timeout
 }
 if $eis {
   set fn pi-eis
+  exec cc -E $fn.c >$fn.x
+  exec sed /^#/d $fn.x >$fn.s
   set f [open $fn.s r]
   send "rm ${fn}$v.s\n"
   send "touch ${fn}$v.s\n"
@@ -78,7 +83,8 @@ if $eis {
     send "$s'>>${fn}$v.s\n\n"
     expect timeout
   }
-  send "as -o ${fn}$v.o ${fn}$v.s\n"
+  exec rm $fn.x $fn.s
+  send "cc -c ${fn}$v.s\n"
   expect timeout
 }
 if $c {
