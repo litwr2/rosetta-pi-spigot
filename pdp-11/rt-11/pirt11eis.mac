@@ -31,6 +31,7 @@
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;litwr has written this for RT-11
+;bqt helped much with optimization
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
@@ -38,6 +39,7 @@
       .radix 10
 
 DEBUG = 0
+DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
       $JSW =: ^O44
@@ -54,16 +56,22 @@ kv = kvs + 2
      ;tst r1
      bmi divm           ;for R1 > 0x7fff
 
+.if eq DIVOF
      asl r3
      rol r2
-     ;bmi               ;for R2 > 0x3fff
+     ;bmi .+2             ;for R2 > 0x3fff, now it is just a stub
 
      cmp r2,r1
      bcc div32b
 
      asr r2
      ror r3
+.endc
      div r1,r2   ;r2(hi):r3(lo)/r1 -> r2 - quotient, r3 - remainder
+.if ne DIVOF
+     bvs div32b
+.endc
+
      clr r4
      br exit
 
@@ -121,6 +129,11 @@ l4:  clr r4
      br exit
 
 div32b:
+.if ne DIVOF
+     asl r3
+     rol r2
+     ;bmi .+2             ;for R2 > 0x3fff, now it is just a stub
+.endc
      mov r0,@sp
      mov r3,r0
      mov r2,r3
@@ -429,7 +442,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v7 (EIS)" <13> <10>
+      .ascii " calculator v8 (EIS)" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"

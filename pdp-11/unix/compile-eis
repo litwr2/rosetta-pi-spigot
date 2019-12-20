@@ -1,0 +1,7 @@
+FLAGS="-DBSD"
+FLAGS="-DDIVOF"         #use DIV's overflow flag - it doesn't work with some PDP-11 models
+#FLAGS="-DBSD -DDIVOF"   #use both DIVOF and BSD
+fn=pi-eis$1
+cc $FLAGS -E $fn.c | sed '/^#/d' >$fn.s
+cc -c $fn.s
+cc -o $fn $fn.o pi.o
