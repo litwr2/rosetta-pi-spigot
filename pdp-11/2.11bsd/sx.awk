@@ -1,1 +1,0 @@
-../unix-v7/sx.awk
