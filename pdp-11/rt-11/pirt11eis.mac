@@ -46,13 +46,15 @@ DIVOF = 1  ;use overflow flag after division, it is faster but can have compatib
       TTSPC$ =: ^O10000
       CONFIG = ^O300
 
-MAXD = 7792  ;limited by the hardware division impementation
+MAXD = 9360  ;the hardware division impementation has a limit only 7792 digits
+             ;however due to a lazy nature of the pi-spigot algorithm errors will be neglected
 
 kv = kvs + 2
 
-.macro div32x16 ?div32 ?div32b ?divm ?div32n ?div32x ?exit ?l1 ?l1x ?l2 ?l4
+.macro div32x16 ?div32 ?div32b ?divm ?div32n ?div32x ?exit ?l1 ?l1x ?l2
               ;R4:R2 = R2:R3/R1, R3 = R2:R3%R1
               ;R1 must be odd
+;it is not universal division but a particular procedure for pi-spigot
      ;tst r1
      bmi divm           ;for R1 > 0x7fff
 
@@ -113,7 +115,7 @@ div32n:
 
      inc r2
      sub r1,r3
-l2:  clc
+l2:  clr r4
      ror r2
      bcc l1x
 
@@ -121,11 +123,10 @@ l2:  clc
 l1x: asl r1
      inc r1
      sub r2,r3
-     bcc l4
+     bcc exit
 
      dec r2
      add r1,r3
-l4:  clr r4
      br exit
 
 div32b:

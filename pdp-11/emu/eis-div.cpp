@@ -8,7 +8,7 @@ struct R {
     int r;
 };
 
-R div11(int dividend, int divisor) {
+R div11(unsigned int dividend, int divisor) {
     R r;
     if (divisor < 32768) {
         dividend *= 2;
@@ -76,8 +76,8 @@ void signalHandler(int signal) {
 }
 
 int main() {
-    int dividend = 0x3de9815a, divisor;
-            for (int divisor = 1; divisor < 65535; divisor += 2)
+    int dividend = 0x4600'0001, divisor;
+            for (int divisor = 3; divisor < 65535; divisor += 2)
                 if (dividend/divisor != div11(dividend, divisor).q || dividend%divisor != div11(dividend, divisor).r) {
                     printf("%d/%d %d:%d %d:%d\n", dividend, divisor, dividend/divisor, dividend%divisor, div11(dividend, divisor).q, div11(dividend, divisor).r);
                     return 1;

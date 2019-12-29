@@ -51,9 +51,10 @@ _pistart:
          jsr r5,csv
 #endif
          mov r5,-(sp)  /this is required for Unix system 7
+         tst -(sp)       /create a location for temp
+/piemu start
          mov *$_N,r0
          mov r0,*$kv
-         tst -(sp)       /create a location for temp
          mov *$_ra,r2
          dec r2
          mov r2,*$m6+2
@@ -97,7 +98,6 @@ m202:    add r3,r5
 #ifndef DIVOF
      asl r3
      rol r2
-     /bmi               /for R2 > 7fff
      cmp r2,r1
      bcc div32b
 
@@ -150,7 +150,7 @@ div32n:
 
      inc r2
      sub r1,r3
-l2:  clc
+l2:  clr r4
      ror r2
      bcc l1x
 
@@ -158,18 +158,16 @@ l2:  clc
 l1x: asl r1
      inc r1
      sub r2,r3
-     bcc l4
+     bcc exitdiv
 
      dec r2
      add r1,r3
-l4:  clr r4
      br exitdiv
 
 div32b:
 #ifdef DIVOF
      asl r3
      rol r2
-     /bmi .+2             /for R2 > 0x3fff, now it is just a stub
 #endif
      mov r0,*sp
      mov r3,r0
@@ -212,11 +210,11 @@ m6:      mov r3,1(r1)      /r[i] <- d%b
 #endif
          sub $14.,*$kv      /k <- k - 14
          bne mloop
-
+/piemu end
          tst (sp)+       /release the location for temp
          mov (sp)+,r5
          rts pc
-
+/piemu start
 PR0000: mov $buf4,r1
         mov $1000.,r3   /prints r2
 	jsr pc,*$PRZ
@@ -236,7 +234,7 @@ l0:	inc r0
 
 	sub r3,r2
 	br l0
-
+/piemu finish
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
