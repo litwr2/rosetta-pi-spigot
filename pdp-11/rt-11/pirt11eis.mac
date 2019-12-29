@@ -46,7 +46,7 @@ DIVOF = 1  ;use overflow flag after division, it is faster but can have compatib
       TTSPC$ =: ^O10000
       CONFIG = ^O300
 
-MAXD = 9360  ;the hardware division impementation has a limit only 7792 digits
+MAXD = 9360  ;the hardware division implementation has a limit only 7792 digits
              ;however due to a lazy nature of the pi-spigot algorithm errors will be neglected
 
 kv = kvs + 2
