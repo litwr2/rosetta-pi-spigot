@@ -51,7 +51,7 @@ MAXD = 9360  ;the hardware division implementation has a limit only 7792 digits
 
 kv = kvs + 2
 
-.macro div32x16 ?div32 ?div32b ?divm ?div32n ?div32x ?exit ?l1 ?l1x ?l2
+.macro div32x16
               ;R4:R2 = R2:R3/R1, R3 = R2:R3%R1
               ;R1 must be odd
 ;it is not universal division but a particular procedure for pi-spigot
@@ -61,7 +61,6 @@ kv = kvs + 2
 .if eq DIVOF
      asl r3
      rol r2
-     ;bmi .+2             ;for R2 > 0x3fff, now it is just a stub
 
      cmp r2,r1
      bcc div32b
@@ -75,9 +74,9 @@ kv = kvs + 2
 .endc
 
      clr r4
-     br exit
+    .endm div32x16
 
-divm:
+.macro adiv32x16 ?div32n ?l1 ?l1x ?l2
      ;clc          ;check CF = 0!
      ror r1
      mov r2,r4
@@ -128,8 +127,9 @@ l1x: asl r1
      dec r2
      add r1,r3
      br exit
+     .endm adiv32x16
 
-div32b:
+.macro bdiv32x16
 .if ne DIVOF
      asl r3
      rol r2
@@ -152,8 +152,8 @@ div32b:
      add r0,r2
      adc r4
      mov @sp,r0
-exit:
-     .endm
+     br exit
+     .endm bdiv32x16
 
 
 START:
@@ -208,16 +208,16 @@ mloop:   clr r5       ;d <- 0
 
 kvs:     mov #0,r1
          asl r1       ;i <- 2k
-         br 4$
+         br l4x
 
-77$:     add r3,r2       ;d <- d/b*i
+l77:     add r3,r2       ;d <- d/b*i
          adc r4
          sub r2,r5
          sbc r0
          sub r4,r0
          ror r0
          ror r5
-4$:      mov #10000,r2
+l4x:      mov #10000,r2
          mul ra(r1),r2   ;the result in r2 - high, r3 - low
          bpl 202$
 
@@ -229,9 +229,9 @@ kvs:     mov #0,r1
          mov r2,r0
          dec r1          ;b <- 2*i-1, CF=0 for EIS!
          div32x16
+exit:
          mov r3,ra+1(r1)      ;r[i] <- d%b
-         dec r1        ;i <- i - 1
-         bne 77$
+         sob r1,l77        ;i <- i - 1
 
          mov r2,r3
          mov r4,r2
@@ -259,7 +259,7 @@ kvs:     mov #0,r1
          mov r3,r1
          mov r2,r0
          bit #32,r4    ;50 or 60 Hz?
-         bne 206$
+         bne l206
 
          asl r1     ;*5
          rol r0
@@ -283,13 +283,18 @@ kvs:     mov #0,r1
          add r0,r1
          adc r2
          mov r2,r0
-206$:
+l206:
          call @#printsec   ;prints r0:r1
          tst (sp)+       ;clear the location for high(d)
          .ttinr
 
          bic #TTSPC$,@#$JSW
          .exit
+
+divm:
+         div32x16a
+div32b:
+         div32x16b
 
 .if ne DEBUG
 PRX:mov r0,-(sp)   ;prints pdata, doesn't save flags
@@ -443,7 +448,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v8 (EIS)" <13> <10>
+      .ascii " calculator v9 (EIS)" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"

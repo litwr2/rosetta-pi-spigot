@@ -36,7 +36,7 @@
 /Thorham and meynaf helped a lot
 
 /#define BSD
-/#define DIVOF
+#define DIVOF
 
 #ifdef BSD
 .globl _pistart, _ra, _N, _ver, csv, _write
@@ -110,8 +110,34 @@ m202:    add r3,r5
 #endif
 
      clr r4
-     br exitdiv
+exitdiv:
+m6:      mov r3,1(r1)      /r[i] <- d%b
+         dec r1        /i <- i - 1
+         bne m77
 
+         mov r2,r3
+         mov r4,r2
+         div $10000.,r2
+         add *$cv,r2  /c + d/10000
+         mov r3,*$cv     /c <- d%10000
+         jsr pc,*$PR0000
+#ifdef BSD
+	 mov $4,-(sp)
+	 mov $buf4,-(sp)
+	 mov $1,-(sp)
+	 jsr pc,*$_write
+	 add $6,sp
+#else
+         mov $1,r0
+         sys 4;buf4;4    /write=4
+#endif
+         sub $14.,*$kv      /k <- k - 14
+         bne mloop
+/piemu end
+         tst (sp)+       /release the location for temp
+         mov (sp)+,r5
+         rts pc
+/piemu start
 divm:
      /clc          /check CF = 0!
      ror r1
@@ -186,35 +212,8 @@ div32b:
      add r0,r2
      adc r4
      mov *sp,r0
-exitdiv:            /end of division
+     br exitdiv
 
-m6:      mov r3,1(r1)      /r[i] <- d%b
-         dec r1        /i <- i - 1
-         bne m77
-
-         mov r2,r3
-         mov r4,r2
-         div $10000.,r2
-         add *$cv,r2  /c + d/10000
-         mov r3,*$cv     /c <- d%10000
-         jsr pc,*$PR0000
-#ifdef BSD
-	 mov $4,-(sp)
-	 mov $buf4,-(sp)
-	 mov $1,-(sp)
-	 jsr pc,*$_write
-	 add $6,sp
-#else
-         mov $1,r0
-         sys 4;buf4;4    /write=4
-#endif
-         sub $14.,*$kv      /k <- k - 14
-         bne mloop
-/piemu end
-         tst (sp)+       /release the location for temp
-         mov (sp)+,r5
-         rts pc
-/piemu start
 PR0000: mov $buf4,r1
         mov $1000.,r3   /prints r2
 	jsr pc,*$PRZ
@@ -238,5 +237,5 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "8","(","E","I","S",")",0
+_ver:   .byte "9","(","E","I","S",")",0
 
