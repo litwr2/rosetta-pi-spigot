@@ -47,7 +47,7 @@ DIVOF = 1  ;use overflow flag after division, it is faster but can have compatib
       CONFIG = ^O300
 
 MAXD = 9360  ;the hardware division implementation has a limit only 7792 digits
-             ;however due to a lazy nature of the pi-spigot algorithm errors will be neglected
+             ;however due to a nature of the pi-spigot algorithm all cases for errors will be missed
 
 kv = kvs + 2
 

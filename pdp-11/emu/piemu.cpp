@@ -333,6 +333,19 @@ void dprint(string &lv, string &rv) {
     //logtrace();
     pc++;
 }
+long userdata[5];
+void user1(string &lv, string &rv) {
+    userdata[1] = reg[1];
+    userdata[2] = reg[2];
+    userdata[3] = reg[3];
+    pc++;
+}
+void user2(string &lv, string &rv) {
+    long divident = userdata[2] << 16 | userdata[3];
+    if (divident/reg[1] != (reg[4] << 16 | reg[2]) || divident%reg[1] != reg[3])
+        cerr << userdata[2] << ':' << userdata[3] << " / " << userdata[1] << " = " << divident/reg[1] << ", " << divident%reg[1] << " (" << (reg[4] << 16 | reg[2]) << ", " << reg[3] << ")\n";
+    pc++;
+}
 void parse() {
     regex empty_line("^#|^\\s*/|^\\s*$");
     regex label("^([^\\s:]*):\\s*(/.*)?$");
@@ -367,6 +380,7 @@ void parse() {
     regex rts_re("^([^\\s:]*):?\\s+rts\\s+([^\\s]+)");
     regex halt_re("^([^\\s:]*):?\\s+halt\\s*$");
     regex dprint_re("^([^\\s:]*):?\\s+dprint\\s*$");
+    regex user_re("^([^\\s:]*):?\\s+user([12])\\s*$");
     smatch sm;
     string s;
 #define PARSE2(M) else if (regex_search(s, sm, M##_re)) {\
@@ -389,6 +403,11 @@ void parse() {
         } else if (regex_search(s, sm, dprint_re)) {
             if (!sm.str(1).empty()) {labels[sm.str(1)] = prog.size();debugl[prog.size()] = sm.str(1);}
             prog.push_back({dprint, "", ""});
+        } else if (regex_search(s, sm, user_re)) {
+            if (!sm.str(1).empty()) {labels[sm.str(1)] = prog.size();debugl[prog.size()] = sm.str(1);}
+            void (*p)(string&, string&) = user1;
+            if (sm.str(2)[0] == '2') p = user2;
+            prog.push_back({p, "", ""});
         } PARSE2(mov) PARSE2(movb) PARSE2(add) PARSE2(sub) PARSE1(decr)
         PARSE1(inc) PARSE2(sob) PARSE1(clr) PARSE1(asl) PARSE1(asr)
         PARSE1(rol) PARSE1(ror) PARSE1(adc) PARSE1(sbc) PARSE1(br)
@@ -400,7 +419,7 @@ void parse() {
     }
 }
 
-map<void*, const char*> debugi = {{(void*)mov, "mov"}, {(void*)movb, "movb"}, {(void*)mul, "mul"}, {(void*)decr, "dec"}, {(void*)inc, "inc"}, {(void*)divi, "div"}, {(void*)bcc, "bcc"}, {(void*)bcs, "bcs"}, {(void*)bmi, "bmi"}, {(void*)bpl, "bpl"}, {(void*)beq, "beq"}, {(void*)bne, "bne"}, {(void*)bvs, "bvs"}, {(void*)br, "br"}, {(void*)halt, "halt"}, {(void*)asl, "asl"}, {(void*)asr, "asr"}, {(void*)ror, "ror"}, {(void*)rol, "rol"}, {(void*)jsr, "jsr"}, {(void*)rts, "rts"}, {(void*)add, "add"}, {(void*)adc, "adc"}, {(void*)sub, "sub"}, {(void*)sbc, "sbc"}, {(void*)sob, "sob"}, {(void*)clr, "clr"}, {(void*)cmp, "cmp"}, {(void*)sys, "sys"}, {(void*)dprint, "dprint"}};
+map<void*, const char*> debugi = {{(void*)mov, "mov"}, {(void*)movb, "movb"}, {(void*)mul, "mul"}, {(void*)decr, "dec"}, {(void*)inc, "inc"}, {(void*)divi, "div"}, {(void*)bcc, "bcc"}, {(void*)bcs, "bcs"}, {(void*)bmi, "bmi"}, {(void*)bpl, "bpl"}, {(void*)beq, "beq"}, {(void*)bne, "bne"}, {(void*)bvs, "bvs"}, {(void*)br, "br"}, {(void*)halt, "halt"}, {(void*)asl, "asl"}, {(void*)asr, "asr"}, {(void*)ror, "ror"}, {(void*)rol, "rol"}, {(void*)jsr, "jsr"}, {(void*)rts, "rts"}, {(void*)add, "add"}, {(void*)adc, "adc"}, {(void*)sub, "sub"}, {(void*)sbc, "sbc"}, {(void*)sob, "sob"}, {(void*)clr, "clr"}, {(void*)cmp, "cmp"}, {(void*)sys, "sys"}, {(void*)dprint, "dprint"}, {(void*)user1, "user1"}, {(void*)user2, "user2"}};
 
 void logtrace(){
     for(int i = 0; i < 6; i++)
