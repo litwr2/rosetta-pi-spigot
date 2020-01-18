@@ -6,7 +6,7 @@ char *ra;
 extern char ver;
 unsigned digits, max, N;
 unsigned getfree() {
-    unsigned max = 0, step = 512;
+    unsigned max = 0, step = 1024;
     do {
         while (sbrk(step) != -1)
             max += step;
