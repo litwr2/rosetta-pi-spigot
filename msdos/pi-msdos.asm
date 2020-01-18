@@ -60,13 +60,12 @@ local .div32, .exitdiv
      xor dx,dx
      div si
      xchg ax,bx
-     div si
      jmp .exitdiv
 
 .div32:
-     div si
      xor BX,BX
 .exitdiv:
+     div si
 }
 
          use16
@@ -352,7 +351,7 @@ msg3  db ' digits will be printed'
 msg2  db 13,10,'$'
 del   db 8,' ',8,'$'
 string rb 6
-msg1  db 'number Pi calculator v5 for DOS ('
+msg1  db 'number Pi calculator v6 for DOS ('
 if TIKI100
       db 'Tiki-100 8088 board'
 else if BBC80186

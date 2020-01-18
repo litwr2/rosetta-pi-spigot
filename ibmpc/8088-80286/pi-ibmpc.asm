@@ -48,13 +48,12 @@ local .div32, .exitdiv
      xor dx,dx   ;T3/3/2/2
      div si      ;T144-162/38/22/22
      xchg ax,bx  ;T4/4/3/3
-     div si      ;T144-162/38/22/22
      jmp .exitdiv  ;T15/14/8/8
 
 .div32:
-     div si      ;T144-162/38/22/22
      xor BX,BX   ;T3/3/2/2
 .exitdiv:
+     div si      ;T144-162/38/22/22
 }
 
          use16
@@ -294,7 +293,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v5',13,10
+msg1  db 'number ',227,' calculator v6',13,10
       db 'it may give 9000 digits in less than an hour with a first PC of 1981!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
