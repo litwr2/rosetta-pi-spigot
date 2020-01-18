@@ -112,8 +112,7 @@ m202:    add r3,r5
      clr r4
 exitdiv:
 m6:      mov r3,1(r1)      /r[i] <- d%b
-         dec r1        /i <- i - 1
-         bne m77
+         sob r1,m77
 
          mov r2,r3
          mov r4,r2
@@ -237,5 +236,9 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "9","(","E","I","S",")",0
+_ver:   .byte "9","(","E","I","S"
+#ifdef DIVOF
+	.byte "-","o","f"
+#endif
+	.byte ")",0
 

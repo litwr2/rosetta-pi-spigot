@@ -76,7 +76,7 @@ kv = kvs + 2
      clr r4
     .endm div32x16
 
-.macro adiv32x16 ?div32n ?l1 ?l1x ?l2
+.macro adiv ?div32n ?l1 ?l1x ?l2
      ;clc          ;check CF = 0!
      ror r1
      mov r2,r4
@@ -127,13 +127,12 @@ l1x: asl r1
      dec r2
      add r1,r3
      br exit
-     .endm adiv32x16
+     .endm adiv
 
-.macro bdiv32x16
+.macro bdiv
 .if ne DIVOF
      asl r3
      rol r2
-     ;bmi .+2             ;for R2 > 0x3fff, now it is just a stub
 .endc
      mov r0,@sp
      mov r3,r0
@@ -153,8 +152,7 @@ l1x: asl r1
      adc r4
      mov @sp,r0
      br exit
-     .endm bdiv32x16
-
+     .endm bdiv
 
 START:
          bis #TTSPC$,@#$JSW
@@ -209,6 +207,10 @@ mloop:   clr r5       ;d <- 0
 kvs:     mov #0,r1
          asl r1       ;i <- 2k
          br l4x
+divm:
+         adiv
+div32b:
+         bdiv
 
 l77:     add r3,r2       ;d <- d/b*i
          adc r4
@@ -290,11 +292,6 @@ l206:
 
          bic #TTSPC$,@#$JSW
          .exit
-
-divm:
-         div32x16a
-div32b:
-         div32x16b
 
 .if ne DEBUG
 PRX:mov r0,-(sp)   ;prints pdata, doesn't save flags
@@ -448,7 +445,11 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v9 (EIS)" <13> <10>
+      .ascii " calculator v9 (EIS"
+.if ne DIVOF
+      .ascii "-of"
+.endc
+      .ascii ")" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"
