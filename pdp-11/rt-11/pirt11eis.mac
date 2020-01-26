@@ -53,8 +53,7 @@ kv = kvs + 2
 
 .macro div32x16
               ;R4:R2 = R2:R3/R1, R3 = R2:R3%R1
-              ;R1 must be odd
-;it is not universal division but a particular procedure for pi-spigot
+              ;R1 must be odd, this is not universal division but a particular procedure for pi-spigot
      ;tst r1
      bmi divm           ;for R1 > 0x7fff
 
@@ -184,9 +183,8 @@ START:
          call @#PR0000
          .print #msg3
 
-7$:      asr r4
-         mov r4,r0
-         asl r0
+7$:      mov r4,r0
+         asr r4
          add r0,r4
          asl r0
          add r0,r4   ;r4 <- r4/2*7
@@ -200,7 +198,6 @@ START:
 1$:      mov r1,(r2)+
          sob r0,1$
 
-         clr @#cv
 mloop:   clr r5       ;d <- 0
          clr r0
 
@@ -445,7 +442,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v9 (EIS"
+      .ascii " calculator v10 (EIS"
 .if ne DIVOF
       .ascii "-of"
 .endc

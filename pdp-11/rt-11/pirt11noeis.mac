@@ -123,9 +123,8 @@ START:
          call @#PR0000
          .print #msg3
 
-7$:      asr r4
-         mov r4,r0
-         asl r0
+7$:      mov r4,r0
+         asr r4
          add r0,r4
          asl r0
          add r0,r4   ;r4 <- r4/2*7
@@ -139,7 +138,6 @@ START:
 1$:      mov r1,(r2)+
          sob r0,1$
 
-         clr @#cv
 mloop:   clr r5       ;d <- 0
          clr @sp
 kvs:     mov #0,r1
@@ -149,7 +147,7 @@ ivs:     mov ra(r1),r0     ;r[i]
          clr r2
          mov r0,r3         ;the result in r2 - high, r3 - low
          asl r3
-         rol r2            
+         rol r2
          asl r3
          rol r2
          asl r3
@@ -427,7 +425,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v6 (no EIS)" <13> <10>
+      .ascii " calculator v7 (no EIS)" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"

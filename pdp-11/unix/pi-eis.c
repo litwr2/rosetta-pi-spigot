@@ -66,7 +66,7 @@ _pistart:
 m1:      mov r1,(r2)+
          sob r0,m1
 
-         clr *$cv
+         ;clr *$cv
 mloop:   clr r5       /d <- 0
          clr r0
 kvs:     mov $0,r1

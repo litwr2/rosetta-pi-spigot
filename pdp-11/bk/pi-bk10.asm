@@ -148,9 +148,8 @@ restart: mov #msg4,r1
 
          mov #140,r0    ;add 12 KB, reduce the screen size
          emt ^O16 
-71$:     asr r4
-         mov r4,r0
-         asl r0
+71$:     mov r4,r0
+         asr r4
          add r0,r4
          asl r0
          add r0,r4   ;r4 <- r4/2*7
@@ -182,7 +181,7 @@ ivs:
          clr r2
          mov r0,r3         ;the result in r2 - high, r3 - low
          asl r3
-         rol r2            
+         rol r2
          asl r3
          rol r2
          asl r3
@@ -442,6 +441,6 @@ msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v5"<10>
+msg1: .ascii "number "<160>" calculator v6"<10>
       .asciz "         it may give 2000 digits in about an hour!"
 
