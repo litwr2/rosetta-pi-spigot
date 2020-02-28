@@ -1,5 +1,3 @@
-	.TITLE	PI - Spigot PI calculator using EIS
-	.IDENT	/V2.0/
 ;for macro-11 assembler
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
@@ -33,18 +31,20 @@
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;litwr has made this code
-;bqt has made RSX-11 version and helped much with optimization
+;bqt has made RSX-11 version and helped much with optimization and this text
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 
-	.LIBRARY	/LB:[1,1]BQTMAC/
+	.TITLE	PI - Spigot PI calculator using EIS
 
-	.MCALL	.IFMT, .FMT, .EOS, .PRINT, .MSG
 	.MCALL	QIOW$S, EXIT$S, GTIM$, DIR$
-	.MCALL	QIO$, WTSE$, QIOW$
+	.MCALL	QIOW$
 
       .radix 10
+
+MEMSZ=31874         ;this is a constant calculated from data in a MAP-file produced by a linker
+                    ;10500 is enough for 3000 digits
 
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
 
@@ -151,72 +151,54 @@ l1x: asl r1
      br exit
      .endm bdiv
 
-	.PSECT	DPB,D,RO
-TSTART:	GTIM$	T1		; Timer start.
-TSTOP:	GTIM$	T2		; Timer stop.
-
-	.PSECT	DATA,D,RW
-
-T1:	.BLKW	8.		; Buffers for time stamps...
-T2:	.BLKW	8.
-
-MAXD=8944.			; ??? Max # of digits we allow. ???
-
-MAXS=<<MAXD/2>*7>		; Size of R[] we need to have for that.
-
-ra:	.BLKW	<MAXS>+1
-cv:	.WORD	0
-kv = kvs + 2
-
-IOSB:	.BLKW	2
-
-BUF:
-OBUF:	.BLKB	4
-
-	.PSECT	DPB,D,RO
-WRIT:	QIOW$	IO.WAL,TILUN,TIEFN,,IOSB,,<OBUF,4>
-
-	.PSECT	CODE,I,RO
-
-	.ENABL	LSB
-START:	.MSG	<"number pi calculator %R (eis-of)">,<R3>
-
-	.IFMT
-	.FMT	<"Number of digits (up to %D)? ">,#MAXD
-	.EOS
-	QIOW$S	#IO.RPR,#TILUN,#TIEFN,,#IOSB,,<#BUF,#8,,R0,R1,#'$>
+	.PSECT	CODE,I,RW
+START:
+    mov #msg1m,r5
+    mov #MAXD,r2
+    call PR0000
+    QIOW$S	#IO.WLB, #5, #5,,,,<#msg1, #msg1m-msg1, #'$>
+    MOV	#msg1m,R0
+	MOV	#7,R1
+	QIOW$S	#IO.RPR,#5,#5,,#IOSB,,<#OBUF,#8,,R0,R1>
 	TSTB	IOSB
 	BPL	10$
 
-	.MSG	<"Error in read: %O">,IOSB
+    QIOW$S	#IO.WLB, #5, #5,,,,<#msg2, #msg3-msg2, #40>
 	EXIT$S
 
 10$:	MOV	IOSB+2,R0		; Terminate input with NUL.
-	CLRB	BUF(R0)
+	CLRB	OBUF(R0)
 
-	MOV	#BUF,R0			; Try to parse input as number.
+	MOV	#OBUF,R0			; Try to parse input as number.
 	CALL	$CDTB
 	TST	R2			; Did we stop at NUL?
 	BEQ	20$			; Yes.
 
-	.MSG	<"Funny byte in input: %D">,R2
+	QIOW$S	#IO.WLB, #5, #5,,,,<#msg3, #msg4-msg3, #40>
 	EXIT$S
 
 20$:	CMP	R1,#MAXD		; Check value against max.
 	BLOS	30$
 
-	.MSG	<"Number too large">
+	QIOW$S	#IO.WLB, #5, #5,,,,<#msg4, #msg5-msg4, #40>
 	EXIT$S
 
-30$:	MOV	R1,R0			; Round value to even four.
+30$:
+	MOV	R1,R0			; Round value to even four.
 	ADD	#3,R0
 	BIC	#3,R0
 	CMP	R0,R1			; Did that cause a change?
 	BEQ	1$
-	.MSG	<"%D digits will be printed">,R0
+
+    mov r0,r2
+    mov r0,-(sp)
+    mov #msg5,r5
+    call PR0000
+    QIOW$S	#IO.WLB, #5, #5,,,,<#msg5, #msg6-msg5, #40>
+    mov (sp)+,r0
 
 1$:	
-	.MSG	<" ">
+    QIOW$S  #IO.WLB, #5, #5,,,,<#msg5, #1, #40>
 	CALL	SPIGOT			; Calculate PI.
 
 ;
@@ -230,14 +212,21 @@ START:	.MSG	<"number pi calculator %R (eis-of)">,<R3>
 	MOV	T2+12,R4	; Get ticks.
 	SUB	T1+12,R4	; Calculate delta.
 	BCC	2$
+
 	ADD	T2+14,R4	; If that was negative, we had wrap. Adjust.
 	DEC	T2+10		; And then we have one less second.
 2$:
 ;
 ; Second part. Convert to 1/100s.
 ;
-	MUL	#100.,R4
-	DIV	T2+14,R4	; Result is in R4.
+    MOV R4,R0
+    MOV #100,R1
+    call $MUL    ;R0/R1 = R0:R1
+    mov r1,r2
+    mov r0,r1
+    mov T2+14,r0
+    call $DDIV   ;R1:R2/R0 = R1:R2 mod R0
+    mov r2,r4
 
 ;
 ; Now get minutes passed.
@@ -245,7 +234,8 @@ START:	.MSG	<"number pi calculator %R (eis-of)">,<R3>
 	MOV	T2+8,R1	; Get end minute.
 	SUB	T1+8,R1	; Substract start minute.
 	BGE	3$		; If result is >= 0 we're good.
-	ADD	#60.,R1		; It was less. Adjust minutes.
+
+	ADD	#60,R1		; It was less. Adjust minutes.
 3$:
 ;
 ; Get seconds passed.
@@ -253,26 +243,28 @@ START:	.MSG	<"number pi calculator %R (eis-of)">,<R3>
 	MOV	T2+10,R0	; Get end second.
 	SUB	T1+10,R0	; Substract start second.
 	BGE	4$
-	ADD	#60.,R0		; If negative, adjust up.
+
+	ADD	#60,R0		; If negative, adjust up.
 	DEC	R1		; And one minute less.
 ;
 ; Now make seconds...
 ;
-4$:	MUL 	#60.,R1		; Minutes to seconds.
-	ADD	R0,R1		; Add in seconds.
+4$:	mov r0,-(sp)
+    mov #60,r0
+    call $mul           ;Minutes to seconds
+	ADD	(sp)+,R1		;Add in seconds
+    mov #ra,r0
+    MOVB #32,(r0)+      ;a white space
+    MOV #<5*2048>+10,R2	;5 places, base 10
+    CALL	$CBTA
+    movb #'.,(r0)+
+    MOV	R4,R1
+	MOV #<2*2048>+512+10,R2	;2 digits, base 10, with leading 0
+	CALL	$CBTA
+    sub #ra,r0
+    QIOW$S	#IO.WLB,#5, #5,,,,<#ra, r0>
+	EXIT$S
 
-	.IFMT
-	.FMT	<"%NTime: %D.">,R1
-
-	MOV	R4,R1		; Get 1/100s second value.
-	MOV	#<2*2048>+512+10.,R2	; 2 digits, base 10, with leading 0.
-	CALL	$CBTA		; Convert.
-
-	.PRINT			; Print string created.
-
-	EXIT$S			; Done.
-
-	.DSABL	LSB
 ;
 ; Spigot PI calculation.
 ;
@@ -372,4 +364,35 @@ PRZ:	mov #65535,r0
 	sub r3,r2
 	br 4$
 
+T1:	.BLKW	8		;Buffers for time stamps
+T2:	.BLKW	8
+
+MAXD=<<MEMSZ/7>/4>*8			;Max # of digits we allow
+
+cv:	.WORD	0
+kv = kvs + 2
+
+IOSB:	.BLKW	2
+OBUF:	.BLKB	8
+
+TSTART:	GTIM$	T1		;Timer start.
+TSTOP:	GTIM$	T2		;Timer stop.
+WRIT:	QIOW$	IO.WAL,5,5,,IOSB,,<OBUF,4>
+
+ra:
+msg1:  .ascii "number pi calculator v1 (EIS"
+.if ne DIVOF
+       .ascii "-of"
+.endc
+       .ascii ")"<10><13>
+       .ascii "number of digits (up to "
+msg1m: .ascii "0000)? "
+msg2:  .ascii "Error in read"
+msg3:  .ascii "Non-digit character in input"
+msg4:  .ascii "Number too large"
+msg5:  .ascii "0000 digits will be printed"
+msg6:
+memfill: .blkb MEMSZ
+       .blkb MEMSZ
+eom:
 	.END	START

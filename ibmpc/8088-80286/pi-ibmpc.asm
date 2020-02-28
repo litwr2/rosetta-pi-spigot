@@ -35,8 +35,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-;N = 3500   ;1000 digits
-N = 2800  ;800 digits
+IO = 1
 
 macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
@@ -114,13 +113,13 @@ start:
 
          push ds
          pop es
-.m100:   mov cx,N        ;fill r-array
+.m100:   mov cx,0        ;fill r-array
          mov ax,2000
          mov di,ra+2
          rep stosw
 
          mov [cv],cx
-.m101:   mov [kv],N
+.m101:   mov [kv],0
 
 .l0:     xor bp,bp
          mov di,bp          ;d = BP:DI <- 0
@@ -129,6 +128,15 @@ start:
          add si,si       ;i <-k*2
          mov cx,10000      ;T4/4/2/2
          jmp .l2
+
+.div32long:
+     mov bx,ax   ;T2/2/2/2
+     mov ax,dx   ;T2/2/2/2
+     xor dx,dx   ;T3/3/2/2
+     div si      ;T144-162/38/22/22
+     xchg ax,bx  ;T4/4/3/3
+     jmp .exitdiv  ;T15/14/8/8
+
                      ;T - timing, 8088/80186/80286/80386
 .l4:     sub di,dx         ;T3/3/2/2
          sbb bp,0          ;T4/4/3/2
@@ -143,20 +151,27 @@ start:
          adc dx,bp         ;T3/3/2/2
          mov bp,dx         ;T2/2/2/2
          dec si        ;b <- 2*i-1  ;T3/3/2/2
-         div32x16            ;Ta165/a57/a35/a35
+         ;BX:AX = DX:AX/SI, DX = DX:AX%SI ;Ta163/a48/a29/a29
+     cmp dx,si   ;T3/3/2/2
+     jnc .div32long   ;T16/13/9/9  - T4/4/3/3
+
+     xor BX,BX   ;T3/3/2/2
+.exitdiv:
+     div si      ;T144-162/38/22/22
+
          mov [si+ra+1],dx   ;r[i] <- d%b  ;T22/12/3/2
          dec si      ;i <- i - 1   ;T3/3/2/2
          jne .l4                   ;T16/14/9/9
-                           ;Toa382/a161/a98/a103
+                           ;Toa380/a152/a92/a97
+if IO = 1
          mov dx,bx
          div cx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
          call PR0000
+end if
          sub [kv],14      ;k <- k - 14
-         ;je .l5        ;it is not for 80386!
-         ;jmp .l0
          jne .l0
 
 .l5:     mov dl,' '
@@ -293,7 +308,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v6',13,10
+msg1  db 'number ',227,' calculator v7',13,10
       db 'it may give 9000 digits in less than an hour with a first PC of 1981!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'

@@ -47,8 +47,7 @@ TIKI100_TIMER_LO equ $FF8C
 TIKI100_TIMER_HI equ $FF8E
 BBC_OSWORD equ $4A
 
-;N = 3500   ;1000 digits
-N = 2800  ;800 digits
+IO = 1
 
 macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
@@ -122,13 +121,13 @@ start:
 
          push ds
          pop es
-.m100:   mov cx,N       ;fill r-array
+.m100:   mov cx,0       ;fill r-array
          mov ax,2000
          mov di,ra+2
          rep stosw
 
          mov [cv],cx
-.m101:   mov [kv],N
+.m101:   mov [kv],0
 
 .l0:     xor bp,bp
          mov di,bp          ;d = BP:DI <- 0
@@ -137,6 +136,14 @@ start:
          add si,si       ;i <-k*2
          mov cx,10000
          jmp .l2
+
+.div32long:
+     mov bx,ax
+     mov ax,dx
+     xor dx,dx
+     div si
+     xchg ax,bx
+     jmp .exitdiv
 
 .l4:     sub di,dx
          sbb bp,0
@@ -150,22 +157,26 @@ start:
          mov di,ax
          adc dx,bp
          mov bp,dx
-
          dec si        ;b <- 2*i-1
-         div32x16
+         cmp dx,si
+     jnc .div32long
+
+     xor BX,BX
+.exitdiv:
+     div si
+
          mov [si+ra+1],dx   ;r[i] <- d%b
          dec si      ;i <- i - 1
          jne .l4
-
+if IO = 1
          mov dx,bx
          div cx
          add ax,[cv]  ;c + d/10000
          mov [cv],dx     ;c <- d%10000
          mov cx,ax
          call PR0000
+end if
          sub [kv],14      ;k <- k - 14
-         ;je .l5        ;it is not for 80386!
-         ;jmp .l0
          jne .l0
 
 .l5:     mov dl,' '
@@ -347,11 +358,8 @@ getnum: xor cx,cx    ;length
         loop .l8
         retn
 
-msg3  db ' digits will be printed'
-msg2  db 13,10,'$'
-del   db 8,' ',8,'$'
 string rb 6
-msg1  db 'number Pi calculator v6 for DOS ('
+msg1  db 'number Pi calculator v7 for DOS ('
 if TIKI100
       db 'Tiki-100 8088 board'
 else if BBC80186
@@ -360,4 +368,6 @@ end if
       db ')',13,10
       db 'number of digits (up to $'
 msg4  db ')? $'
-
+msg3  db ' digits will be printed'
+msg2  db 13,10,'$'
+del   db 8,' ',8,'$'

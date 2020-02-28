@@ -35,6 +35,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
+IO = 1
          use16
          org 100h
 
@@ -74,11 +75,10 @@ start:
          int 21h
          pop ax
 
-.l7:     shr ax,1
-         mov bx,7
+.l7:     mov bx,7
          mul bx
          mov bp,ax
-         shr ax,1
+         shr ax,2
          push ax
 
          xor ax,ax
@@ -101,7 +101,7 @@ start:
          mov bx,cx
 .l0:     xor edi,edi          ;d <- 0
          mov si,bp
-         add si,si       ;i <-k*2
+         ;add si,si       ;i <-k*2
          mov cx,10000
          jmp .l2
 
@@ -119,18 +119,20 @@ start:
          dec si      ;i <- i - 1   ;T2
          jne .l4          ;T10
                           ;To91
+if IO = 1
          mov eax,edi
          xor edx,edx
          div ecx
          add ax,bx  ;c + d/10000
          mov bx,dx     ;c <- d%10000
          call pr0000
-         sub bp,14      ;k <- k - 14
+end if
+         sub bp,28      ;k <- k - 14
          jne .l0
 
 .l5:     mov dl,' '
          mov ah,2
-   	 int 21h
+	 int 21h
 
          xor ax,ax
          mov es,ax
@@ -180,7 +182,7 @@ start:
          mov dl,[di]
          add dl,'0'
          mov ah,2
-   	 int 21h
+	 int 21h
 
          cmp di,string
          jne .l11
@@ -266,7 +268,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v5',13,10
+msg1  db 'number ',227,' calculator v6',13,10
       db 'it may give 9000 digits in less than 5 minutes with a PC 386DX @25MHz!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
