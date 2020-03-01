@@ -36,14 +36,18 @@
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 
+;there is a neater and finer pi-spigot implementation for RSX-11 (EIS only)
+;it can be found at ftp://guest:guest@Mim.Update.UU.SE/US:[BQT]PIRSX.MAC
+;it is even faster but rather only theoretically and in an invisible amount
+
 	.TITLE	PI - Spigot PI calculator using EIS
 
 	.MCALL	QIOW$S, EXIT$S, GTIM$, DIR$
-	.MCALL	QIOW$
+	.MCALL	QIOW$, WTSE$, QIO$
 
       .radix 10
 
-MEMSZ=31874         ;this is a constant calculated from data in a MAP-file produced by a linker
+MEMSZ=31864         ;this is a constant calculated from data in a MAP-file produced by a linker
                     ;10500 is enough for 3000 digits
 
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
@@ -262,6 +266,7 @@ START:
 	MOV #<2*2048>+512+10,R2	;2 digits, base 10, with leading 0
 	CALL	$CBTA
     sub #ra,r0
+    DIR$ #WAIT
     QIOW$S	#IO.WLB,#5, #5,,,,<#ra, r0>
 	EXIT$S
 
@@ -325,10 +330,10 @@ exit:
          add @#cv,r2  ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
 
-	MOV	#OBUF,R5
-	    call PR0000
-    MOV	#OBUF,R0
-	DIR$	#WRIT
+	     MOV #OBUF,R5
+         DIR$ #WAIT
+	     call PR0000
+	     DIR$ #WRIT
 
          sub #14,@#kv      ;k <- k - 14
          bne mloop
@@ -377,7 +382,9 @@ OBUF:	.BLKB	8
 
 TSTART:	GTIM$	T1		;Timer start.
 TSTOP:	GTIM$	T2		;Timer stop.
-WRIT:	QIOW$	IO.WAL,5,5,,IOSB,,<OBUF,4>
+EVNTFLG = 5
+WRIT:	QIO$	IO.WAL,5,EVNTFLG,,,,<OBUF,4>
+WAIT:	WTSE$	EVNTFLG
 
 ra:
 msg1:  .ascii "number pi calculator v1 (EIS"
