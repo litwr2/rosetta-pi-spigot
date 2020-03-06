@@ -4,7 +4,7 @@
 set noeis 0
 set eis 1
 set c 0
-set v 8
+set v 9
 #If it all goes pear shaped the script will timeout after 20 seconds.
 set timeout 16
 #Second argument is assigned to the variable user
@@ -29,7 +29,10 @@ expect "Password:"
 send "$password\n"
 expect timeout
 send "ls\n"
+expect "$"
+expect timeout
 send "who\n"
+expect "$"
 expect timeout
 
 if $noeis {
@@ -39,7 +42,9 @@ if $noeis {
   exec sed /^#/d $fn.x >$fn.s
   set f [open $fn.s r]
   send "rm ${fn}$v.s\n"
+  expect "$"
   send "touch ${fn}$v.s\n"
+  expect "$"
   expect timeout
   while {![eof $f]} {
     send "echo '"
@@ -54,10 +59,12 @@ if $noeis {
     send "$s\n"
     gets $f s; regsub "#" $s "\\#" s
     send "$s'>>${fn}$v.s\n\n"
+    expect "$"
     expect timeout
   }
   exec rm $fn.x $fn.c $fn.s
   send "cc -c ${fn}$v.s\n"
+  expect "$"
   expect timeout
 }
 if $eis {
@@ -66,7 +73,9 @@ if $eis {
   exec sed /^#/d $fn.x >$fn.s
   set f [open $fn.s r]
   send "rm ${fn}$v.s\n"
+  expect "$"
   send "touch ${fn}$v.s\n"
+  expect "$"
   expect timeout
   while {![eof $f]} {
     send "echo '"
@@ -81,6 +90,7 @@ if $eis {
     send "$s\n"
     gets $f s; regsub "#" $s "\\#" s
     send "$s'>>${fn}$v.s\n\n"
+    expect "$"
     expect timeout
   }
   exec rm $fn.x $fn.s
@@ -110,14 +120,17 @@ if $c {
     expect timeout
   }
   send "cc -c ${fn}.c\n"
+  expect "$"
   expect timeout
 }
 if $c&&$eis {
   send "cc -o pi-eis$v pi-eis$v.o pi.o\n"
+  expect "$"
   expect timeout
 }
 if $c&&$noeis {
   send "cc -o pi-noeis$v pi-noeis$v.o pi.o\n"
+  expect "$"
 }
 
 #This hands control of the keyboard over two you (Nice expect feature!)

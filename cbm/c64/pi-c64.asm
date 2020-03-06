@@ -39,6 +39,7 @@
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
+IO = 1
 DIV8OPT = 1           ;it is slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
@@ -229,6 +230,7 @@ l4       lda #>10000
          sta divisor+1
          lda #<10000
          sta divisor
+.if IO
          lda dividend+3   ;dividend = quotient
          jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
@@ -242,6 +244,7 @@ l4       lda #>10000
          sta c             ;c <- d%10000
          lda remainder+1
          sta c+1
+.endif
          lda k      ;k <- k - 14
          sec
          sbc #14

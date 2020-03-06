@@ -36,9 +36,11 @@
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 
-;there is a neater and finer pi-spigot implementation for RSX-11 (EIS only)
+;there is a neater and nicer pi-spigot implementation for RSX-11 (EIS only)
 ;it can be found at ftp://guest:guest@Mim.Update.UU.SE/US:[BQT]PIRSX.MAC
 ;it is even faster but rather only theoretically and in an invisible amount
+;however its maximum for digits produced is less and it uses its own buffer
+;to keep all the output which is forbidden by rule #4
 
 	.TITLE	PI - Spigot PI calculator using EIS
 
@@ -47,7 +49,8 @@
 
       .radix 10
 
-MEMSZ=31864         ;this is a constant calculated from data in a MAP-file produced by a linker
+IO = 1
+MEMSZ = 31864       ;this is a constant calculated from data in a MAP-file produced by a linker
                     ;10500 is enough for 3000 digits
 
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
@@ -192,7 +195,7 @@ START:
 	ADD	#3,R0
 	BIC	#3,R0
 	CMP	R0,R1			; Did that cause a change?
-	BEQ	1$
+	BEQ	31$
 
     mov r0,r2
     mov r0,-(sp)
@@ -201,10 +204,74 @@ START:
     QIOW$S	#IO.WLB, #5, #5,,,,<#msg5, #msg6-msg5, #40>
     mov (sp)+,r0
 
-1$:	
+31$:	
     QIOW$S  #IO.WLB, #5, #5,,,,<#msg5, #1, #40>
-	CALL	SPIGOT			; Calculate PI.
+         mov r0,r4
+         asr r4
+         add r0,r4
+         asl r0
+         add r0,r4    ;r4 <- r0/2*7
+         mov r4,@#kv
+         tst -(sp)
 
+	     DIR$ #TSTART		; Start measure time.
+         mov r4,r0     ;fill r-array
+         mov #2000,r1
+         mov #ra+2,r2
+1$:      mov r1,(r2)+
+         sob r0,1$
+
+mloop:   clr r5       ;d <- 0
+         clr r0
+kvs:     mov #0,r1
+         asl r1       ;i <- 2k
+         br l4x
+divm:
+         adiv
+div32b:
+         bdiv
+
+l77:     add r3,r2       ;d <- d/b*i
+         adc r4
+         sub r2,r5
+         sbc r0
+         sub r4,r0
+         ror r0
+         ror r5
+l4x:     mov #10000,r2
+         mul ra(r1),r2   ;the result in r2 - high, r3 - low
+         bpl 202$
+
+         add #10000,r2
+202$:    add r3,r5
+         mov r5,r3
+         adc r2
+         add r0,r2   ;sets CF=0
+         mov r2,r0
+         dec r1          ;b <- 2*i-1, CF=0 for EIS!
+         div32x16
+exit:
+         mov r3,ra+1(r1)      ;r[i] <- d%b
+         sob r1,l77        ;i <- i - 1
+
+.if ne IO
+         mov r2,r3
+         mov r4,r2
+         div #10000,r2
+         add @#cv,r2  ;c + d/10000
+         mov r3,@#cv     ;c <- d%10000
+
+	     MOV #OBUF,R5
+         DIR$ #WAIT
+	     call PR0000
+	     DIR$ #WRIT
+.endc
+         sub #14,@#kv      ;k <- k - 14
+         bne mloop
+
+         DIR$ #WAIT
+	     DIR$ #TSTOP
+         tst (sp)+
 ;
 ; Figure out how many ticks passed, and make this
 ; into 1/100s.
@@ -231,7 +298,6 @@ START:
     mov T2+14,r0
     call $DDIV   ;R1:R2/R0 = R1:R2 mod R0
     mov r2,r4
-
 ;
 ; Now get minutes passed.
 ;
@@ -266,82 +332,8 @@ START:
 	MOV #<2*2048>+512+10,R2	;2 digits, base 10, with leading 0
 	CALL	$CBTA
     sub #ra,r0
-    DIR$ #WAIT
     QIOW$S	#IO.WLB,#5, #5,,,,<#ra, r0>
 	EXIT$S
-
-;
-; Spigot PI calculation.
-;
-; In> R0 - Number of digits to calculate.
-;
-SPIGOT:	 mov r0,r4
-         asr r4
-         add r0,r4
-         asl r0
-         add r0,r4    ;r4 <- r0/2*7
-         mov r4,@#kv
-         tst -(sp)
-
-	DIR$	#TSTART		; Start measure time.
-         mov r4,r0     ;fill r-array
-         mov #2000,r1
-         mov #ra+2,r2
-1$:      mov r1,(r2)+
-         sob r0,1$
-
-mloop:   clr r5       ;d <- 0
-         clr r0
-
-kvs:     mov #0,r1
-         asl r1       ;i <- 2k
-         br l4x
-divm:
-         adiv
-div32b:
-         bdiv
-
-l77:     add r3,r2       ;d <- d/b*i
-         adc r4
-         sub r2,r5
-         sbc r0
-         sub r4,r0
-         ror r0
-         ror r5
-l4x:      mov #10000,r2
-         mul ra(r1),r2   ;the result in r2 - high, r3 - low
-         bpl 202$
-
-         add #10000,r2
-202$:    add r3,r5
-         mov r5,r3
-         adc r2
-         add r0,r2   ;sets CF=0
-         mov r2,r0
-         dec r1          ;b <- 2*i-1, CF=0 for EIS!
-         div32x16
-exit:
-         mov r3,ra+1(r1)      ;r[i] <- d%b
-         sob r1,l77        ;i <- i - 1
-
-         mov r2,r3
-         mov r4,r2
-         div #10000,r2
-         add @#cv,r2  ;c + d/10000
-         mov r3,@#cv     ;c <- d%10000
-
-	     MOV #OBUF,R5
-         DIR$ #WAIT
-	     call PR0000
-	     DIR$ #WRIT
-
-         sub #14,@#kv      ;k <- k - 14
-         bne mloop
-
-	DIR$	#TSTOP
-
-	TST	(SP)+		; Clean stack.
-	RETURN
 
 ;
 ; Output 4 digits
@@ -350,16 +342,16 @@ exit:
 ;     R2 - Value
 ;
 PR0000:
-        mov #1000,r3
+    mov #1000,r3
 	CALL @#PRZ
-        mov #100,r3
+    mov #100,r3
 	CALL @#PRZ
-        mov #10,r3
+    mov #10,r3
 	CALL @#PRZ
 	mov r2,r0
 PR:	add #48,r0
    	movb r0,(r5)+
-        return
+    return
 
 PRZ:	mov #65535,r0
 4$:	inc r0

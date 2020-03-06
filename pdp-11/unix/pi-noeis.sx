@@ -34,6 +34,7 @@
 /MMS gave some support
 /Thorham and meynaf helped a lot
 
+#define IO
 /#define BSD
 
 #ifdef BSD
@@ -152,7 +153,9 @@ m6:      mov r2,1(r1)      /r[i] <- d%b
          mov r3,*sp
          jmp *$m5
 
-m77:     mov r3,r2
+m77:
+#ifdef IO
+         mov r3,r2
          mov r4,r3
          mov $10000.,r1
          jsr pc,*$div32x16s
@@ -168,6 +171,7 @@ m77:     mov r3,r2
 #else
          mov $1,r0
          sys 4;buf4;4    /write=4
+#endif
 #endif
          sub $14.,*$kv      /k <- k - 14
          beq m78
@@ -233,5 +237,5 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "6","(","N","O","E","I","S",")",0
+_ver:   .byte "7","(","N","O","E","I","S",")",0
 

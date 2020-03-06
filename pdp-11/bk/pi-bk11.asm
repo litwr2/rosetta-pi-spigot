@@ -38,6 +38,7 @@
       .radix 10
       .dsabl gbl
 
+IO = 1
 HMUL = 0  ;hardware multiplication, 0 - no
 
 ;N = 10500   ;3000 digits
@@ -224,7 +225,9 @@ ivs:
          ror r5
          jmp @#ivs
 
-4$:      mov #512,sp
+4$:
+.if ne IO
+         mov #512,sp
          mov r4,r3
          mov #10000,r1
          call @#div32x16s
@@ -233,7 +236,7 @@ ivs:
          mov #toandos,@#pageport
          call @#PR0000
          mov #todata,@#pageport
-
+.endc
          mov @#timerport2,r1
          mov @#prevtime,r3
          sub r1,r3
@@ -438,6 +441,6 @@ msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v5"<10>
+msg1: .ascii "number "<160>" calculator v6"<10>
       .asciz "         it may give 3000 digits in about an hour!"
 

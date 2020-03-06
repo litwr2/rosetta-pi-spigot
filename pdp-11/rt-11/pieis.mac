@@ -39,6 +39,7 @@
       .radix 10
 
 DEBUG = 0
+IO = 1
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
@@ -232,12 +233,14 @@ exit:
          mov r3,ra+1(r1)      ;r[i] <- d%b
          sob r1,l77        ;i <- i - 1
 
+.if ne IO
          mov r2,r3
          mov r4,r2
          div #10000,r2
          add @#cv,r2  ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
          call @#PR0000
+.endc
          sub #14,@#kv      ;k <- k - 14
          bne mloop
 
@@ -442,7 +445,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v10 (EIS"
+      .ascii " calculator v11 (EIS"
 .if ne DIVOF
       .ascii "-of"
 .endc

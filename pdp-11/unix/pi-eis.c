@@ -36,6 +36,7 @@
 /Thorham and meynaf helped a lot
 
 /#define BSD
+#define IO
 #define DIVOF
 
 #ifdef BSD
@@ -114,6 +115,7 @@ exitdiv:
 m6:      mov r3,1(r1)      /r[i] <- d%b
          sob r1,m77
 
+#ifdef IO
          mov r2,r3
          mov r4,r2
          div $10000.,r2
@@ -129,6 +131,7 @@ m6:      mov r3,1(r1)      /r[i] <- d%b
 #else
          mov $1,r0
          sys 4;buf4;4    /write=4
+#endif
 #endif
          sub $14.,*$kv      /k <- k - 14
          bne mloop
@@ -236,7 +239,7 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "9","(","E","I","S"
+_ver:   .byte "1","0","(","E","I","S"
 #ifdef DIVOF
 	.byte "-","o","f"
 #endif

@@ -38,6 +38,7 @@
       .radix 10
 
 DEBUG = 0
+IO = 1
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
       $JSW =: ^O44
@@ -193,13 +194,16 @@ ivs:     mov ra(r1),r0     ;r[i]
          mov r3,@sp
          jmp @#ivs
 
-4$:      mov r3,r2
+4$:
+.if ne IO
+         mov r3,r2
          mov r4,r3
          mov #10000,r1
          call @#div32x16s
          add @#cv,r2  ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
          call @#PR0000
+.endc
          sub #14,@#kv      ;k <- k - 14
          beq 5$
          jmp @#mloop
@@ -425,7 +429,7 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v7 (no EIS)" <13> <10>
+      .ascii " calculator v8 (no EIS)" <13> <10>
       .ascii "number of digits (up to " <128>
 msg2: .ascii ")? " <128>
 msg3: .ascii " digits will be printed"

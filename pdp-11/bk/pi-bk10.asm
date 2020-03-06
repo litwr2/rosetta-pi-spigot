@@ -39,6 +39,7 @@
       .dsabl gbl
 
 HMUL = 0  ;hardware multiplication, 0 - no
+IO = 1
 
 ;N = 10500   ;3000 digits
 ;N = 3500   ;1000 digits
@@ -231,13 +232,16 @@ ivs:
          ror r5
          jmp @#ivs
 
-4$:      mov #512,sp
+4$:
+.if ne IO
+         mov #512,sp
          mov r4,r3
          mov #10000,r1
          call @#div32x16s
          add @#cv,r2     ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
          call @#PR0000
+.endc
          mov @#timerport2,r1
          mov @#prevtime,r3
          sub r1,r3
@@ -441,6 +445,6 @@ msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v6"<10>
+msg1: .ascii "number "<160>" calculator v7"<10>
       .asciz "         it may give 2000 digits in about an hour!"
 
