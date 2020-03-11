@@ -67,7 +67,7 @@ _pistart:
 m1:      mov r1,(r2)+
          sob r0,m1
 
-         ;clr *$cv
+         /clr *$cv
 mloop:   clr r5       /d <- 0
          clr r0
 kvs:     mov $0,r1
@@ -197,23 +197,20 @@ div32b:
      asl r3
      rol r2
 #endif
-     mov r0,*sp
-     mov r3,r0
-     mov r2,r3
-     clr r2
-     div r1,r2
-     mov r2,r4
-     mov r3,r2
-     mov r0,r3
+     mov r5,*sp
+     mov r2,r5
+     clr r4
+     div r1,r4
+     mov r5,r2
      asr r2
      ror r3
      div r1,r2
-     clr r0
+     clr r5
      asr r4
-     ror r0
-     add r0,r2
+     ror r5
+     add r5,r2
      adc r4
-     mov *sp,r0
+     mov *sp,r5
      br exitdiv
 
 PR0000: mov $buf4,r1
@@ -239,7 +236,7 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "1","0","(","E","I","S"
+_ver:   .byte "1","1","(","E","I","S"
 #ifdef DIVOF
 	.byte "-","o","f"
 #endif

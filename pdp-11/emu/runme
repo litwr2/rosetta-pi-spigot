@@ -1,4 +1,4 @@
 fn=pi-eis
 awk '/piemu start/{f=1;next}/piemu end/{f=0;print " halt"}/piemu finish/{f=0}f' ../unix/$fn.c >$fn-emu.c
-cc -DDIVOF -E $fn-emu.c >$fn-emu.s
+cc -DDIVOF -DIO -E $fn-emu.c >$fn-emu.s
 g++ -O3 -o piemu piemu.cpp && time piemu <$fn-emu.s
