@@ -31,6 +31,8 @@
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;litwr has written this for BK
+;bqt helped much with optimization
+;Manwe helped with development
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
@@ -47,7 +49,7 @@ N = 350   ;100 digits
 ;N = 2800  ;800 digits
 
 kv = kvs + 2
- 
+
 timerport1 = ^O177706            ;$ffc6
 timerport2 = ^O177710            ;$ffc8
 timerport3 = ^O177712            ;$ffca
@@ -171,7 +173,6 @@ restart: mov #msg4,r1
          clr @#cv
 mloop:   clr r5       ;d <- 0
          clr sp
-
 kvs:     mov #0,r1
          asl r1       ;i <- 2k
 ivs:

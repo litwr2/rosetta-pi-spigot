@@ -30,7 +30,9 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;litwr has written this for ARM
+;litwr has written this for BK
+;bqt helped much with optimization
+;Manwe helped with development
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
@@ -38,8 +40,8 @@
       .radix 10
       .dsabl gbl
 
-IO = 1
 HMUL = 0  ;hardware multiplication, 0 - no
+IO = 1
 
 ;N = 10500   ;3000 digits
 ;N = 3500   ;1000 digits
@@ -420,7 +422,7 @@ getnum: clr r1    ;length
 5$:     tst r1
         beq 0$
 
-        cmp @#maxnum,r2
+        cmp @#maxnum,r2   ;(end of memory minus end of program)/7 and down to the multiple of 4
         bcs 0$
 
         tst r2
@@ -441,6 +443,6 @@ msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v6"<10>
+msg1: .ascii "number "<160>" calculator v7"<10>
       .asciz "         it may give 3000 digits in about an hour!"
 
