@@ -38,17 +38,18 @@
 
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr made the spigot for several z80 based computers
+;bqt helped much with optimization
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
 
 TIKI100 equ 0
-AMSTRADCPC equ 1
+AMSTRADCPC equ 0
 AMSTRADPCW equ 0
-C128 equ 0
+C128 equ 1
 MSX equ 0
 MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 ACORNBBCZ80 equ 0
@@ -106,10 +107,11 @@ if BIOS_OUTPUT
 endif
 
 if MSX
-      ld a,$54
-      ld d,$55
-      ld hl,$2b
-      call $f380
+      ld a,($fcc1)     ;Get main-ROM slot number
+      ld hl,$2b       ;Read address #2b
+      call $c         ;Call RDSLT
+      ei                
+      ld e,a
       ld a,60
       bit 7,e
       jr z,$+4
@@ -971,7 +973,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v7',13,10
+      db ' calculator v8',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
@@ -1001,7 +1003,7 @@ endif
 if CPM3TIMER
       db ', CP/M+ timer'
 endif
-      db ').',13,10,'number of digits (up to $'
+      db ')',13,10,'number of digits (up to $'
 msg2  db ')? $'
 msg3  db ' digits will be printed'
 msg4  db 13,10,'$'

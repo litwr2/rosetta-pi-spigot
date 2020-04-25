@@ -70,7 +70,6 @@ LINELEN  EQU   80
 &STPT    SETB  0
 *
 BALPI    CSECT
-*
          USING BALPI,12
          STM   14,12,0(13)
          LR    12,15

@@ -22,3 +22,10 @@ MODE 80 (DOS)
 CLS (DOS)
 RUN"PI.BAS
 RUN
+FILES
+WIDTH80
+
+openMSX:
+F9 - full throttle
+F11 - mute
+F12 - fullscreen
