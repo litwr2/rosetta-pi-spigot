@@ -1,10 +1,7 @@
 FILES
    pi-msx.com
-   pi-msx-intr.com
-ARE AT cpm22 FOLDER.  THEY ARE ALSO AT msx.dsk DISK IMAGE.
-
-
-MSX Basic program may show wrong time for 2201-2699 digits computation.  It is the problem of MSX Basic which timer is 16-bit only.
+   pi-msx-i.com
+ARE AT cpm22 FOLDER.  THEY ARE ALSO AT msx.dsk DISK IMAGE.  For turboR, insert disk only after the system boot is finished
 
 
 the next models of OPENMSX had tested:
@@ -20,8 +17,10 @@ commands:
 BASIC (DOS)
 MODE 80 (DOS)
 CLS (DOS)
+CLS
 RUN"PI.BAS
 RUN
+LOAD"PI.BAS
 FILES
 WIDTH80
 

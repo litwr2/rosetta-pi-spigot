@@ -32,6 +32,7 @@
 
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr made the spigot for several z80 based computers
+;bqt helped much with optimization
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped too
@@ -42,6 +43,9 @@ N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
 SA equ $8500  ;start address
 R800 equ 0   ;R800 MULUW is 1 t-state slower than the table multiplication but it saves 781 bytes
+
+MSX_TIMER equ $FC9E
+IO equ 1
 
 OPT equ 5       ;it's a constant for the pi-spigot
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
@@ -58,6 +62,12 @@ start    proc
          ;di            ;no interrupts
          ld (kv),bc     ;k <- N
          dec bc
+    ld hl,0
+    ld (time),hl
+    ld (time+2),hl
+
+    ld hl,(MSX_TIMER)
+    ld (prevtime),hl
      ld a,c
      cpl
      ld c,a
@@ -169,6 +179,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          pop hl
          pop hl
+if IO
          ld h,b
          ld l,c
          ld bc,10000
@@ -180,6 +191,20 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          add hl,de   ;c + d/10000
          call PR0000
+endif
+     ld de,(prevtime)
+     ld hl,(MSX_TIMER)
+     ld (prevtime),hl
+     xor a
+     sbc hl,de
+     ld de,(time)
+     add hl,de
+     ld (time),hl
+     jr nc,$+9
+     ld hl,(time+2)
+     inc hl
+     ld (time+2),hl
+
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -226,6 +251,7 @@ div32x8
 include "z80-div8.s"
 endif
 
+if IO
 div32x16r proc
      local t,t0,t1,t2,t3
      call t
@@ -250,9 +276,12 @@ t3
      div0
      RET
      endp
+endif
 
 cv dw 0
 kv dw 0
+prevtime dw 0
+time dw 0,0   ;@ti0@, @ti1@, @ti2@
 dw 0   ;reserved for Basic h, @varh@
 
          org ($ + 256) and $ff00

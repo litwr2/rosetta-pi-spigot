@@ -1,0 +1,6 @@
+A=${1%%asm}
+pasmo6 --listing ${A}lst ${A}asm ${A}com || exit 1
+sudo mount -t msdos -o loop,fmask=111,dmask=000 msx1.dsk /mnt/loop
+exit
+cp ${A}com /mnt/loop
+sudo umount /mnt/loop

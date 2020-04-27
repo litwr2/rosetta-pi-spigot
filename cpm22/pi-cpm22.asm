@@ -111,9 +111,8 @@ if MSX
       ld hl,$2b       ;Read address #2b
       call $c         ;Call RDSLT
       ei                
-      ld e,a
+      bit 7,a
       ld a,60
-      bit 7,e
       jr z,$+4
       ld a,50
       ld (msx_vsync),a
@@ -973,7 +972,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v8',13,10
+      db ' calculator v9',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
