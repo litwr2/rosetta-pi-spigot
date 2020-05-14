@@ -39,6 +39,8 @@
 
 kl_time_please equ &bd0d
 BDOS equ 5
+IO equ 1
+
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
 OPT equ 5       ;it's a constant for the pi-spigot
 
@@ -224,6 +226,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          pop hl
          pop hl
+if IO
          ld h,b
          ld l,c
          ld bc,10000
@@ -235,6 +238,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          add hl,de   ;c + d/10000
          call PR0000
+endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -364,7 +368,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v6',13,10
+msg1  db 'number ',165,' calculator v7',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'
@@ -456,6 +460,6 @@ l5      ld a,b
 
 l8      pop de
         djnz l8
-        retn
+        ret
 endp
   end start

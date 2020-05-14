@@ -45,6 +45,7 @@
 
 BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
+IO equ 1
 
 TIKI100 equ 0
 AMSTRADCPC equ 0
@@ -343,6 +344,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          pop hl
          pop hl
+if IO
          ld h,b
          ld l,c
          ld bc,10000
@@ -354,6 +356,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          add hl,de   ;c + d/10000
          call PR0000
+endif
 if MSX and MSX_INTR=0
      ld de,(prevtime)
      ld hl,(MSX_TIMER)
@@ -413,7 +416,7 @@ lct8  ld (hl),a
       daa
       jr nc,lct9
 
-      sub 76
+      sub 76h
 lct9  ld (hl),a
 endif
 if TIKI100
@@ -972,7 +975,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v9',13,10
+      db ' calculator v10',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
@@ -1094,7 +1097,7 @@ l5      ld a,b
 
 l8      pop de
         djnz l8
-        retn
+        ret
 endp
 if CPM3TIMER
 days2  dw 0

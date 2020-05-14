@@ -88,12 +88,21 @@ endif
      ADC   A, H
      JP    NC, DIV320
 
-longdiv
-     PUSH  DE
+     PUSH  DE  ;longdiv
+
+if OPT=0
+     xor a  ;sets CF=0
+else if OPT < 3
 rept OPT
-     sla h    ;sets CF=0
+     sla h
 endm
-;set CF=0 if OPT=0 !!!
+else
+     ld a,h
+rept OPT
+     rlca   ;sets CF=0
+endm
+     ld h,a
+endif
      EX    DE, HL
      LD    HL, 0
 rept 8-OPT
