@@ -111,7 +111,7 @@ if MSX
       ld a,($fcc1)     ;Get main-ROM slot number
       ld hl,$2b       ;Read address #2b
       call $c         ;Call RDSLT
-      ei                
+      ei
       bit 7,a
       ld a,60
       jr z,$+4
@@ -332,7 +332,7 @@ loop2    ld c,iyl
          dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iy
+         dec iyl   ;iy is odd
 
          push hl
          push de
@@ -969,13 +969,13 @@ if TIKI100
       db 240
 endif
 if AMSTRADCPC
-      db 165
+      db 184
 endif
 if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v10',13,10
+      db ' calculator v11',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
@@ -1004,6 +1004,11 @@ if C128
 endif
 if CPM3TIMER
       db ', CP/M+ timer'
+endif
+if BIOS_OUTPUT
+      db ', BIOS'
+else
+      db ', BDOS'
 endif
       db ')',13,10,'number of digits (up to $'
 msg2  db ')? $'

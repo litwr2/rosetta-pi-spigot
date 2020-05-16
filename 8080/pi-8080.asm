@@ -185,12 +185,14 @@ lf0      ld (hl),e
          ld a,b
          ld (cv),a
          ld (cv+1),a
-loop     ld hl,0          ;d <- 0
-         push hl
-         push hl
-         ld hl,(kv)          ;i <-k
+loop     ld hl,(kv)          ;i <-k
          add hl,hl        ;keeps 2*i
-         ld (iym),hl
+         ld b,h
+         ld c,l
+         push hl
+         ld hl,0          ;d <- 0
+         push hl
+         push hl
          jp loop2
 
 l4       add hl,de
@@ -224,12 +226,11 @@ lnc      ex de,hl
          rra
          ld e,a
 
+         pop bc
+         push bc
          push hl
          push de
-         ld hl,(iym)
-loop2    ld b,h
-         ld c,l
-         ld hl,ra
+loop2    ld hl,ra
          add hl,bc
          ld (m1+1),hl
 
@@ -265,24 +266,22 @@ loop2    ld b,h
          inc hl
 noc      add hl,bc
 
-         push hl
-    ld hl,(iym)    ;i <- i - 1
-    dec hl
-    ld b,h
-    ld c,l
-    dec l            ;hl is odd
-         ld a,l
-         or h
-    ld (iym),hl
-         pop hl
+    pop bc
+    dec bc     ;i <- i - 1
+    dec c      ;bc is odd
+    push bc
+    ld a,c
+    or b
          push hl
          push de
     push af
+    inc c
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-     pop af
+    pop af
          jp nz,l4
 
+         pop hl
          pop hl
          pop hl
 if IO
@@ -590,7 +589,6 @@ endif
 
 cv dw 0
 kv dw 0
-iym dw 0
 
 if CPM3TIMER
 days1  dw 0
@@ -611,7 +609,7 @@ if GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v1',13,10
+      db ' calculator v2',13,10
       db 'for CP/M 2.2 (8080, '
 
 if GENERIC
@@ -650,7 +648,11 @@ l00     ld c,6   ;direct console i/o
         cp 13
         jp z,l5
 
+if KORVET
         cp 8    ;backspace, check the system for this value
+else
+        cp 07fh    ;backspace
+endif
         jp z,l1
 
         cp '0'

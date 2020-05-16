@@ -143,7 +143,7 @@ loop2    ld c,iyl
          dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iy
+         dec iyl
 
          push hl
          push de

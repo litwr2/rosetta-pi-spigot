@@ -214,7 +214,7 @@ loop2    ld c,iyl
          dec iy
          ld b,iyh
          ld c,iyl
-         dec iy
+         dec iyl
 
          push hl
          push de
@@ -368,7 +368,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v7',13,10
+msg1  db 'number ',165,' calculator v8',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'

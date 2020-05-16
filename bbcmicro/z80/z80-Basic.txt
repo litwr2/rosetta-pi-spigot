@@ -1,9 +1,0 @@
-If you have z80-Basic ROM then use it together with Acorn z80 2nd processor and run pi-z80 from Basic by
-CH."PI-Z80"
-
-The provided disk image contains a ROM image of z80 ROM Basic.  So if you have sideways RAM then move the ROM image into it by
-SRLOAD Z80ROM 8000 4
-
-Then press CTRL-BREAK and run the program
-*DISC
-CH."PI-Z80"

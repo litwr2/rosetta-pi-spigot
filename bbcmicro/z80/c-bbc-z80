@@ -9,5 +9,5 @@ sed 's/$/\r/' BOOT >'!BOOT'
 beeb delete $D -y !BOOT PIZ PILOADZ
 beeb putfile $D !BOOT PIZ PILOADZ
 
-echo PILOADZ is a text file and maybe converted to Basic by *EXEC and SAVE
+echo PILOADZ is a text file and may be converted to Basic by *EXEC and SAVE
 #rm z.sed

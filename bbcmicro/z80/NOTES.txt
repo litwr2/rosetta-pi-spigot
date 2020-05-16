@@ -15,6 +15,24 @@ COPY src-file TO dst-file
 To delete a file with Torch CPN use
 DELETE file
 
+To copy a file with Torch CPN use
+COPY file TO file
+
 To copy files from/to DFS use RWACORN.COM utility from Torch CPN distribution.
 
-To copy files from/to DFS use DIP.COM utility from Acorn CP/M distribution.
+To copy files from/to DFS use DIP.COM utility from Acorn CP/M distribution:
+    DIP PI.COM=:1.$.PIACORN
+
+
+If you have z80-Basic ROM then use it together with Acorn z80 2nd processor and run pi-z80 from Basic by
+CH."PI-Z80"
+
+The provided disk image (pi-z80-basic.ssd) contains a ROM image of z80 ROM Basic.  So if you have sideways RAM then move the ROM image into it by
+SRLOAD Z80ROM 8000 4
+
+Then press CTRL-BREAK and run the program
+*DISC
+CH."PI-Z80"
+
+To use Torch select proper ROM configuration at first then reboot and type
+MCP
