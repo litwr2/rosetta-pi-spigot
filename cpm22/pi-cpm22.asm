@@ -125,7 +125,7 @@ if BIOS_OUTPUT
 else
     ld hl,(6)
 endif
-    push hl
+    ld sp,hl
     add hl,de
     ld de,0
     ex de,hl
@@ -242,8 +242,6 @@ vicsave
     ld (hl),a
 endif
          pop bc      ;fill r-array
-         pop hl
-         ld sp,hl
      ld (kv),bc  ;k <- N
      dec bc
      ld a,c
@@ -975,7 +973,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v11',13,10
+      db ' calculator v12',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC

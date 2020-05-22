@@ -25,6 +25,7 @@ FILES
 WIDTH80
 
 openMSX:
+Print Screen
 F9 - full throttle
 F11 - mute
 F12 - fullscreen

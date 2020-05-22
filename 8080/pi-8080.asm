@@ -43,8 +43,8 @@ CPM3TIMER equ 0
 IO equ 1
 
 GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
-KORVET equ 0
-AMSTRADCPC equ 1
+KORVET equ 1
+AMSTRADCPC equ 0
 
 if GENERIC + KORVET + AMSTRADCPC != 1
 show ERROR
@@ -79,14 +79,17 @@ if BIOS_OUTPUT
    add hl,de
    ld (bios4+1),hl
 endif
-
+if KORVET
+    ld de,-(ra+64)  ;64 bytes for stack
+else
     ld de,-(ra+48)  ;48 bytes for stack
+endif
 if BIOS_OUTPUT
     pop hl
 else
     ld hl,(6)
 endif
-    push hl
+    ld sp,hl
     add hl,de
     ld de,0
     ex de,hl
@@ -156,12 +159,36 @@ if AMSTRADCPC
     ld (time),hl
     ld (time+2),de
 endif
+if KORVET
+    pop bc
+    ld hl,0
+    push hl
+    add hl,sp
+    ld (ssp+1),hl
+    ld (ssp2+1),hl
+    ex de,hl
+    ld hl,(0xf7f1)
+    push hl
+    ld hl,(KINTR+8)
+    push hl
+    ex de,hl
+    push hl
+    ex de,hl
+    ld hl,(KINTR+4)
+    push hl
+    ex de,hl
+    push hl
+    ld hl,(KINTR)
+    push hl
+    ld hl,0
+    add hl,sp
+    ld (0xf7f1),hl
+    push bc
+endif
          pop hl      ;fill r-array
      ld (kv),hl  ;k <- N
          ld b,h
          ld c,l
-         pop hl
-         ld sp,hl
      dec bc
      ld a,c
      cpl
@@ -299,6 +326,23 @@ if IO
          add hl,de   ;c + d/10000
          call PR0000
 endif
+if KORVET
+         ld de,0
+         di
+ssp      ld hl,(0)
+         ex de,hl
+ssp2     ld (0),hl
+         ei
+         ld hl,(time)
+         add hl,de
+         ld (time),hl
+         jp  nc,kl1
+
+         ld hl,(time+2)
+         inc hl
+         ld (time+2),hl
+kl1      
+endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -358,12 +402,37 @@ lct8  ld (hl),a
       sub 76h
 lct9  ld (hl),a
 endif
+if KORVET
+    di
+    pop hl
+    pop hl
+    pop hl
+    pop hl
+    pop hl
+    pop hl
+    ld (0xf7f1),hl
+    pop hl
+    ei
+endif
+if GENERIC = 0
+     ld hl,(time+2)
+     push hl
+     ld hl,(time)
+     push hl
+endif 
 if AMSTRADCPC
     call ENTER_FIRMWARE
     dw KL_TIME_PLEASE
 endif
+if KORVET
+    pop hl
+    pop de
+    ld bc,0
+    push bc
+    push bc
+endif
 if GENERIC = 0
-     ld bc,(time)
+     pop bc
      ld a,l
      sub c
      ld l,a
@@ -371,7 +440,7 @@ if GENERIC = 0
      sbc a,b
      ld h,a
      ex de,hl
-     ld bc,(time+2)
+     pop bc
      ld a,l
      sbc a,c
      ld l,a
@@ -381,6 +450,9 @@ if GENERIC = 0
 endif
 if AMSTRADCPC
      ld bc,300
+endif
+if KORVET
+     ld bc,50
 endif
 if GENERIC = 0
         call div32x16r
@@ -408,7 +480,11 @@ if AMSTRADCPC
         jp c,$+3
         inc de
 endif
-                      ;*10000/freq
+if KORVET
+        ld bc,200    ;10000/50 = 200
+        call mul16
+endif
+                    ;*10000/freq
 if GENERIC = 0
         ex de,hl
 	call PR0000
@@ -582,11 +658,11 @@ t3
      div0
      RET
      endp
+
 if GENERIC = 0
 include "8080-mul16.s"
 time dw 0,0
 endif
-
 cv dw 0
 kv dw 0
 
@@ -609,7 +685,7 @@ if GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v2',13,10
+      db ' calculator v3',13,10
       db 'for CP/M 2.2 (8080, '
 
 if GENERIC
@@ -624,12 +700,27 @@ endif
 if CPM3TIMER
       db ', CP/M+ timer'
 endif
+if BIOS_OUTPUT
+      db ', BIOS'
+else
+      db ', BDOS'
+endif
       db ')',13,10,'number of digits (up to $'
 msg2  db ')? $'
 msg3  db ' digits will be printed'
 msg4  db 13,10,'$'
 del   db 8,' ',8,'$'
 maxnum dw 0
+if KORVET
+KINTR
+     push hl
+     ld hl,(KTI)
+     inc hl
+     ld (KTI),hl
+     pop hl
+KL   jp 0
+KTI  ;dw 0
+endif
 getnum proc
 local l0,l1,l5,l8
         ld b,0
