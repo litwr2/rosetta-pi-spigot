@@ -1,8 +1,7 @@
 div0 macro         ;it is used in the main code
      local t1,t2
-     ex de,hl
-     add hl,hl
-     ex de,hl
+     or a
+     rl de
      ld a,l
      adc a,l
      ld l,a
@@ -32,34 +31,29 @@ div1 macro
      ld h,a
      jp c,t1
 
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     jp    NC,t2
+     ld a,l
+     sub c
+     ld a,h
+     sbc a,b
+     jp c,t2
 t1
-     ADD   HL,BC
-     scf
-t2
+     sub hl,bc
+t2   ccf
 endm
 
 divz macro
-    local l1,l2
+    local l2
+    ex de,hl
     ADD HL,HL
+    rl de
     EX DE,HL
-    ADD HL,HL
-    EX DE,HL
-    JP NC,l1
 
-    INC L
-l1  LD  A,L
-    ADD A,C
-    LD  A,H
-    ADC A,B
-    JP NC,l2
+    sub hl,bc
+    inc e
+    jp nc,l2
 
     ADD HL,BC
-    INC E
+    dec e
 l2
 endm
 
@@ -71,21 +65,15 @@ endm
 
 div32x16 macro  ; BCDE = HLDE/BC, HL = HLDE%BC
      local DIV320,divminus ;may work wrong if HL>$7fff
-     ;DEC   BC    ;assumes that BC is odd
      LD    A, B
-     dec c
      or a         ;CF=0
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
      jp m,divminus
 
-     ADD   A, L
-     LD    A, B
-     ADC   A, H
-     JP    NC, DIV320
+     ld a,l
+     sub c
+     ld a,h
+     sbc a,b
+     jp c,DIV320
 
      PUSH DE    ;longdiv
 	 EX DE,HL

@@ -1,0 +1,4 @@
+sed -rf a85-to-z80.sed 8085-div.a85 >8085-div.s
+sed -rf a85-to-z80.sed pi-t100.a85 >pi-t100.asm
+pasmo6 --listing pi-t100.lst pi-t100.asm calcpi.co
+rm -f 8085-div.s 8085-mul16.s pi-t100.asm
