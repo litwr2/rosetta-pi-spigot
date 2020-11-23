@@ -42,7 +42,7 @@ DEBUG = 0
 IO = 1
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
            ;with some PDP-11, for example, 11/34 and 11/44
-
+SOUZNEON = 0 ;This computer needs its timer to be corrected, 1.3 factor is used
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
       $JSW =: ^O44
@@ -255,10 +255,13 @@ exit:
          mov @#time2+2,r3
          asl r3
          rol r2
+.if eq SOUZNEON
          .gval #area,#CONFIG
          mov r0,r4
+.iftf
          mov r3,r1
          mov r2,r0
+.ift
          bit #32,r4    ;50 or 60 Hz?
          bne l206
 
@@ -267,7 +270,7 @@ exit:
          add @#time2+2,r1
          adc r0
          add @#time2,r0
-         asl r1    ;divisor is limited to 15 bits!
+         asl r1    ;quotient is limited to 15 bits!
          rol r0
          mov r0,r3
          clr r2
@@ -285,6 +288,36 @@ exit:
          adc r2
          mov r2,r0
 l206:
+.iff
+         mov r0,-(sp)
+         mov r1,-(sp)
+         asl r1         ;*3
+         rol r0
+         add (sp),r1
+         adc r0
+         add 2(sp),r0
+         asl r1    ;quotient is limited to 15 bits!
+         rol r0
+         mov r0,r3
+         clr r2
+         div #10,r2
+         mov r3,r0
+         asr r0
+         ror r1
+         div #10,r0
+         cmp #4,r1
+         adc r0
+         mov r0,r1
+         clr r0
+         asr r2
+         ror r0
+         add r0,r1
+         adc r2
+         mov r2,r0
+         add (sp)+,r1
+         adc r0
+         add (sp)+,r0
+.endc
          call @#printsec   ;prints r0:r1
          tst (sp)+       ;clear the location for high(d)
          .ttinr
@@ -444,9 +477,12 @@ getnum: clr r1    ;length
 
 msg1: .ascii "number pi"
       ;.byte 160 ;Greek pi
-      .ascii " calculator v12 (EIS"
+      .ascii " calculator v13 (EIS"
 .if ne DIVOF
       .ascii "-of"
+.endc
+.if ne SOUZNEON
+      .ascii ", SOUZ-NEON"
 .endc
       .ascii ")" <13> <10>
       .ascii "number of digits (up to " <128>
