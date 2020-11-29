@@ -1,4 +1,25 @@
+SA=8D00   #for a plain model 100
+#SA=9200   #for a model 100 with REX# (TS-DOS)?
+awk 'BEGIN {
+   B=0x'$SA'
+   "(grep -i IO pi-t100.a85 | grep -i equ | grep 0)" | getline io
+   M=1236
+   if (io != "") M=1212
+}
+{
+   sub("@B@-2048", B-2048)
+#   sub("@B@-255", B-255) #30 IF H < @B@-255 THEN PRINT"BAD"
+   sub("@B@-1", B-1)
+   sub("@B@-2", B-2)
+   sub("@B@\\+21", B+21)
+   sub("@B@\\+22", B+22)
+   sub("@B@\\+1236", B+M)
+   sub("@B@", B)
+   print
+}' pi.cbas >pi.ba
 sed -rf a85-to-z80.sed 8085-div.a85 >8085-div.s
-sed -rf a85-to-z80.sed pi-t100.a85 >pi-t100.asm
+sed -rf a85-to-z80.sed pi-t100.a85 | awk '{
+   if($1=="SA"&&$2=="equ")$0=$1" "$2" $'$SA'"
+   print}' >pi-t100.asm
 pasmo6 --listing pi-t100.lst pi-t100.asm calcpi.co
 rm -f 8085-div.s 8085-mul16.s pi-t100.asm
