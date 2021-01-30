@@ -1,0 +1,13 @@
+tmpx pi-atari.asm -l pi-atari.lst
+gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
+/@ti@/{print "s/@tilo@/"strtonum("0x"$2)"/;s/@timi@/"strtonum("0x"$2)+1"/;s/@tihi@/"strtonum("0x"$2)+2"/"}
+/@EOP@/{print "s/@EOP@/"strtonum("0x"$4)*256"/"}' pi-atari.lst >z.sed
+sed -f z.sed pi-atari.cbas >pi-atari.bas
+dd if=pi-atari.prg of=PI bs=1 skip=2
+tr '\n[:lower:]' '\233[:upper:]' >PI.LST <pi-atari.bas
+rm *.prg
+#echo PI.LAT is a text file and may be converted to Basic by ENTER and SAVE
