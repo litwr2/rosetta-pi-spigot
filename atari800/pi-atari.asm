@@ -32,6 +32,7 @@
 
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr converted it to 6502
+;drac030 helped to make the Atari 800 code
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped too
@@ -60,16 +61,24 @@ fac1 = dividend
 fac2 = remainder
 rbase = $db ;$dc
 
-         * = $d00 + $1a
+         * = $d00 + 7
          pla             ;@start@
          ;lda #125     ;screen clear code
          ;jsr OUTCHAR
          ldy #0
          sei         ;no interrupts
-         sty 18
-         sty 19
+         lda $222
+         pha
+         lda $223
+         pha
+         lda #<tiroutine
+         sta $222
+         lda #>tiroutine
+         sta $223
          sty 20
-         cli
+         sty 19
+         sty 18
+         ;cli
          lda #2
          sta d
          lda #>r            ;@EOP@ - end of program
@@ -248,17 +257,35 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     sei
-         sec
+exit     ;sei
          lda 20
+         ldx 19
+         ldy 18
+         cmp 20
+         bne exit
+
+         cpx 19
+         bne exit
+
          sta ti
-         lda 19
-         sta ti+1
-         lda 18
-         sta ti+2
+         stx ti+1
+         sty ti+2
+         pla
+         sta $223
+         pla
+         sta $222
          cli         ;interrupts enabled
          rts
 
+tiroutine
+         inc 20
+         bne tiexit
+
+         inc 19
+         bne tiexit
+
+         inc 18
+tiexit   jmp ($224)
 
     * = (* + 256) & $ff00
 m10000
