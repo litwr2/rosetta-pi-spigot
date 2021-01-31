@@ -10,4 +10,4 @@ sed -f z.sed pi-atari.cbas >pi-atari.bas
 dd if=pi-atari.prg of=PI bs=1 skip=2
 tr '\n[:lower:]' '\233[:upper:]' >PI.LST <pi-atari.bas
 rm *.prg
-#echo PI.LAT is a text file and may be converted to Basic by ENTER and SAVE
+echo PI.LST is a text file and it may be converted into Basic by ENTER and SAVE

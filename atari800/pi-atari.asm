@@ -37,7 +37,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-OUTCHAR = $F2B0   ;$F6A4 for Atari 400/800
+;OUTCHAR = $F2B0   ;$F6A4 for Atari 400/800
 
 DIV8OPT = 1           ;it slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
@@ -61,7 +61,7 @@ fac1 = dividend
 fac2 = remainder
 rbase = $db ;$dc
 
-         * = $d00 + 7
+         * = $1900 + 7
          pla             ;@start@
          ;lda #125     ;screen clear code
          ;jsr OUTCHAR
@@ -287,6 +287,63 @@ tiroutine
          inc 18
 tiexit   jmp ($224)
 
+outchar ;a portable OUTCHAR
+        tax
+        lda $0347
+        pha
+        lda $0346
+        pha
+        txa
+        ldx     #0
+        rts
+
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0
+         lda #10
+         sta d
+         jsr pr0
+         txa
+         tay
+prd      tya
+         eor #$30
+         stx xs+1
+         ;jsr OUTCHAR
+         jsr outchar
+xs       ldx #0
+         rts
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
+ti .byte 0     ;@ti@
+c .byte 0,0
+
     * = (* + 256) & $ff00
 m10000
  .byte 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
@@ -342,50 +399,5 @@ m10000
 .include "6502-div8.s"
 .endif
 .include "6502-div7.s"
-
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         stx xs+1
-         jsr OUTCHAR
-xs       ldx #0
-         rts
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
-ti .byte 0     ;@ti@
-c .byte 0,0
 
 r = (* + 256) & $ff00
