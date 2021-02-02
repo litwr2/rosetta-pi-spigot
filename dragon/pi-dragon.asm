@@ -36,17 +36,21 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-OPCHR equ $800C    ;print char in AC
-
 DIV8OPT equ 0      ;1 is slower
-OPT equ 5          ;it's a constant for the pi-spigot, OPT=0 and OPT=6 are not supported
-DIVNOMINUS equ 0   ;limits to 4704 digits, this may shrink size, not increase speed
+OPT equ 5          ;it's a constant for the pi-spigot
+DIVNOMINUS equ 1   ;limits to 4704 digits, this may shrink size and slightly increase speed
 
-;N equ 350    ;100 digits
+N equ 350    ;100 digits
 ;N equ 2800   ;800 digits
-N equ 3500   ;1000 digits
+;N equ 3500   ;1000 digits
 
+  if DRACO
+OPCHR equ $800C    ;print char in AC
          org $2800
+  else
+OPCHR equ $A282    ;print char in AC
+         org $2900
+  endif
          setdp dpage/256
 dpage
 divisor fcb 0,0

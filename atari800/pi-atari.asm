@@ -61,7 +61,7 @@ fac1 = dividend
 fac2 = remainder
 rbase = $db ;$dc
 
-         * = $1900 + 7
+         * = $1900 + 1
          pla             ;@start@
          ;lda #125     ;screen clear code
          ;jsr OUTCHAR
@@ -71,10 +71,14 @@ rbase = $db ;$dc
          pha
          lda $223
          pha
+         ldx 20
+loop20   cpx 20
+         beq loop20
+
          lda #<tiroutine
+         ldx #>tiroutine
          sta $222
-         lda #>tiroutine
-         sta $223
+         stx $223
          sty 20
          sty 19
          sty 18
@@ -270,6 +274,10 @@ exit     ;sei
          sta ti
          stx ti+1
          sty ti+2
+         ldx 20
+loop20x  cpx 20
+         beq loop20x
+
          pla
          sta $223
          pla

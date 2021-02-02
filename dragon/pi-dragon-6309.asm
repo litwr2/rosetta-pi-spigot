@@ -36,13 +36,17 @@
 ;Thorham and meynaf helped too
 ;thanks to zephyr
 
-OPCHR equ $800C    ;print char in AC
-
-;N equ 350    ;100 digits
+N equ 350    ;100 digits
 ;N equ 2800  ;800 digits
-N equ 3500    ;1000 digits
+;N equ 3500    ;1000 digits
 
+  if DRACO
+OPCHR equ $800C    ;print char in AC
          org $2800
+  else
+OPCHR equ $A282    ;print char in AC
+         org $2900
+  endif
          setdp dpage/256
 dpage
 divisor fcb 0,0

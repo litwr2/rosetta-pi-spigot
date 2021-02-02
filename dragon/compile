@@ -1,5 +1,6 @@
-asm6809 -l pi-dragon.lst pi-dragon.asm -D -o pi-dragon.bin
-gawk '/@start@/{print "s/@start@/"strtonum("0x"$1)"/\ns/@start1@/"and(0xff00,strtonum("0x"$1))-1"/"}
+asm6809 -dDRACO -l pi-dragon.lst pi-dragon.asm -D -o pi-dragon.bin
+gawk 'BEGIN{print "s/@ver@/5/;s/@VFREQ@/50/"}
+/@start@/{print "s/@start@/"strtonum("0x"$1)"/\ns/@start1@/"and(0xff00,strtonum("0x"$1))-1"/"}
 /@EOP@/{print "s/@MEM@/"strtonum("0x"substr($2,5))-254"/"}
 /@OUT@/{print "s/@OUT@/"strtonum("0x"$1)+1"/"}
 /@timer@/{print "s/@hitimer@/"strtonum("0x"$1)"/"}
