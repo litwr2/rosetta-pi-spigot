@@ -268,9 +268,6 @@ exit     ;sei
          cmp 20
          bne exit
 
-         cpx 19
-         bne exit
-
          sta ti
          stx ti+1
          sty ti+2
@@ -302,7 +299,7 @@ outchar ;a portable OUTCHAR
         lda $0346
         pha
         txa
-        ldx     #0
+        ldx #0
         rts
 
 pr0000 .block
