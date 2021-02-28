@@ -64,6 +64,12 @@ PI:    MOV 11,@save11
        dec 2
        jne -!
 
+       mov @8228,4
+       dect 4
+       mov 4,@l2+2
+       inc 4
+       mov 4,@l1+2
+
        li 0,>8300
        li 1,SAVEWP+32
        li 2,(efast-sfast)/2
@@ -88,7 +94,8 @@ PI:    MOV 11,@save11
        mov @start-2,1
        mov 1,kv
        li 2,2000
-       li 3,ra+2
+*       li 3,ra+2
+       mov @8228,3
        b @>8300
 
 slowcode:
@@ -219,7 +226,7 @@ sfast: mov 2,*3+            *all this code is relocatable
        clr 7     *R7:R6 = d
        mov kv,9
        a 9,9     *i <-k*2
-       jmp !l2
+       jmp l2
 
 !l4:   s 12,7
        joc !
@@ -232,10 +239,10 @@ sfast: mov 2,*3+            *all this code is relocatable
 !:     s 10,6
        srl 7,1
        srl 6,1
-       jnc !l2
+       jnc l2
 
        ai 7,>8000
-!l2:   mov @ra(9),11
+l2:    mov @ra(9),11
        mpy 15,11
        a 7,12
        mov 12,7
@@ -247,11 +254,11 @@ sfast: mov 2,*3+            *all this code is relocatable
        dec 9    *b <- 2*i-1
        clr 10
        div 9,11
-       jno !
+       jno l1
 
        div 9,10
        div 9,11
-!:     mov 12,@ra+1(9)   *r[i] <- d%b
+l1:    mov 12,@ra+1(9)   *r[i] <- d%b
        dec 9             *i <- i - 1
        jne -!l4
 
