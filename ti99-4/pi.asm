@@ -64,11 +64,11 @@ PI:    MOV 11,@save11
        dec 2
        jne -!
 
-       mov @8228,4
-       dect 4
-       mov 4,@l2+2
-       inc 4
-       mov 4,@l1+2
+*       mov @8228,4      *E/A only
+*       dect 4
+*       mov 4,@l2+2
+*       inc 4
+*       mov 4,@l1+2
 
        li 0,>8300
        li 1,SAVEWP+32
@@ -94,8 +94,8 @@ PI:    MOV 11,@save11
        mov @start-2,1
        mov 1,kv
        li 2,2000
-*       li 3,ra+2
-       mov @8228,3
+       li 3,ra+2
+*       mov @8228,3    *E/A only
        b @>8300
 
 slowcode:
@@ -214,7 +214,7 @@ tick:  INC @tilo
        INC @tihi
 !      B *11
 
-tihi bss 2
+tihi bss 2                  *@tihi@
 tilo bss 2
 
 sfast: mov 2,*3+            *all this code is relocatable

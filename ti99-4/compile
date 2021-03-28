@@ -1,14 +1,16 @@
-PP=/home/micro/retro/ti99/tools/xdt99-2.0.1
+PP=/home/micro/retro/ti99-4/tools/xdt99-3.1.0
 #F=${1%%.asm}
 F=pi
 B=${F}ea
 X=${F}xb
 $PP/xas99.py $F.asm -L $F.lst
-gawk '$4=="tihi"{print "s/@tihi@/"strtonum("0x"$2)"/"}
+gawk '/@tihi@/{print "s/@tihi@/"strtonum("0x"$2)"/"}
 $3=="start"&&$4=="equ"{print "s/@N@/"strtonum("0x"$2)-2"/"}' $F.lst >z.sed
 sed -f z.sed $B.cbas >$B.bas
+sed -f z.sed $X.cbas >$X.bas
 $PP/xdm99.py -X sssd pi.dsk -f df80
 $PP/xbas99.py -c $B.bas
-$PP/xdm99.py pi.dsk -a $B.prg
+$PP/xbas99.py -c $X.bas
+$PP/xdm99.py pi.dsk -a $B.prg $X.prg
 $PP/xdm99.py pi.dsk -a $F.obj -f DIS/FIX80
-rm $B.bas *.prg *.obj
+rm $B.bas $X.bas *.prg *.obj

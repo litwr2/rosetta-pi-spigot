@@ -32,7 +32,7 @@
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;the fast 32/16-bit division was made by Ivagor for z80
-;litwr made the spigot for several z80 based computers
+;litwr made the spigot for several the z80 and 8080 based computers
 ;bqt helped much with optimization
 ;tricky provided some help
 ;MMS gave some support
@@ -43,8 +43,8 @@ CPM3TIMER equ 0
 IO equ 1
 
 GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
-KORVET equ 1
-AMSTRADCPC equ 0
+KORVET equ 0
+AMSTRADCPC equ 1
 
 if GENERIC + KORVET + AMSTRADCPC != 1
 show ERROR
