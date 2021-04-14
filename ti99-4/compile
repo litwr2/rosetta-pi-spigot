@@ -1,5 +1,4 @@
 PP=/home/micro/retro/ti99-4/tools/xdt99-3.1.0
-#F=${1%%.asm}
 F=pi
 B=${F}ea
 X=${F}xb

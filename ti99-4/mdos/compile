@@ -1,0 +1,6 @@
+PP=/home/micro/retro/ti99-4/tools/xdt99-3.1.0
+F=pi-mdos
+D=pi-geneve.dsk
+$PP/xas99.py $F.asm -L $F.lst
+$PP/xdm99.py $D -a $F.obj -f DIS/FIX80
+rm $F.obj

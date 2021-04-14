@@ -30,14 +30,13 @@
 *then 4*T is required to calculate 2*N digits
 *main loop count is 7*(4+D)*D/16, D - number of digits
 
-*litwr has written this for the TI99/4A (+32KB RAM, +E/A cartridge)
+*litwr has written this for the TI99/4A (+32KB RAM, +E/A or XB cartridge)
 *tricky provided some help
 *MMS gave some support
 *Thorham and meynaf helped too
 
        DEF PI
 STATUS EQU >837C
-USRWS  EQU >20BA
 vdpwd  EQU >8C00
 vdprd  EQU >8800
 vdpwa  EQU >8C02
@@ -56,7 +55,6 @@ start equ >2800
 PI:    MOV 11,@save11
        STWP 11
        MOV 11,@EWP+2
-       LWPI USRWS
        li 0,>8380
        li 1,SAVEWP
        li 2,16
@@ -70,6 +68,10 @@ PI:    MOV 11,@save11
 *       inc 4
 *       mov 4,@l1+2
 
+       li 0,>7778
+*       mov 0,@>9d00
+       mov 0,@>9e00
+       mov 0,@>9f00
        li 0,>8300
        li 1,SAVEWP+32
        li 2,(efast-sfast)/2
@@ -84,9 +86,17 @@ PI:    MOV 11,@save11
        li 15,10000
 
        limi 2
-       s 2,2
+       clr 2
        mov 2,@tihi
        mov 2,@tilo
+       clr 12
+       sbo 0
+       li 2,>3fff
+       mov 2,@prevti
+       inct 12
+       ldcr 2,14
+       dect 12
+       sbz 0
        li 2,tick
        mov 2,@>83c4  *timer user proc
 
@@ -106,7 +116,7 @@ slowcode:
        li 1,>8000      *space
        bl @sout
 
-       LWPI USRWS
+EWP    LWPI 0
        li 0,>8300
        li 1,SAVEWP+32
        li 2,(efast-sfast)/2
@@ -122,7 +132,6 @@ slowcode:
        jne -!
 
        MOVB 2,@STATUS
-EWP    LWPI 0
        mov @save11,11
        B *11           *rt
 
@@ -208,12 +217,22 @@ sout:  ci 0,rows*cols      *IN: R1 - symbol,  R0 - pos; USE: R3,R4,R5
        inc 0
        b *11           *rt
 
-tick:  INC @tilo
-       JNE !
+tick:  clr 12
+       sbo 0
+       stcr 2,15
+       sbz 0
+       srl 2,1
+       mov @prevti,12
+       mov 2,@prevti
+       s 2,12
+       andi 12,>3fff
+       a 12,@tilo
+       jnc !
 
-       INC @tihi
-!      B *11
+       inc @tihi
+!      b *11
 
+prevti bss 2
 tihi bss 2                  *@tihi@
 tilo bss 2
 
