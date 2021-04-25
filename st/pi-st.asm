@@ -38,21 +38,14 @@
 ;Thorham and meynaf helped a lot
 
      mc68000
-     ;mc68020
+     ;mc68030
 
-OldOpenLibrary	= -408
-CloseLibrary	= -414
-Output = -60
-Input = -54
-Write = -48
-Read = -42
-AllocMem = -198
-FreeMem = -210
-VBlankFrequency = 530
+timer = $4ba
 
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
 
-;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
+D = 1000
+N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
 div32x16o macro    ;D7=D6/D4, D6=D6%D4
      ;clr.l d7
@@ -94,81 +87,53 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
 endm
 
 
-start    lea  libname(pc),a1         ;open the dos library
-         move.l  4,a5
-         move.l a5,a6
-         jsr     OldOpenLibrary(a6)
-         move.l  d0,a6
-         jsr     Output(a6)          ;get stdout
-         move.l  d0,cout
-         move.l  d0,d1                   ;call Write(stdout,buff,size)
-         move.l  #msg1,d2
-         moveq   #msg4-msg1,d3
-         jsr     Write(a6)
-         move.l #start+$10000-endmark,d0
-         divu #7,d0
-         ext.l d0
-         and.b #$fc,d0
-         move.l d0,maxn
+start    move.l #msg1,-(sp)
+         move #9,-(sp)    ;print line
+         trap #1
+         addq.l #6,sp
 
-.l20     move.l cout(pc),d1
-         move.l  #msg4,d2
-         moveq   #msg5-msg4,d3
-         jsr     Write(a6)
-         move.l maxn(pc),d5
+         move.l #start+$10000-ra,d4
+         divu #7,d4
+         ext.l d4
+         and.b #$fc,d4
+         move d4,d5
          bsr PR0000
-         move.l cout(pc),d1
-         move.l  #msg5,d2
-         moveq   #msg3-msg5,d3
-         jsr     Write(a6)
+         move.l #msg5,-(sp)
+         move #9,-(sp)    ;print line
+         trap #1
+         addq.l #6,sp
          bsr getnum
-         cmp maxn+2(pc),d5    ;680x0 are Big Endian
-         bhi .l20
-
-         or d5,d5
-         beq .l20
+         ;move.l #D,d5
 
          move d5,d1
          addq #3,d5
          and #$fffc,d5
-         cmp.b #10,(a0)
-         bne .l21
-
          cmp d1,d5
          beq .l7
 
-.l21     move d5,a4
+         move d5,a4
          bsr PR0000
          move a4,d5
-         move.l  cout(pc),d1
-         move.l  #msg3,d2
-         moveq   #msg2-msg3+1,d3
-         jsr     Write(a6)
+         move.l #msg3,-(sp)
+         move #9,-(sp)    ;print line
+         trap #1
+         addq.l #6,sp
 .l7      lsr d5
          mulu #7,d5
-         move.l d5,a4
+         movea.l d5,a4
+
+         clr.l -(sp)
+	     move #32,-(sp)    ;super
+	     trap #1
+	     addq.l #6,sp
+	     move.l d0,ssp
+         move.l timer,time
 
          move.l a4,d2
-         move.l d2,d0
-         lsl.l d0
-         move.l d0,a2
-         exg.l a5,a6
-         clr.l d1      ;any kind of memory
-         jsr AllocMem(a6)
-         exg.l a5,a6
-         move.l d0,a2
-
-  if __VASM&28
-         bsr gettime
-         move.l d5,time
-  else
-         move.l $6c,rasterie+2
-         move.l #rasteri,$6c
-  endif
          lsr #1,d2
          subq #1,d2
          move.l #2000*65537,d0
-         move.l a2,a0
+         move.l #ra,a0
 .fill    move.l d0,(a0)+
          dbra d2,.fill
 
@@ -179,7 +144,7 @@ start    lea  libname(pc),a1         ;open the dos library
          clr.l d4
          move kv(pc),d4
          add.l d4,d4     ;i <-k*2
-         move.l a2,a3
+         lea.l ra(pc),a3
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
   ifeq MULUopt
@@ -209,7 +174,7 @@ start    lea  libname(pc),a1         ;open the dos library
   endif
          add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
-  if __VASM&28              ;68020?
+  if __VASM&28              ;68030?
          divul.l d4,d7:d6
          move d7,(a3)     ;r[i] <- d%b
   else
@@ -232,32 +197,19 @@ start    lea  libname(pc),a1         ;open the dos library
          sub.w #14,kv
          bne .l0
 
-  if __VASM&28              ;68020?
-         bsr gettime
-         sub.l time(pc),d5
-  else
-         move.l rasterie+2,$6c
-         move.l time(pc),d5
-  endif
+         move.l timer,d5
+         move.l	ssp,-(sp)
+         move.w	#32,-(sp)     ;super
+	     trap #1
+	     addq.l #6,sp
 
-         moveq   #1,d3
-         move.l  cout(pc),d1
-         move.l  #msg3,d2
-         jsr     Write(a6)  ;space
+         move   #' ',-(sp)
+         move  #2,-(sp)    ;conout
+         trap #1
+         addq.l #4,sp
 
-         move.l d5,d3
-         lsl.l d5
-         cmp.b #50,VBlankFrequency(a5)
-         beq .l8
-
-         lsl.l d5      ;60 Hz
-         add.l d3,d5
-         divu #3,d5
-         swap d5
-         lsr #2,d5
-         swap d5
-         negx.l d5
-         neg.l d5
+         sub.l time,d5
+         lsr.l d5        ;200 MHz
 
 .l8      lea string(pc),a3
          move #10,d4
@@ -280,35 +232,35 @@ start    lea  libname(pc),a1         ;open the dos library
          swap d7
          bra .l12
 
-.l11     add.b #'0',-(a3)
-         moveq   #1,d3
-         move.l  cout(pc),d1
-         move.l  a3,d2
-         jsr     Write(a6)
+.l11     move #'0',d0
+         add.b -(a3),d0
+         move d0,-(sp)
+         move #2,-(sp)    ;conout
+         trap #1
+         addq.l #4,sp
          cmp.l #string,a3
          bne .l11
 
-         ;moveq   #1,d3
-         move.l  cout(pc),d1
-         move.l  #msg2,d2
-         jsr     Write(a6)  ;newline
+         move   #13,-(sp)
+         move  #2,-(sp)    ;conout
+         trap #1
+         move   #10,-(sp)
+         move  #2,-(sp)    ;conout
+         trap #1
+         addq.l #8,sp
 
-         move.l a6,a1
-         move.l a5,a6
-         jsr CloseLibrary(a6)
-         move.l a2,a1
-         move.l a4,d0
-         lsl.l d0
-         jmp FreeMem(a6)
-         ;rts
+         move #0,-(sp)     ;term
+         trap #1
 
 PR0000     ;prints d5
        lea string(pc),a0
+       ;movea.l a0,-(sp)
        bsr .l1
-       moveq   #4,d3
-       move.l  cout(pc),d1
-       move.l  #string,d2
-       jmp     Write(a6)             ;call Write(stdout,buff,size)
+       move.l #string,-(sp)
+       move   #9,-(sp)    ;print line
+       trap   #1
+       addq.l #6,sp
+       rts
 
 .l1    divu #1000,d5
        bsr .l0
@@ -326,63 +278,91 @@ PR0000     ;prints d5
 
 .l0    eori.b #'0',d5
        move.b d5,(a0)+
-eos    rts
-
-getnum   jsr Input(a6)          ;get stdin
-         move.l #string,d2     ;set by previous call
-         move.l d0,d1
-         moveq.l #5,d3     ;+ newline
-         jsr Read(a6)
-         subq #1,d0
-         beq getnum
-
-         move.l d2,a0
-         clr.l d5
-.l1      clr d6
-         move.b (a0)+,d6
-         sub.b #'0',d6
-         add d6,d5
-         subq #1,d0
-         beq eos
-
-         mulu #10,d5
-         bra .l1
-
-  if __VASM&28              ;68020?
-gettime clr d5          ;returns D5
-        move.b $bfea01,d5
-        swap d5
-        move.b $bfe901,d5
-        lsl #8,d5
-        move.b $bfe801,d5
-        rts
-  else
-rasteri      btst #6,$dff01e   ;blitter?
-             bne rasterie
-
-             addq.l #1,(time)
-rasterie     jmp $ffff00
-  endif
+       rts
 
 cv  dc.w 0
 kv  dc.w 0
 time dc.l 0
-cout dc.l 0
-maxn dc.w 0
+ssp dc.l 0
 
-string = msg1
-libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v5 '
-  if __VASM&28              ;68020?
-      dc.b '(68020)'
+string dc.b 0,0,0,0,0
+      even
+ra
+
+getnum  clr.l d7    ;length
+        clr.l d5    ;number
+.l0:    move #7,-(sp)    ;conin without echo
+        trap #1
+        addq.l #2,sp
+        tst.b d0
+        beq .l0
+
+        cmpi.b #13,d0   ;cr
+        beq .l5
+
+        cmpi.b #8,d0    ;bs
+        beq .l1
+
+        cmpi.b #'0',d0   ;'0'
+        bcs .l0
+
+        cmpi.b #'9',d0   ;'9'
+        bhi .l0
+
+        cmpi.b #4,d7
+        beq .l0
+
+        move d0,d3
+        move d0,-(sp)
+        move #2,-(sp)    ;conout
+        trap #1
+        addq.l #4,sp
+        move d5,-(sp)
+        addq.l #1,d7
+        sub #'0',d3
+        mulu #10,d5
+        add d3,d5 
+        jmp .l0
+
+.l1     tst d7
+        beq .l0
+
+        subq.l #1,d7
+        move.l #del,-(sp)
+        move #9,-(sp)    ;print line
+        trap #1
+        addq.l #6,sp
+        move (sp)+,d5
+        bra .l0
+
+.l5     tst d7
+        beq .l0
+
+        cmp d4,d5    ;maxn = D4
+        bhi .l0
+
+        tst d5
+        beq .l0
+
+        move.l #msg2,-(sp)
+        move #9,-(sp)    ;print line
+        trap #1
+        addq.l #6,sp
+
+        lsl #1,d7
+        add.l d7,sp
+        rts
+
+msg1  dc.b 27,'vnumber pi calculator v1 '
+  if __VASM&28              ;68030?
+      dc.b '(68030)'
   else
       dc.b '(68000)'
   endif
-msg4  dc.b 10,'number of digits (up to '
-msg5 dc.b ')? '
+     dc.b 13,10,'number of digits (up to ',0
+msg5 dc.b ')? ',0
+del  dc.b 8,32,8,0
 msg3  dc.b ' digits will be printed'
-msg2  dc.b 10
-msg6  dc.b 'no fast memory',10
-endmark
+msg2  dc.b 13,10,0
       end     start
 

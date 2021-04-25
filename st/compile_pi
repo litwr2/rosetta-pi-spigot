@@ -1,0 +1,5 @@
+compile pi-st.asm
+sed 's/mc68000/;mc68000/;s/;mc68030/mc68030/' pi-st.asm >pi-st30.asm
+compile pi-st30.asm
+rm pi-st30.asm
+
