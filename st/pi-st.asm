@@ -249,6 +249,10 @@ start    move.l #msg1,-(sp)
          trap #1
          addq.l #8,sp
 
+         move #7,-(sp)    ;conin without echo
+         trap #1          ;wait a key
+         addq.l #2,sp
+
          move #0,-(sp)     ;term
          trap #1
 
@@ -353,7 +357,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v1 '
+msg1  dc.b 27,'vnumber pi calculator v2 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
