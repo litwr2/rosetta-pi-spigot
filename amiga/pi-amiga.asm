@@ -363,7 +363,7 @@ getnum   jsr Input(a6)          ;get stdin
          mulu #10,d5
          bra .l1
 
-  if __VASM&28              ;68020?
+  if __VASM&30              ;68020?
 gettime clr d5          ;returns D5
         move.b $bfea01,d5
         swap d5
