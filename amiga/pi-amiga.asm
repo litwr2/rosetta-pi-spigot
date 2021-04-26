@@ -93,6 +93,22 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      swap d6
 endm
 
+div32x16_20 macro    ;D7=D6/D4, D6=D6%D4
+     moveq.l #0,d7
+     divu d4,d6
+     bvc .div32no\@
+
+     divul d4,d7:d6
+     move d7,(a3)     ;r[i] <- d%b
+     bra .div32f\@
+
+.div32no\@
+     move d6,d7
+     clr d6
+     swap d6
+     move d6,(a3)     ;r[i] <- d%b
+.div32f\@
+endm
 
 start    lea  libname(pc),a1         ;open the dos library
          move.l  4,a5
@@ -158,7 +174,7 @@ start    lea  libname(pc),a1         ;open the dos library
          exg.l a5,a6
          move.l d0,a2
 
-  if __VASM&28
+  if __VASM&30
          bsr gettime
          move.l d5,time
   else
@@ -210,8 +226,7 @@ start    lea  libname(pc),a1         ;open the dos library
          add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
   if __VASM&28              ;68020?
-         divul.l d4,d7:d6
-         move d7,(a3)     ;r[i] <- d%b
+         div32x16_20
   else
          div32x16
          move d6,(a3)     ;r[i] <- d%b
@@ -232,7 +247,7 @@ start    lea  libname(pc),a1         ;open the dos library
          sub.w #14,kv
          bne .l0
 
-  if __VASM&28              ;68020?
+  if __VASM&30              ;68020?
          bsr gettime
          sub.l time(pc),d5
   else
@@ -372,7 +387,7 @@ maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v5 '
+msg1  dc.b 'number ',182,' calculator v6 '
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else

@@ -86,6 +86,22 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      swap d6
 endm
 
+div32x16_20 macro    ;D7=D6/D4, D6=D6%D4
+     moveq.l #0,d7
+     divu d4,d6
+     bvc .div32no\@
+
+     divul d4,d7:d6
+     move d7,(a3)     ;r[i] <- d%b
+     bra .div32f\@
+
+.div32no\@
+     move d6,d7
+     clr d6
+     swap d6
+     move d6,(a3)     ;r[i] <- d%b
+.div32f\@
+endm
 
 start    move.l #msg1,-(sp)
          move #9,-(sp)    ;print line
@@ -175,8 +191,7 @@ start    move.l #msg1,-(sp)
          add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
   if __VASM&28              ;68030?
-         divul.l d4,d7:d6
-         move d7,(a3)     ;r[i] <- d%b
+         div32x16_20
   else
          div32x16
          move d6,(a3)     ;r[i] <- d%b
@@ -357,7 +372,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v2 '
+msg1  dc.b 27,'vnumber pi calculator v3 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
