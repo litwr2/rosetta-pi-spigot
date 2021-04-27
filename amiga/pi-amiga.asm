@@ -174,13 +174,9 @@ start    lea  libname(pc),a1         ;open the dos library
          exg.l a5,a6
          move.l d0,a2
 
-  if __VASM&30
-         bsr gettime
-         move.l d5,time
-  else
          move.l $6c,rasterie+2
          move.l #rasteri,$6c
-  endif
+
          lsr #1,d2
          subq #1,d2
          move.l #2000*65537,d0
@@ -247,13 +243,8 @@ start    lea  libname(pc),a1         ;open the dos library
          sub.w #14,kv
          bne .l0
 
-  if __VASM&30              ;68020?
-         bsr gettime
-         sub.l time(pc),d5
-  else
          move.l rasterie+2,$6c
          move.l time(pc),d5
-  endif
 
          moveq   #1,d3
          move.l  cout(pc),d1
@@ -363,21 +354,11 @@ getnum   jsr Input(a6)          ;get stdin
          mulu #10,d5
          bra .l1
 
-  if __VASM&30              ;68020?
-gettime clr d5          ;returns D5
-        move.b $bfea01,d5
-        swap d5
-        move.b $bfe901,d5
-        lsl #8,d5
-        move.b $bfe801,d5
-        rts
-  else
 rasteri      btst #6,$dff01e   ;blitter?
              bne rasterie
 
              addq.l #1,(time)
 rasterie     jmp $ffff00
-  endif
 
 cv  dc.w 0
 kv  dc.w 0
@@ -387,7 +368,7 @@ maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v6 '
+msg1  dc.b 'number ',182,' calculator v7 '
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else
