@@ -43,6 +43,7 @@
 timer = $4ba
 
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
+IO = 1
 
 D = 1000
 N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
@@ -203,12 +204,14 @@ start    move.l #msg1,-(sp)
   else
          divu d1,d5      ;removed with MULU optimization
   endif
+  if IO
          add cv(pc),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
          clr d5
          swap d5
          bsr PR0000
+  endif
          sub.w #14,kv
          bne .l0
 
@@ -372,7 +375,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v3 '
+msg1  dc.b 27,'vnumber pi calculator v4 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else

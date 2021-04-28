@@ -51,6 +51,7 @@ FreeMem = -210
 VBlankFrequency = 530
 
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
+IO = 1
 
 ;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
@@ -234,12 +235,14 @@ start    lea  libname(pc),a1         ;open the dos library
   else
          divu d1,d5      ;removed with MULU optimization
   endif
+  if IO
          add cv(pc),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
          clr d5
          swap d5
          bsr PR0000
+  end
          sub.w #14,kv
          bne .l0
 
@@ -368,7 +371,7 @@ maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v7 '
+msg1  dc.b 'number ',182,' calculator v8 '
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else
