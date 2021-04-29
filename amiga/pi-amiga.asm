@@ -111,6 +111,27 @@ div32x16_20 macro    ;D7=D6/D4, D6=D6%D4
 .div32f\@
 endm
 
+div32x16_20x macro    ;D7=D6/D4, D6=D6%D4
+     moveq.l #0,d7
+     swap d6
+     cmp.w d4,d6
+     bcs .div32no\@
+
+     swap d6
+     divul d4,d7:d6
+     move d7,(a3)     ;r[i] <- d%b
+     bra .div32f\@
+
+.div32no\@
+     swap d6
+     divu.w d4,d6
+     move.w d6,d7
+     clr.w d6
+     swap d6 
+     move d6,(a3)     ;r[i] <- d%b
+.div32f\@
+endm
+
 start    lea  libname(pc),a1         ;open the dos library
          move.l  4,a5
          move.l a5,a6
@@ -242,7 +263,7 @@ start    lea  libname(pc),a1         ;open the dos library
          clr d5
          swap d5
          bsr PR0000
-  end
+  endif
          sub.w #14,kv
          bne .l0
 
