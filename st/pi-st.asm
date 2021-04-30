@@ -36,6 +36,7 @@
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
+;a/b helped to optimize the 68000 code
 
      mc68000
      ;mc68030
@@ -48,28 +49,7 @@ IO = 1
 D = 1000
 N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
-div32x16o macro    ;D7=D6/D4, D6=D6%D4
-     ;clr.l d7
-     moveq.l #0,d7
-     swap d6
-     cmp d4,d6
-     bcs .div32\@
-
-     move d6,d7
-     divu d4,d7
-     swap d7
-     move d7,d6
-
-.div32\@
-     swap d6
-     divu d4,d6
-     move d6,d7
-     clr d6
-     swap d6
-endm
-
 div32x16 macro    ;D7=D6/D4, D6=D6%D4
-     ;clr.l d7
      moveq.l #0,d7
      divu d4,d6
      bvc .div32no\@
@@ -85,23 +65,6 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      move d6,d7
      clr d6
      swap d6
-endm
-
-div32x16_20 macro    ;D7=D6/D4, D6=D6%D4
-     moveq.l #0,d7
-     divu d4,d6
-     bvc .div32no\@
-
-     divul d4,d7:d6
-     move d7,(a3)     ;r[i] <- d%b
-     bra .div32f\@
-
-.div32no\@
-     move d6,d7
-     clr d6
-     swap d6
-     move d6,(a3)     ;r[i] <- d%b
-.div32f\@
 endm
 
 start    move.l #msg1,-(sp)
@@ -169,6 +132,26 @@ start    move.l #msg1,-(sp)
   endif
          bra .l4
 
+.longdiv
+  if __VASM&28              ;68030?
+         divul d4,d7:d6
+         move d7,(a3)     ;r[i] <- d%b
+  else
+         moveq.l #0,d7
+         swap d6
+         move d6,d7
+         divu d4,d7
+         swap d7
+         move d7,d6
+         swap d6
+         divu d4,d6
+         move d6,d7
+         clr d6
+         swap d6
+         move d6,(a3)
+  endif
+         bra.s .enddiv
+
 .l2      sub.l d6,d5
          sub.l d7,d5
          lsr.l d5
@@ -191,12 +174,15 @@ start    move.l #msg1,-(sp)
   endif
          add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
-  if __VASM&28              ;68030?
-         div32x16_20
-  else
-         div32x16
+         divu d4,d6
+         bvs.s .longdiv
+
+         moveq.l #0,d7
+         move d6,d7
+         clr d6
+         swap d6
          move d6,(a3)     ;r[i] <- d%b
-  endif
+.enddiv
          subq #2,d4    ;i <- i - 1
          bcc .l2       ;the main loop
   if MULUopt
@@ -375,7 +361,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v4 '
+msg1  dc.b 27,'vnumber pi calculator v5 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
