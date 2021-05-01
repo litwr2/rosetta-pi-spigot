@@ -168,21 +168,18 @@ start    lea  libname(pc),a1         ;open the dos library
   if __VASM&28              ;68030?
          divul d4,d7:d6
          move d7,(a3)     ;r[i] <- d%b
+         bra.s .enddiv
   else
-         moveq.l #0,d7
          swap d6
+         moveq.l #0,d7
          move d6,d7
          divu d4,d7
          swap d7
          move d7,d6
          swap d6
          divu d4,d6
-         move d6,d7
-         clr d6
-         swap d6
-         move d6,(a3)
+         bra.s .contdiv
   endif
-         bra.s .enddiv
 
 .l2      sub.l d6,d5
          sub.l d7,d5
@@ -210,6 +207,7 @@ start    lea  libname(pc),a1         ;open the dos library
          bvs.s .longdiv
 
          moveq.l #0,d7
+.contdiv
          move d6,d7
          clr d6
          swap d6
@@ -358,7 +356,7 @@ maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v9 '
+msg1  dc.b 'number ',182,' calculator v10 '
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else
