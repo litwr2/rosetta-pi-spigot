@@ -1,5 +1,5 @@
 compile pi-amiga.asm
-sed 's/mc68000/;mc68000/;s/;mc68020/mc68020/' pi-amiga.asm >pi-amiga1200.asm
+sed 's/mc68000/mc68020/;s/MULUopt = 0/MULUopt=1/' pi-amiga.asm >pi-amiga1200.asm
 compile pi-amiga1200.asm
 rm pi-amiga1200.asm
 

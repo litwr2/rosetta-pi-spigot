@@ -39,12 +39,10 @@
 ;a/b helped to optimize the 68000 code
 
      mc68000
-     ;mc68030
+MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE/Amiga1200 and faintly faster with the real 68020
+IO = 1
 
 timer = $4ba
-
-MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
-IO = 1
 
 D = 1000
 N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits

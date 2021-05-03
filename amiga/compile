@@ -1,6 +1,5 @@
 F=$1
 vasmm68k_mot -m68000 -Fhunkexe -kick1hunks -align -o ${F%.*} -L ${F%.*}.lst -nosym $F
-#./vasmm68k_mot -m68020 -Fhunkexe -kick1hunks -align -o ${F%.*} -L ${F%.*}.lst -nosym $F
 #vasmm68k_mot -Fhunkexe -align -o ${F%.*} -L ${F%.*}.lst -nosym $F
-xdftool hello.ADF delete ${F%.*}
-xdftool hello.ADF write ${F%.*}
+#xdftool hello.ADF delete ${F%.*}
+#xdftool hello.ADF write ${F%.*}

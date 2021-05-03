@@ -1,4 +1,3 @@
 F=$1
 vasmm68k_mot -m68000 -Ftos -align -o ${F%.*}.tos -L ${F%.*}.lst -nosym $F
-#./vasmm68k_mot -m68020 -Fhunkexe -kick1hunks -align -o ${F%.*} -L ${F%.*}.lst -nosym $F
 #vasmm68k_mot -Fhunkexe -align -o ${F%.*} -L ${F%.*}.lst -nosym $F

@@ -39,7 +39,8 @@
 ;a/b helped to optimize the 68000 code
 
      mc68000
-     ;mc68020
+MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and faintly faster with the real 68020
+IO = 1
 
 OldOpenLibrary	= -408
 CloseLibrary	= -414
@@ -50,9 +51,6 @@ Read = -42
 AllocMem = -198
 FreeMem = -210
 VBlankFrequency = 530
-
-MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and maybe a bit faster with the real iron
-IO = 1
 
 ;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
