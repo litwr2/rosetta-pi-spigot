@@ -36,7 +36,7 @@
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
-;a/b helped to optimize the 68000 code
+;a/b and modrobert helped to optimize the 68000 code
 
      mc68000
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and faintly faster with the real 68020
@@ -50,7 +50,13 @@ Write = -48
 Read = -42
 AllocMem = -198
 FreeMem = -210
+Forbid = -132
+Permit = -138
+AddIntServer = -168
+RemIntServer = -174
 VBlankFrequency = 530
+INTB_VERTB = 5     ;for vblank interrupt
+NT_INTERRUPT = 2   ;node type
 
 ;N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
 
@@ -73,41 +79,40 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      swap d6
 endm
 
-start    lea  libname(pc),a1         ;open the dos library
-         move.l  4,a5
+start    lea.l libname(pc),a1         ;open the dos library
+         move.l 4,a5
          move.l a5,a6
-         jsr     OldOpenLibrary(a6)
-         move.l  d0,a6
-         jsr     Output(a6)          ;get stdout
-         move.l  d0,cout
-         move.l  d0,d1                   ;call Write(stdout,buff,size)
-         move.l  #msg1,d2
-         moveq   #msg4-msg1,d3
-         jsr     Write(a6)
+         jsr OldOpenLibrary(a6)
+         move.l d0,a6
+         jsr Output(a6)          ;get stdout
+         move.l d0,cout
+         move.l d0,d1                   ;call Write(stdout,buff,size)
+         move.l #msg1,d2
+         moveq #msg4-msg1,d3
+         jsr Write(a6)
          move.l #start+$10000-endmark,d0
          divu #7,d0
          ext.l d0
          and.b #$fc,d0
-         move.l d0,maxn
+         move.l d0,d7     ;d7=maxn
 
 .l20     move.l cout(pc),d1
-         move.l  #msg4,d2
-         moveq   #msg5-msg4,d3
-         jsr     Write(a6)
-         move.l maxn(pc),d5
+         move.l #msg4,d2
+         moveq #msg5-msg4,d3
+         jsr Write(a6)
+         move.l d7,d5
          bsr PR0000
          move.l cout(pc),d1
          move.l  #msg5,d2
          moveq   #msg3-msg5,d3
          jsr     Write(a6)
          bsr getnum
-         cmp maxn+2(pc),d5    ;680x0 are Big Endian
+         cmp d7,d5
          bhi .l20
 
-         or d5,d5
+         move d5,d1
          beq .l20
 
-         move d5,d1
          addq #3,d5
          and #$fffc,d5
          cmp.b #10,(a0)
@@ -119,37 +124,32 @@ start    lea  libname(pc),a1         ;open the dos library
 .l21     move d5,a4
          bsr PR0000
          move a4,d5
-         move.l  cout(pc),d1
-         move.l  #msg3,d2
-         moveq   #msg2-msg3+1,d3
-         jsr     Write(a6)
+         move.l cout(pc),d1
+         move.l #msg3,d2
+         moveq #msg2-msg3+1,d3
+         jsr Write(a6)
 .l7      lsr d5
          mulu #7,d5
-         move.l d5,a4
+         move.l d5,d3
+         movea.l #ra,a2
 
-         move.l a4,d2
-         move.l d2,d0
-         lsl.l d0
-         move.l d0,a2
          exg.l a5,a6
-         clr.l d1      ;any kind of memory
-         jsr AllocMem(a6)
+         jsr Forbid(a6)
+         moveq.l #INTB_VERTB,d0
+         lea.l VBlankServer(pc),a1
+         jsr AddIntServer(a6)
          exg.l a5,a6
-         move.l d0,a2
+         ;move.w #$4000,$dff096    ;DMA off
 
-         move.l $6c,rasterie+2
-         move.l #rasteri,$6c
-
-         lsr #1,d2
-         subq #1,d2
+         lsr d3
+         subq #1,d3
          move.l #2000*65537,d0
          move.l a2,a0
 .fill    move.l d0,(a0)+
-         dbra d2,.fill
+         dbra d3,.fill
 
          clr cv
-         move a4,kv
-
+         move d5,kv
 .l0      clr.l d5       ;d <- 0
          clr.l d4
          move kv(pc),d4
@@ -179,6 +179,7 @@ start    lea  libname(pc),a1         ;open the dos library
          bra.s .contdiv
   endif
 
+  align 2
 .l2      sub.l d6,d5
          sub.l d7,d5
          lsr.l d5
@@ -229,13 +230,19 @@ start    lea  libname(pc),a1         ;open the dos library
          sub.w #14,kv
          bne .l0
 
-         move.l rasterie+2,$6c
          move.l time(pc),d5
+         ;move.w #$c000,$dff096    ;DMA on
+         exg.l a5,a6
+         moveq.l #INTB_VERTB,d0
+         lea.l VBlankServer(pc),a1
+         jsr RemIntServer(a6)
+         jsr Permit(a6)
+         exg.l a5,a6
 
-         moveq   #1,d3
-         move.l  cout(pc),d1
-         move.l  #msg3,d2
-         jsr     Write(a6)  ;space
+         moveq.l #1,d3
+         move.l cout(pc),d1
+         move.l #msg3,d2
+         jsr Write(a6)  ;space
 
          move.l d5,d3
          lsl.l d5
@@ -280,19 +287,13 @@ start    lea  libname(pc),a1         ;open the dos library
          cmp.l #string,a3
          bne .l11
 
-         ;moveq   #1,d3
          move.l  cout(pc),d1
          move.l  #msg2,d2
          jsr     Write(a6)  ;newline
 
          move.l a6,a1
          move.l a5,a6
-         jsr CloseLibrary(a6)
-         move.l a2,a1
-         move.l a4,d0
-         lsl.l d0
-         jmp FreeMem(a6)
-         ;rts
+         jmp CloseLibrary(a6)
 
 PR0000     ;prints d5
        lea string(pc),a0
@@ -340,21 +341,25 @@ getnum   jsr Input(a6)          ;get stdin
          mulu #10,d5
          bra .l1
 
-rasteri      btst #6,$dff01e   ;blitter?
-             bne rasterie
+rasteri      addq.l #1,time
+;If you set your interrupt to priority 10 or higher then a0 must point at $dff000 on exit
+      moveq #0,d0  ; must set Z flag on exit!
+      rts
 
-             addq.l #1,(time)
-rasterie     jmp $ffff00
+VBlankServer:
+      dc.l  0,0                   ;ln_Succ,ln_Pred
+      dc.b  NT_INTERRUPT,0        ;ln_Type,ln_Pri
+      dc.l  libname               ;ln_Name
+      dc.l  0,rasteri             ;is_Data,is_Code
 
 cv  dc.w 0
 kv  dc.w 0
 time dc.l 0
 cout dc.l 0
-maxn dc.w 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number ',182,' calculator v10 '
+msg1  dc.b 'number pi calculator v11 [beta 2]'
   if __VASM&28              ;68020?
       dc.b '(68020)'
   else
@@ -364,7 +369,9 @@ msg4  dc.b 10,'number of digits (up to '
 msg5 dc.b ')? '
 msg3  dc.b ' digits will be printed'
 msg2  dc.b 10
-msg6  dc.b 'no fast memory',10
 endmark
+      bss
+prsz  equ 500  ;it must be endmark-start
+ra    dcb.b 65536-prsz
       end     start
 
