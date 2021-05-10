@@ -36,7 +36,7 @@
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
-;a/b and modrobert helped to optimize the 68000 code
+;a/b, saimo and modrobert helped to optimize the 68k code
 
      mc68000
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and faintly faster with the real 68020
@@ -157,31 +157,37 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l a2,a3
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
+         moveq.l #0,d3
   ifeq MULUopt
-         move #10000,d1   ;removed with MULU optimization
+         move #10000,d1
   endif
          bra .l4
 
 .longdiv
-  if __VASM&28              ;68030?
-         divul d4,d7:d6
-         move d7,(a3)     ;r[i] <- d%b
-         bra.s .enddiv
+  if __VASM&28              ;68020/30?
+         divul d4,d3:d6
   else
          swap d6
-         moveq.l #0,d7
-         move d6,d7
-         divu d4,d7
-         swap d7
-         move d7,d6
+         move d6,d3
+         divu d4,d3
+         swap d3
+         move d3,d6
          swap d6
          divu d4,d6
-         bra.s .contdiv
-  endif
 
-  align 2
+         move d6,d3
+         exg.l d6,d3
+         clr d3
+         swap d3
+  endif
+         move d3,(a3)     ;r[i] <- d%b
+         bra.s .enddiv
+
+  if __VASM&28              ;68020/30?
+         align 2
+  endif
 .l2      sub.l d6,d5
-         sub.l d7,d5
+         sub.l d3,d5
          lsr.l d5
 .l4
   if MULUopt
@@ -205,9 +211,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          divu d4,d6
          bvs.s .longdiv
 
-         moveq.l #0,d7
-.contdiv
-         move d6,d7
+         move d6,d3
          clr d6
          swap d6
          move d6,(a3)     ;r[i] <- d%b
@@ -359,8 +363,8 @@ cout dc.l 0
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v11 [beta 2]'
-  if __VASM&28              ;68020?
+msg1  dc.b 'number pi calculator v11 [beta 3]'
+  if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
       dc.b '(68000)'
