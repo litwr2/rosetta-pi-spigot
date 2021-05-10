@@ -90,7 +90,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l #msg1,d2
          moveq #msg4-msg1,d3
          jsr Write(a6)
-         move.l #start+$10000-endmark,d0
+         move.l #start+$10000-ra,d0
          divu #7,d0
          ext.l d0
          and.b #$fc,d0
@@ -103,9 +103,9 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l d7,d5
          bsr PR0000
          move.l cout(pc),d1
-         move.l  #msg5,d2
-         moveq   #msg3-msg5,d3
-         jsr     Write(a6)
+         move.l #msg5,d2
+         moveq #msg3-msg5,d3
+         jsr Write(a6)
          bsr getnum
          cmp d7,d5
          bhi .l20
@@ -131,7 +131,7 @@ start    lea.l libname(pc),a1         ;open the dos library
 .l7      lsr d5
          mulu #7,d5
          move.l d5,d3
-         movea.l #ra,a2
+         lea.l ra(pc),a2
 
          exg.l a5,a6
          jsr Forbid(a6)
@@ -245,7 +245,7 @@ start    lea.l libname(pc),a1         ;open the dos library
 
          moveq.l #1,d3
          move.l cout(pc),d1
-         move.l #msg3,d2
+         move.l #msgx,d2
          jsr Write(a6)  ;space
 
          move.l d5,d3
@@ -284,28 +284,28 @@ start    lea.l libname(pc),a1         ;open the dos library
          bra .l12
 
 .l11     add.b #'0',-(a3)
-         moveq   #1,d3
-         move.l  cout(pc),d1
-         move.l  a3,d2
-         jsr     Write(a6)
+         moveq #1,d3
+         move.l cout(pc),d1
+         move.l a3,d2
+         jsr Write(a6)
          cmp.l #string,a3
          bne .l11
 
-         move.l  cout(pc),d1
-         move.l  #msg2,d2
-         jsr     Write(a6)  ;newline
+         move.l cout(pc),d1
+         move.l #msgx+1,d2
+         jsr Write(a6)  ;newline
 
          move.l a6,a1
          move.l a5,a6
          jmp CloseLibrary(a6)
 
 PR0000     ;prints d5
-       lea string(pc),a0
+       lea buf(pc),a0
        bsr .l1
-       moveq   #4,d3
-       move.l  cout(pc),d1
-       move.l  #string,d2
-       jmp     Write(a6)             ;call Write(stdout,buff,size)
+       moveq #4,d3
+       move.l cout(pc),d1
+       move.l #buf,d2
+       jmp Write(a6)             ;call Write(stdout,buff,size)
 
 .l1    divu #1000,d5
        bsr .l0
@@ -325,6 +325,25 @@ PR0000     ;prints d5
        move.b d5,(a0)+
 eos    rts
 
+rasteri      addq.l #1,time
+;If you set your interrupt to priority 10 or higher then a0 must point at $dff000 on exit
+      moveq #0,d0  ; must set Z flag on exit!
+      rts
+
+VBlankServer:
+      dc.l  0,0                   ;ln_Succ,ln_Pred
+      dc.b  NT_INTERRUPT,0        ;ln_Type,ln_Pri
+      dc.l  libname               ;ln_Name
+      dc.l  0,rasteri             ;is_Data,is_Code
+
+cv  dc.w 0
+kv  dc.w 0
+time dc.l 0
+cout dc.l 0
+buf ds.b 4
+msgx dc.b 32,10
+        align 2
+ra
 getnum   jsr Input(a6)          ;get stdin
          move.l #string,d2     ;set by previous call
          move.l d0,d1
@@ -345,25 +364,9 @@ getnum   jsr Input(a6)          ;get stdin
          mulu #10,d5
          bra .l1
 
-rasteri      addq.l #1,time
-;If you set your interrupt to priority 10 or higher then a0 must point at $dff000 on exit
-      moveq #0,d0  ; must set Z flag on exit!
-      rts
-
-VBlankServer:
-      dc.l  0,0                   ;ln_Succ,ln_Pred
-      dc.b  NT_INTERRUPT,0        ;ln_Type,ln_Pri
-      dc.l  libname               ;ln_Name
-      dc.l  0,rasteri             ;is_Data,is_Code
-
-cv  dc.w 0
-kv  dc.w 0
-time dc.l 0
-cout dc.l 0
-
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v11 [beta 3]'
+msg1  dc.b 'number pi calculator v11 [beta 4]'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
@@ -373,9 +376,6 @@ msg4  dc.b 10,'number of digits (up to '
 msg5 dc.b ')? '
 msg3  dc.b ' digits will be printed'
 msg2  dc.b 10
-endmark
-      bss
-prsz  equ 500  ;it must be endmark-start
-ra    dcb.b 65536-prsz
-      end     start
+      dcb.b 65536-(ra-start)
+      end start
 
