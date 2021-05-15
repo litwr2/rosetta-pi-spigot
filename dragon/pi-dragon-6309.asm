@@ -36,6 +36,8 @@
 ;Thorham and meynaf helped too
 ;thanks to zephyr
 
+IO equ 1
+
 N equ 350    ;100 digits
 ;N equ 2800  ;800 digits
 ;N equ 3500    ;1000 digits
@@ -161,12 +163,14 @@ exitdiv  divq <divisor
          leax -1,x         ;i <- i - 1
          bne l4
 
+    if IO
          ldd <quotient
          divq #10000
          addw <c          ;c + d/10000
          std <c           ;c <- d%10000
          tfr w,d
          jsr <pr0000
+    endif
          ldd >$112
          stu >$112
          addd <timer+1
