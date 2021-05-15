@@ -117,19 +117,18 @@ start    lea.l libname(pc),a1         ;open the dos library
          cmp.b #10,(a0)
          bne .l21
 
+         move d5,d6
          cmp d1,d5
          beq .l7
 
-.l21     move d5,-(sp)
-         bsr PR0000
-         move (sp)+,d5
+.l21     bsr PR0000
          move.l cout(pc),d1
          move.l #msg3,d2
          moveq #msg2-msg3+1,d3
          jsr Write(a6)
-.l7      lsr d5
-         mulu #7,d5
-         move.l d5,d3
+.l7      lsr d6
+         mulu #7,d6          ;kv = d6
+         move.l d6,d3
          lea.l ra(pc),a3
 
          exg.l a5,a6
@@ -148,12 +147,11 @@ start    lea.l libname(pc),a1         ;open the dos library
          dbra d3,.fill
 
          clr cv
-         move d5,kv
 .l0      clr.l d5       ;d <- 0
          clr.l d4
          clr.l d7
-         move kv(pc),d4
-         add.l d4,d4     ;i <-k*2
+         move d6,d4     ;i <- kv
+         add.l d4,d4     ;i <- i*2
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
   ifeq MULUopt
@@ -163,18 +161,18 @@ start    lea.l libname(pc),a1         ;open the dos library
 
 .longdiv
   if __VASM&28              ;68020/30?
-         divul d4,d7:d6
+         divul d4,d7:d3
   else
-         swap d6
-         move d6,d7
+         swap d3
+         move d3,d7
          divu d4,d7
          swap d7
-         move d7,d6
-         swap d6
-         divu d4,d6
+         move d7,d3
+         swap d3
+         divu d4,d3
 
-         move d6,d7
-         exg.l d6,d7
+         move d3,d7
+         exg.l d3,d7
          clr d7
          swap d7
   endif
@@ -184,7 +182,7 @@ start    lea.l libname(pc),a1         ;open the dos library
   if __VASM&28              ;68020/30?
          align 2
   endif
-.l2      sub.l d6,d5
+.l2      sub.l d3,d5
          sub.l d7,d5
          lsr.l d5
 .l4
@@ -205,14 +203,14 @@ start    lea.l libname(pc),a1         ;open the dos library
          mulu d1,d0       ;r[i]*10000
   endif
          add.l d0,d5       ;d += d + r[i]*10000
-         move.l d5,d6
-         divu d4,d6
+         move.l d5,d3
+         divu d4,d3
          bvs.s .longdiv
 
-         move d6,d7
-         clr d6
-         swap d6
-         move d6,(a3)     ;r[i] <- d%b
+         move d3,d7
+         clr d3
+         swap d3
+         move d3,(a3)     ;r[i] <- d%b
 .enddiv
          subq #2,d4    ;i <- i - 1
          bcc .l2       ;the main loop
@@ -229,7 +227,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          swap d5
          bsr PR0000
   endif
-         sub.w #14,kv
+         sub.w #14,d6   ;kv
          bne .l0
 
          move.l time(pc),d5
@@ -335,7 +333,6 @@ VBlankServer:
       dc.l  time,rasteri          ;is_Data,is_Code
 
 cv  dc.w 0
-kv  dc.w 0
 time dc.l 0
 cout dc.l 0
 buf ds.b 4
@@ -372,7 +369,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v11 [beta 5]'
+msg1  dc.b 'number pi calculator v11 '
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
