@@ -86,19 +86,19 @@ start    move.l #msg1,-(sp)
          move d5,d1
          addq #3,d5
          and #$fffc,d5
+         move d5,d6
          cmp d1,d5
          beq .l7
 
-         move d5,a4
          bsr PR0000
-         move a4,d5
          move.l #msg3,-(sp)
          move #9,-(sp)    ;print line
          trap #1
          addq.l #6,sp
-.l7      lsr d5
-         mulu #7,d5
-         movea.l d5,a4
+.l7      lsr d6
+         mulu #7,d6
+         move.l d6,d3   ;kv = d6
+         lea.l ra(pc),a3
 
          clr.l -(sp)
 	     move #32,-(sp)    ;super
@@ -107,23 +107,19 @@ start    move.l #msg1,-(sp)
 	     move.l d0,ssp
          move.l timer,time
 
-         move.l a4,d2
-         lsr #1,d2
-         subq #1,d2
+         lsr d3
+         subq #1,d3
          move.l #2000*65537,d0
-         move.l #ra,a0
+         movea.l a3,a0
 .fill    move.l d0,(a0)+
-         dbra d2,.fill
+         dbra d3,.fill
 
          clr cv
-         move a4,kv
-
 .l0      clr.l d5       ;d <- 0
          clr.l d4
          clr.l d7
-         move kv(pc),d4
-         add.l d4,d4     ;i <-k*2
-         lea.l ra(pc),a3
+         move d6,d4      ;i <- kv
+         add.l d4,d4     ;i <- i*2
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
   ifeq MULUopt
@@ -133,18 +129,18 @@ start    move.l #msg1,-(sp)
 
 .longdiv
   if __VASM&28              ;68020/30?
-         divul d4,d7:d6
+         divul d4,d7:d3
   else
-         swap d6
-         move d6,d7
+         swap d3
+         move d3,d7
          divu d4,d7
          swap d7
-         move d7,d6
-         swap d6
-         divu d4,d6
+         move d7,d3
+         swap d3
+         divu d4,d3
 
-         move d6,d7
-         exg.l d6,d7
+         move d3,d7
+         exg.l d3,d7
          clr d7
          swap d7
   endif
@@ -155,7 +151,7 @@ start    move.l #msg1,-(sp)
          align 2
   endif
 
-.l2      sub.l d6,d5
+.l2      sub.l d3,d5
          sub.l d7,d5
          lsr.l d5
 .l4
@@ -176,14 +172,14 @@ start    move.l #msg1,-(sp)
          mulu d1,d0       ;r[i]*10000, removed with MULU optimization
   endif
          add.l d0,d5       ;d += d + r[i]*10000
-         move.l d5,d6
-         divu d4,d6
+         move.l d5,d3
+         divu d4,d3
          bvs.s .longdiv
 
-         move d6,d7
-         clr d6
-         swap d6
-         move d6,(a3)     ;r[i] <- d%b
+         move d3,d7
+         clr d3
+         swap d3
+         move d3,(a3)     ;r[i] <- d%b
 .enddiv
          subq #2,d4    ;i <- i - 1
          bcc .l2       ;the main loop
@@ -200,7 +196,7 @@ start    move.l #msg1,-(sp)
          swap d5
          bsr PR0000
   endif
-         sub.w #14,kv
+         sub.w #14,d6
          bne .l0
 
          move.l timer,d5
@@ -363,7 +359,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v6 '
+msg1  dc.b 27,'vnumber pi calculator v7 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
