@@ -36,10 +36,10 @@
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
-;a/b helped to optimize the 68000 code
+;a/b, saimo and modrobert helped to optimize the 68000 code
 
      mc68000
-MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE/Amiga1200 and faintly faster with the real 68020
+MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE/Amiga1200 and slightly faster with the real 68020
 IO = 1
 
 timer = $4ba
@@ -120,6 +120,7 @@ start    move.l #msg1,-(sp)
 
 .l0      clr.l d5       ;d <- 0
          clr.l d4
+         clr.l d7
          move kv(pc),d4
          add.l d4,d4     ;i <-k*2
          lea.l ra(pc),a3
@@ -131,20 +132,27 @@ start    move.l #msg1,-(sp)
          bra .l4
 
 .longdiv
-  if __VASM&28              ;68030?
+  if __VASM&28              ;68020/30?
          divul d4,d7:d6
-         move d7,(a3)     ;r[i] <- d%b
-         bra.s .enddiv
   else
          swap d6
-         moveq.l #0,d7
          move d6,d7
          divu d4,d7
          swap d7
          move d7,d6
          swap d6
          divu d4,d6
-         bra.s .contdiv
+
+         move d6,d7
+         exg.l d6,d7
+         clr d7
+         swap d7
+  endif
+         move d7,(a3)     ;r[i] <- d%b
+         bra.s .enddiv
+
+  if __VASM&28              ;68020/30?
+         align 2
   endif
 
 .l2      sub.l d6,d5
@@ -172,8 +180,6 @@ start    move.l #msg1,-(sp)
          divu d4,d6
          bvs.s .longdiv
 
-         moveq.l #0,d7
-.contdiv
          move d6,d7
          clr d6
          swap d6
@@ -203,12 +209,12 @@ start    move.l #msg1,-(sp)
 	     trap #1
 	     addq.l #6,sp
 
-         move   #' ',-(sp)
-         move  #2,-(sp)    ;conout
+         move #' ',-(sp)
+         move #2,-(sp)    ;conout
          trap #1
          addq.l #4,sp
 
-         sub.l time,d5
+         sub.l time(pc),d5
          lsr.l d5        ;200 MHz
 
 .l8      lea string(pc),a3
@@ -357,7 +363,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v5 '
+msg1  dc.b 27,'vnumber pi calculator v6 '
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
