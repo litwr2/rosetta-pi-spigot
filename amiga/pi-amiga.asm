@@ -36,20 +36,19 @@
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
-;a/b, saimo and modrobert helped to optimize the 68k code
+;a/b, saimo, and modrobert helped to optimize the 68k code
+;Don_Adan found some useful tricks for the Amiga 
 
      mc68000
-MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and faintly faster with the real 68020
+MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and slightly faster with the real 68020
 IO = 1
 
-OldOpenLibrary	= -408
-CloseLibrary	= -414
+OldOpenLibrary = -408
+CloseLibrary = -414
 Output = -60
 Input = -54
 Write = -48
 Read = -42
-AllocMem = -198
-FreeMem = -210
 Forbid = -132
 Permit = -138
 AddIntServer = -168
@@ -121,9 +120,9 @@ start    lea.l libname(pc),a1         ;open the dos library
          cmp d1,d5
          beq .l7
 
-.l21     move d5,a4
+.l21     move d5,-(sp)
          bsr PR0000
-         move a4,d5
+         move (sp)+,d5
          move.l cout(pc),d1
          move.l #msg3,d2
          moveq #msg2-msg3+1,d3
@@ -131,7 +130,7 @@ start    lea.l libname(pc),a1         ;open the dos library
 .l7      lsr d5
          mulu #7,d5
          move.l d5,d3
-         lea.l ra(pc),a2
+         lea.l ra(pc),a3
 
          exg.l a5,a6
          jsr Forbid(a6)
@@ -144,7 +143,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          lsr d3
          subq #1,d3
          move.l #2000*65537,d0
-         move.l a2,a0
+         move.l a3,a0
 .fill    move.l d0,(a0)+
          dbra d3,.fill
 
@@ -152,12 +151,11 @@ start    lea.l libname(pc),a1         ;open the dos library
          move d5,kv
 .l0      clr.l d5       ;d <- 0
          clr.l d4
+         clr.l d7
          move kv(pc),d4
          add.l d4,d4     ;i <-k*2
-         move.l a2,a3
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
-         moveq.l #0,d3
   ifeq MULUopt
          move #10000,d1
   endif
@@ -165,29 +163,29 @@ start    lea.l libname(pc),a1         ;open the dos library
 
 .longdiv
   if __VASM&28              ;68020/30?
-         divul d4,d3:d6
+         divul d4,d7:d6
   else
          swap d6
-         move d6,d3
-         divu d4,d3
-         swap d3
-         move d3,d6
+         move d6,d7
+         divu d4,d7
+         swap d7
+         move d7,d6
          swap d6
          divu d4,d6
 
-         move d6,d3
-         exg.l d6,d3
-         clr d3
-         swap d3
+         move d6,d7
+         exg.l d6,d7
+         clr d7
+         swap d7
   endif
-         move d3,(a3)     ;r[i] <- d%b
+         move d7,(a3)     ;r[i] <- d%b
          bra.s .enddiv
 
   if __VASM&28              ;68020/30?
          align 2
   endif
 .l2      sub.l d6,d5
-         sub.l d3,d5
+         sub.l d7,d5
          lsr.l d5
 .l4
   if MULUopt
@@ -204,14 +202,14 @@ start    lea.l libname(pc),a1         ;open the dos library
          lsl.l #8,d1
          sub.l d1,d0
   else
-         mulu d1,d0       ;r[i]*10000, removed with MULU optimization
+         mulu d1,d0       ;r[i]*10000
   endif
          add.l d0,d5       ;d += d + r[i]*10000
          move.l d5,d6
          divu d4,d6
          bvs.s .longdiv
 
-         move d6,d3
+         move d6,d7
          clr d6
          swap d6
          move d6,(a3)     ;r[i] <- d%b
@@ -299,12 +297,12 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l a5,a6
          jmp CloseLibrary(a6)
 
-PR0000     ;prints d5
-       lea buf(pc),a0
-       bsr .l1
+PR0000     ;prints d5, uses a0,a1(scratch),d0,d1,d2,d3
+       lea.l buf(pc),a0
+       move.l a0,d2
+       bsr.s .l1
        moveq #4,d3
        move.l cout(pc),d1
-       move.l #buf,d2
        jmp Write(a6)             ;call Write(stdout,buff,size)
 
 .l1    divu #1000,d5
@@ -323,9 +321,9 @@ PR0000     ;prints d5
 
 .l0    eori.b #'0',d5
        move.b d5,(a0)+
-eos    rts
+       rts
 
-rasteri      addq.l #1,time
+rasteri      addq.l #1,(a1)
 ;If you set your interrupt to priority 10 or higher then a0 must point at $dff000 on exit
       moveq #0,d0  ; must set Z flag on exit!
       rts
@@ -333,8 +331,8 @@ rasteri      addq.l #1,time
 VBlankServer:
       dc.l  0,0                   ;ln_Succ,ln_Pred
       dc.b  NT_INTERRUPT,0        ;ln_Type,ln_Pri
-      dc.l  libname               ;ln_Name
-      dc.l  0,rasteri             ;is_Data,is_Code
+      dc.l  0                     ;ln_Name
+      dc.l  time,rasteri          ;is_Data,is_Code
 
 cv  dc.w 0
 kv  dc.w 0
@@ -350,32 +348,41 @@ getnum   jsr Input(a6)          ;get stdin
          moveq.l #5,d3     ;+ newline
          jsr Read(a6)
          subq #1,d0
-         beq getnum
+         beq .err
 
          move.l d2,a0
          clr.l d5
 .l1      clr d6
          move.b (a0)+,d6
-         sub.b #'0',d6
+         cmpi.b #'9',d6
+         bhi .err
+
+         subi.b #'0',d6
+         bcs .err
+
          add d6,d5
          subq #1,d0
-         beq eos
+         beq .eos
 
          mulu #10,d5
          bra .l1
 
+.err     clr d5
+.eos     rts
+
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v11 [beta 4]'
+msg1  dc.b 'number pi calculator v11 [beta 5]'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
       dc.b '(68000)'
   endif
-msg4  dc.b 10,'number of digits (up to '
+  dc.b 10
+msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
-msg3  dc.b ' digits will be printed'
-msg2  dc.b 10
-      dcb.b 65536-(ra-start)
-      end start
+msg3 dc.b ' digits will be printed'
+msg2 dc.b 10
+     dcb.b 65536-(ra-start)
+     end start
 
