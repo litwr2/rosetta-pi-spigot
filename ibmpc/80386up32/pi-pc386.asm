@@ -36,6 +36,8 @@
 ;Thorham and meynaf helped too
 
 IO = 1
+MULOPT = 0   ;1 is slower for the 80386 but must be faster for the 80486
+
          use16
          org 100h
 
@@ -90,7 +92,6 @@ start:
          mov [time+2],ax
 
          xor esi,esi
-         xor ecx,ecx
          push ds
          pop es
          pop cx       ;fill r-array
@@ -102,25 +103,46 @@ start:
 .l0:     xor edi,edi          ;d <- 0
          mov si,bp
          ;add si,si       ;i <-k*2
-         mov cx,10000
+if MULOPT = 0
+         mov ecx,10000
+else
+         xor edx,edx
+         xor ecx,ecx
+end if
          jmp .l2
 
-.lx:     rol eax,16
+.longdiv:
+         rol eax,16
+if MULOPT
+         xor edx,edx
+end if
          div esi
          jmp .lxc
 
+         align 4
 .l4:     sub edi,edx      ;T2
          sub edi,eax      ;T2
          shr edi,1        ;T3
 .l2:     movzx eax,word [si+ra]     ;r[i]   ;T6
-         mul ecx         ;r[i]*10000   ;T20
-         add eax,edi      ;T2
-         mov edi,eax      ;T2
+if MULOPT = 0
+     mul ecx          ;T9-38/13-42, sets EDX=0
+else
+     mov ecx,eax      ;T2/1
+     shl eax,3        ;T3/2
+     sub ecx,eax      ;T2/1
+     add eax,eax      ;T2/1
+     sub ecx,eax      ;T2/1
+     sub ecx,eax      ;T2/1
+     shl ecx,8        ;T3/2
+     sub eax,ecx      ;T2/1
+                      ;=T18/10
+end if
+         add eax,edi      ;T2/1
+         mov edi,eax      ;T2/1
          dec si        ;b <- 2*i-1   ;T2
-         ;xor edx,edx
          rol eax,16     ;T3/2
          cmp ax,si      ;T2/1
-         jnc .lx        ;T3/1
+         jnc .longdiv   ;T3/1
 
          mov dx,ax      ;T2/1
          shr eax,16     ;T3/2
@@ -132,6 +154,9 @@ start:
 if IO = 1
          mov eax,edi
          xor edx,edx
+if MULOPT
+         mov ecx,10000
+end if
          div ecx
          add ax,bx  ;c + d/10000
          mov bx,dx     ;c <- d%10000
@@ -278,7 +303,7 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number ',227,' calculator v7',13,10
+msg1  db 'number pi calculator v8',13,10
       db 'it may give 9000 digits in less than 5 minutes with a PC 386DX @25MHz!'
       db 13,10,'number of digits (up to $'
 msg4  db ')? $'
