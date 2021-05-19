@@ -78,6 +78,8 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      swap d6
 endm
 
+KV equr d6
+
 start    lea.l libname(pc),a1         ;open the dos library
          move.l 4,a5
          move.l a5,a6
@@ -89,11 +91,10 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l #msg1,d2
          moveq #msg4-msg1,d3
          jsr Write(a6)
-         move.l #start+$10000-ra,d0
-         divu #7,d0
-         ext.l d0
-         and.b #$fc,d0
-         move.l d0,d7     ;d7=maxn
+         move.l #start+$10000-ra,d7
+         divu #7,d7
+         ext.l d7
+         and.b #$fc,d7                 ;d7=maxn
 
 .l20     move.l cout(pc),d1
          move.l #msg4,d2
@@ -146,7 +147,6 @@ start    lea.l libname(pc),a1         ;open the dos library
 .fill    move.l d0,(a0)+
          dbra d3,.fill
 
-         clr cv
 .l0      clr.l d5       ;d <- 0
          clr.l d4
          clr.l d7
@@ -202,7 +202,7 @@ start    lea.l libname(pc),a1         ;open the dos library
   else
          mulu d1,d0       ;r[i]*10000
   endif
-         add.l d0,d5       ;d += d + r[i]*10000
+         add.l d0,d5       ;d += r[i]*10000
          move.l d5,d3
          divu d4,d3
          bvs.s .longdiv
@@ -369,7 +369,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v11 '
+msg1  dc.b 'number pi calculator v12 [Beta]'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
