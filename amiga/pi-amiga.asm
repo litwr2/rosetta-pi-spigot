@@ -30,7 +30,7 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - so it optimizes the memory usage by 2 bytes
+;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - does it optimize the memory usage by 2 bytes?
 
 ;litwr has written this for 680x0
 ;tricky provided some help
@@ -127,8 +127,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l #msg3,d2
          moveq #msg2-msg3+1,d3
          jsr Write(a6)
-.l7      lsr d6
-         mulu #7,d6          ;kv = d6
+.l7      mulu #7,d6          ;kv = d6
          move.l d6,d3
          lea.l ra(pc),a3
 
@@ -140,7 +139,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          exg.l a5,a6
          ;move.w #$4000,$dff096    ;DMA off
 
-         lsr d3
+         lsr #2,d3
          subq #1,d3
          move.l #2000*65537,d0
          move.l a3,a0
@@ -148,10 +147,8 @@ start    lea.l libname(pc),a1         ;open the dos library
          dbra d3,.fill
 
 .l0      clr.l d5       ;d <- 0
-         clr.l d4
          clr.l d7
-         move d6,d4     ;i <- kv
-         add.l d4,d4     ;i <- i*2
+         move.l d6,d4     ;i <- kv, i <- i*2
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
   ifeq MULUopt
@@ -227,7 +224,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          swap d5
          bsr PR0000
   endif
-         sub.w #14,d6   ;kv
+         sub.w #28,d6   ;kv
          bne .l0
 
          move.l time(pc),d5
@@ -259,7 +256,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          neg.l d5
 
 .l8      lea string(pc),a3
-         move #10,d4
+         moveq.l #10,d4
          move.l d5,d6
          div32x16
          move.b d6,(a3)+
@@ -369,7 +366,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v12 [Beta]'
+msg1  dc.b 'number pi calculator v12 [Beta 2]'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else

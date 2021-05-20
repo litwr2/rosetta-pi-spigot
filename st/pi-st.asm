@@ -30,7 +30,7 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - so it optimizes the memory usage by 2 bytes
+;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - - does it optimize the memory usage by 2 bytes?
 
 ;litwr has written this for 680x0
 ;tricky provided some help
@@ -95,8 +95,7 @@ start    move.l #msg1,-(sp)
          move #9,-(sp)    ;print line
          trap #1
          addq.l #6,sp
-.l7      lsr d6
-         mulu #7,d6
+.l7      mulu #7,d6
          move.l d6,d3   ;kv = d6
          lea.l ra(pc),a3
 
@@ -107,19 +106,16 @@ start    move.l #msg1,-(sp)
 	     move.l d0,ssp
          move.l timer,time
 
-         lsr d3
+         lsr #2,d3
          subq #1,d3
          move.l #2000*65537,d0
          movea.l a3,a0
 .fill    move.l d0,(a0)+
          dbra d3,.fill
 
-         clr cv
 .l0      clr.l d5       ;d <- 0
-         clr.l d4
          clr.l d7
-         move d6,d4      ;i <- kv
-         add.l d4,d4     ;i <- i*2
+         move.l d6,d4      ;i <- kv, i <- i*2
          adda.l d4,a3
          subq.l #1,d4     ;b <- 2*i-1
   ifeq MULUopt
@@ -196,7 +192,7 @@ start    move.l #msg1,-(sp)
          swap d5
          bsr PR0000
   endif
-         sub.w #14,d6
+         sub.w #28,d6
          bne .l0
 
          move.l timer,d5
@@ -214,7 +210,7 @@ start    move.l #msg1,-(sp)
          lsr.l d5        ;200 MHz
 
 .l8      lea string(pc),a3
-         move #10,d4
+         moveq.l #10,d4
          move.l d5,d6
          div32x16
          move.b d6,(a3)+
@@ -359,7 +355,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v7 '
+msg1  dc.b 27,'vnumber pi calculator v8 [Beta]'
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
