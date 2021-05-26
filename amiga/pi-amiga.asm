@@ -29,6 +29,7 @@
 ;the time of the calculation is quadratic, so if T is time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
+;max number of digits is 9400 due to data types used
 
 ;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - does it optimize the memory usage by 2 bytes?
 
@@ -224,7 +225,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          swap d5
          bsr PR0000
   endif
-         sub.w #28,d6   ;kv
+         sub.w #28,d6   ;kv, this limits to 9360 digits - #14 did not have this limit
          bne .l0
 
          move.l time(pc),d5
@@ -366,7 +367,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v12 [Beta 2]'
+msg1  dc.b 'number pi calculator v12 [Beta 3]'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
