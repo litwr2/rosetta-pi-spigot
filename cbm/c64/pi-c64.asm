@@ -39,13 +39,12 @@
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
+CMOS6502 = 0
 IO = 1
-DIV8OPT = 1           ;it is slightly slower for 7532 or more digits but faster for 7528 or less
+DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
 DIV8SADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
@@ -54,19 +53,36 @@ d = $61   ;..$64
 i = $65   ;$66
 k = $8c   ;$8d
 
-divisor = $19     ;$1a, $1b..$1c used for hi-byte
-dividend = $1d	  ;..$1e used for hi-bytes
-remainder = $41   ;..$42 used for hi-byte
+divisor = $19     ;$1a, $1b..$1c used for hi-byte and product ($1c is not used if DIV8OPT=0)
+dividend = $1d	  ;..$20 used for hi-bytes
+remainder = $41   ;$42 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
 rbase = $3f ;$40
 
+osubr .macro
+.if IO
+     jsr pr0000
+.endif
+.ifeq IO
+     lda pr0000
+.endif
+.endm
          * = $801
          .include "pi-c64.inc"
-
-         * = $96a + $ad
+.if DIV8OPT
+MAINADJ = $ad
+DIV32ADJ = 9
+DIVMIADJ = 16
+.endif
+.ifeq DIV8OPT
+MAINADJ = $b7
+DIV32ADJ = 0
+DIVMIADJ = $12
+.endif
+         * = $96a + MAINADJ
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
          lda #$b
@@ -230,7 +246,7 @@ l4       lda #>10000
          sta divisor+1
          lda #<10000
          sta divisor
-.if IO
+
          lda dividend+3   ;dividend = quotient
          jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
@@ -239,12 +255,12 @@ l4       lda #>10000
          tax
          lda quotient+1
          adc c+1
-         jsr pr0000
+         #osubr
          lda remainder
          sta c             ;c <- d%10000
          lda remainder+1
          sta c+1
-.endif
+
          lda k      ;k <- k - 14
          sec
          sbc #14

@@ -37,4 +37,4 @@ beeb putfile z1.ssd !BOOT PI PI2 PILOAD PILOAD2
 rm *-2100.*
 rm *.prg
 
-echo PILOAD and PILOAD2 are text files and maybe converted to Basic by *EXEC and SAVE
+echo PILOAD and PILOAD2 are text files and they may be converted to Basic by *EXEC and SAVE

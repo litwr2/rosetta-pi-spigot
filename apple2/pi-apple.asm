@@ -1,4 +1,4 @@
-;for TMPX assembler
+;for TMPX assembler, it works on Apple IIc and Apple IIe
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -36,284 +36,89 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-;INT2STR = $A45F  ;print unsigned integer in AC:XR
-BSOUT = $FFD2    ;print char in AC
+COUT = $FDED    ;print char in AC, the redirection is possible
+;COUT1 = $FDF0   ;print char in AC, screen only
+CROUT = $FD8E   ;print nl, corrupts AC
+;RDKEY = $FD0C   ;wait and read a char to AC from the kbd
+HOME = $FC58
+IOSAVE = $FF4A
+IOREST = $FF3F
+SETMOUSE = $12
+SERVEMOUSE = $13
+INITMOUSE = $19
 
-CMOS6502 = 0
+CMOS6502 = 1
+APPLE2C = 1           ;the Apple2c or enhanced Apple IIe can use a faster interrupt handler
+SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
 IO = 1
-DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
+DIV8OPT = 1           ;1 slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
 DIV8SADJ = 0
 
-N = 14
-;N = 350   ;100 digits
-;N = 700   ;200 digits
-;N = 3500  ;1000 digits
-;N = 7792*7/2
-d = $d8   ;..$db
-i = $d4 ;$d5
-;b = $d6 ;$d7
-k = $d2 ;$d3
+N = 350   ;100 digits
+;N = 14  ;4 digits
+;b = $8e   ;$8f
+d = $fa   ;..$fd
+i = $ec   ;$ed
+k = $ee   ;$ef
 
-divisor = $de     ;$df, $e0..$e1 used for hi-byte and product ($e1 is not used if DIV8OPT=0)
-dividend = $e2	  ;..$e5 used for hi-bytes
-remainder = $e6   ;$e7 used for hi-byte
+divisor = $4a     ;$4b, $4c..$4d used for hi-byte and product ($4d is not used if DIV8OPT=0)
+dividend = $4e	  ;..$51 used for hi-bytes
+remainder = $ce   ;$cf used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $dc ;$dd
-;maddlo = $2b ;$2c
-;maddhi = $2d ;$2e
-;mdiflo = $2f ;$30
-;mdifhi = $d2 ;$d3
-;freez = $31 ;$32
+rbase = $ea ;$eb
 
 osubr .macro
 .if IO
-     jsr pr0000        ;$20=32
+     jsr pr0000
 .endif
 .ifeq IO
-     lda pr0000        ;$ad=173
+     lda pr0000
 .endif
 .endm
 
-         * = $1001
-         .include "pi-plus4.inc"
-
 .if DIV8OPT
-MAINADJ = $b
+.if CMOS6502
+MAINADJ = $20
+.endif
+.ifeq CMOS6502
+MAINADJ = $1d
+.endif
 DIV32ADJ = 9
 DIVMIADJ = 16
 .endif
 .ifeq DIV8OPT
-MAINADJ = 0
+MAINADJ = $27
 DIV32ADJ = 0
 DIVMIADJ = $12
 .endif
-         * = $1210 + MAINADJ
-         ldy #<irqh    ;@start@
-         ldx #>irqh
-         lda $ff07
-         and #$40
-         beq nontsc
 
-         ldy #<intsc
-         ldx #>intsc  ;maybe commented?
-nontsc   sty $fffe
-         stx $ffff
-         lda #$b
-         lda $ff06   ;screen @blank@
-         lda #$48
-         lda $ff07   ;@ntsc@ on
-         ;sei         ;no interrupts
-         ;lda #147    ;clear screen
-         ;jsr BSOUT
+         * = $a00
+start    jmp init  ;@start@
 
-;       ldx #7
-;szpl
-;       lda $2b,x
-;       pha
-;       dex
-;       bpl szpl
+.repeat MAINADJ,$ea
 
-.if 0   ;timings
-.block
-tdiv = 9
-       lda #$b
-       sta $ff06
-       lda #$d3
-       sta $ff13
-       lda #10
-       sta zzr
-       lda #tdiv       ;@lowinstr@
-       sta divisor
-       lda #0
-       sta divisor+1
-       lda #0
-       sta zzq
-       sta zzq+1
-       sta zzq+2
-       sta zzq+3
-loop   ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta zzs
-       stx zzs+1
-
-       and #3
-       sta dividend+3
-       stx dividend+2
-       ldy $ff00
-       ldx $ff04
-       sty dividend+1
-       stx dividend
-
-       jsr div32x16x
-       ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta fac1
-       stx fac1+1
-       lda zzs
-       sec
-       sbc fac1
-       sta zzs
-       lda zzs+1
-       sbc fac1+1
-       sta zzs+1
-       lda zzq
-       clc
-       adc zzs
-       sta zzq
-       lda zzq+1
-       adc zzs+1
-       sta zzq+1
-       lda zzq+2
-       adc #0
-       sta zzq+2
-       lda zzq+3
-       adc #0
-       sta zzq+3
-       dec zzr+1
-       bne loop
-
-       dec zzr
-       bne loop
-
-       lda #$d1
-       sta $ff13
-       lda #$1b
-       sta $ff06
-       jmp rzpl0
-zzs .byte 0,0         ;@zzq@
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
-.if 0    ;testing
-.block
-tdiv = 9
-       lda #$28
-       sta $ff07
-       ldx #1
-       stx d
-       ldx #0
-       stx d+1
-       stx d+2
-       stx d+3
-xl1    lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-       jsr div32x16x
-       lda quotient
-       sta zzq
-       lda quotient+1
-       sta zzq+1
-       lda quotient+2
-       sta zzq+2
-       lda quotient+3
-       sta zzq+3
-       lda remainder
-       sta zzr
-       lda remainder+1
-       sta zzr+1
-       lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-
-       ldy #0
-       jsr div32x8f
-       ;jsr div32x16
-       lda quotient
-       cmp zzq
-       bne err
-       lda quotient+1
-       cmp zzq+1
-       bne err
-       lda quotient+2
-       cmp zzq+2
-       bne err
-       lda quotient+3
-       cmp zzq+3
-       bne err
-       lda remainder
-       cmp zzr
-       bne err
-       lda remainder+1
-       cmp zzr+1
-       bne err
-       inc d
-       bne xl1j
-       inc d+1
-       bne xl1j
-       inc d+2
-       bne xl1j
-       inc d+3
-       lda d+3
-       cmp #4
-       bne xl1j
-       lda #8
-       sta $ff07
-       jmp rzpl0
-xl1j   jmp xl1
-err    ldx #0
-rzpl
-       pla
-       sta $2b,x
-       inx
-       cpx #8
-       bne rzpl
-       stx $ff07
-       brk
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
-         sta $ff3f   ;selects RAM
-
-         ldy #0
+main     ldy #0
          lda #2
-         sta d
+         sta rbase
          lda #>r            ;@EOP@ - end of program
-         sta d+1
+         sta rbase+1
          ldx #N/128   ;fill r-array @high2N@
          beq lf3
 
 lf0      lda #<2000
-         sta (d),y
+         sta (rbase),y
          iny
          lda #>2000
-         sta (d),y
+         sta (rbase),y
          iny
          bne lf0
 
-         inc d+1
+         inc rbase+1
          dex
          bne lf0
 
@@ -322,10 +127,10 @@ lf3      ldy #(2*N)&255   ;fill r-array @low2N@
 
 lf1      lda #>2000
          dey
-         sta (d),y
+         sta (rbase),y
          lda #<2000
          dey
-         sta (d),y
+         sta (rbase),y
          bne lf1
 
 lf2      stx c
@@ -344,7 +149,7 @@ loop     lda #0          ;d <- 0
          sta d+3
 
          lda k          ;i <- 2k
-         asl          ;shoud be moved upper, k can keep 2*N
+         asl
          sta i
          lda k+1
          rol       ;sets CY=0
@@ -387,14 +192,10 @@ loop2    ldy i
          lda i+1    ; b <- 2*i
          adc #>r    ;sets CY=0
          sta rbase+1     ; r[i]
-         ;sei
-         ;sta $ff3f    ;c264 to RAM, if number of digits about > 3140
          lda (rbase),y
          tax
          iny
          lda (rbase),y
-         ;sta $ff3e    ;c264 to ROM
-         ;cli
          tay
          lda m10000+256,x
          adc m10000,y
@@ -435,9 +236,10 @@ loop2    ldy i
 l1       dex
          stx divisor
          sty divisor+1
-         ;IN: AC = dividend+3, YR = divisor+1; OUT: AC = remainder
+         ;jsr div32x16x   ;AC = dividend+3
 .include "6502-div6.s"
-         ldy i            ;r[i] <- d%b
+         ldy i
+         lda remainder    ;r[i] <- d%b
          sta (rbase),y
          lda remainder+1
          iny
@@ -464,9 +266,7 @@ l4       lda #>10000
          tax
          lda quotient+1
          adc c+1
-         sta $ff3e
          #osubr
-         sta $ff3f
          lda remainder
          sta c             ;c <- d%10000
          lda remainder+1
@@ -483,44 +283,58 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     sta $ff3e   ;selects ROM
-         lda #$1b
-         sta $ff06   ;screen on
-         lda #8
-         sta $ff07   ;@ntsc-off@
-         ;cli         ;interrupts enabled
-rzpl0
-;       ldx #0
-;rzpl
-;       pla
-;       sta $2b,x
-;       inx
-;       cpx #8
-;       bne rzpl
-         rts
-irqh
-       dec $7fd
-       bpl intsc
+exit     sei
+mlo      lda #0
+         sta $3fe
+mhi      lda #0
+         sta $3ff
+         lda #0
+         ldx #SETMOUSE
+         jsr mousesub
+exitprg  lda #0
+         sta $45
+         jmp IOREST
 
-       pha
-       lda #4
-       sta $7fd
-       pla
-       jsr uptime
-intsc  jsr uptime
-       inc $ff09
-       rti
+mousesub stx p6+1
+p6       ldx $c400
+         stx p2+1
+         pha
+         lda p6+2
+         tax
+         asl
+         asl
+         asl
+         asl
+         tay
+         pla
+p2       jmp 0
 
-uptime inc $a5
-.block
-       bne l1
+timeirq  
+.ifeq APPLE2C
+         tya
+         pha
+         txa
+         pha
+.endif
+p3       jsr 0
+         bcs nomouse
 
-       inc $a4
-       bne l1
+         inc time
+         bne nomouse
 
-       inc $a3
-l1     rts
-.bend
+         inc time+1
+         bne nomouse
+
+         inc time+2
+nomouse
+.ifeq APPLE2C
+         pla
+         tax
+         pla
+         tay
+         lda $45    ;Apple IIe compatibility
+.endif
+         rti
 
 pr0000 .block
          sta d+2
@@ -540,8 +354,8 @@ pr0000 .block
          txa
          tay
 prd      tya
-         eor #$30
-         jmp BSOUT
+         eor #$b0
+         jmp COUT
 
 pr0      ldy #255
 prn      iny
@@ -561,6 +375,9 @@ prc      txa
          sta d+2
          bcs prn
 .bend
+
+c .byte 0,0
+time .byte 0,0,0    ;@timer@
 
     * = (* + 256) & $ff00
 m10000
@@ -618,7 +435,82 @@ m10000
 .endif
 .include "6502-div7.s"
 
-c .byte 0,0
+init     sta exitprg+1      ;apple IIe things
+         jsr IOSAVE
+         ;jsr HOME  ;clear screen
 
-r = (* + 24 + 256) & $ff00
+mx       jsr setmouse
 
+         ldx #2          ;clear timer
+         lda #0
+loopt    sta time,x
+         dex
+         bpl loopt
+
+         sei
+         ldx #INITMOUSE
+         jsr mousesub
+         lda #8
+         ldx #SETMOUSE
+         jsr mousesub
+         lda $3fe
+         sta mlo+1
+         lda $3ff
+         sta mhi+1
+         lda #<timeirq
+         sta $3fe
+         lda #>timeirq
+         sta $3ff
+         cli
+         jmp main
+
+r = (* + 16 + 256) & $ff00
+
+setmouse lda #$ad   ;opcode for LDA $xxxx
+         sta mx
+.if SEEKMOUSE
+         ldx #$c1
+         stx p4+2
+loop3    ldx #4
+loop4    ldy amagic,x
+         lda vmagic,x
+p4       cmp $c000,y
+         beq match
+
+         inc p4+2
+         ldy p4+2
+         cpy #$c8
+         bne loop3
+
+         jsr mouserr
+         pla
+         pla
+         jmp exitprg
+
+amagic .byte 5,7,$b,$c,$fb
+vmagic .byte $38,$18,1,$20,$d6
+
+match    dex
+         bpl loop4
+
+         lda p4+2
+         sta p7+2
+         sta p3+2
+         sta p2+2
+         sta p6+2
+.endif
+p7       lda $c400+SERVEMOUSE
+         sta p3+1
+         rts
+
+mouserr  ldx #0
+loop8    lda msg,x
+         beq exiterr
+
+         jsr COUT
+         inx
+         bne loop8
+exiterr  rts
+
+msg .text "can't find a mouse card"
+    .byte 0

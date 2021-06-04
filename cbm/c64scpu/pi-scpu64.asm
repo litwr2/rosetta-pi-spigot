@@ -38,24 +38,33 @@
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
+IO = 1
 OPT = 5               ;it's a constant for the pi-spigot
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
-b = $8e   ;$8f
+;b = $8e   ;$8f
 d = $61   ;..$64
 i = $65   ;$66
 k = $8c   ;$8d
 
 divisor = $19     ;$1a, $1b..$1c used for hi-byte
-dividend = $1d	  ;..$1e used for hi-bytes
-remainder = $41   ;..$42 used for hi-byte
+dividend = $1d	  ;..$20 used for hi-bytes
+remainder = $41   ;$42 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
 
-         .include "scpu.mac"
+osubr .macro
+.if IO
+     jsr pr0000
+.endif
+.ifeq IO
+     lda pr0000
+.endif
+.endm
+         .include "tmpx65816.mac"
          * = $801
          .include "pi-scpu64.inc"
 
@@ -77,8 +86,9 @@ fac2 = remainder
          #regs16
          #lda_i16 2000
          #ldx_i16 r+2
-         ldy #0           ;fill r-array @N2@
-         .byte 0
+         ldy #<N           ;fill r-array @N2@
+         .byte >N
+         sty k
 lf0      sta 0,x
          inx
          inx
@@ -86,10 +96,7 @@ lf0      sta 0,x
          bne lf0
 
          sty c
-         lda #<N        ;k <- N   @N16@
-         .byte >N
-         sta k
-
+         lda k
 loop     #stz_z d    ;d <- 0
          #stz_z d+2
 
@@ -155,13 +162,15 @@ tl1      ;lda d
 
 l4       #lda_i16 10000
          sta divisor
+
          jsr div32x16m    ;c + d/10000, AC = dividend+3
          clc
          lda quotient
          adc c
-         jsr pr0000
+         #osubr
          lda remainder
          sta c             ;c <- d%10000
+
          lda k      ;k <- k - 14
          sec
          sbc #14

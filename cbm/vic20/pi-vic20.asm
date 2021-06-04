@@ -38,13 +38,12 @@
 
 BSOUT = $FFD2    ;print char in AC
 
+CMOS6502 = 0
 IO = 1
-DIV8OPT = 1           ;it is slightly slower for 7532 or more digits but faster for 7528 or less
+DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
 DIV8SADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
 
 N = 350   ;100 digits
 ;N = 2800  ;800 digits
@@ -52,21 +51,37 @@ d = $F7   ;..$FA
 i = $FB   ;$FC
 k = $FD   ;$FE
 
-divisor = $26     ;$27, $28..$29 used for hi-byte
+divisor = $26     ;$27, $28..$29 used for hi-byte and product ($29 is not used if DIV8OPT=0)
 dividend = $69	  ;..$6a used for hi-bytes
-remainder = $41   ;..$42 used for hi-byte
+remainder = $41   ;$42 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
 rbase = $3f ;$40
 
+osubr .macro
+.if IO
+     jsr pr0000
+.endif
+.ifeq IO
+     lda pr0000
+.endif
+.endm
          * = $1201
          .include "pi-vic20.inc"
 
-         * = $1300 + $20
-         ;lda #$b
-         ;lda $d011   ;screen @blank@
+.if DIV8OPT
+MAINADJ = $20
+DIV32ADJ = 9
+DIVMIADJ = 16
+.endif
+.ifeq DIV8OPT
+MAINADJ = $2a
+DIV32ADJ = 0
+DIVMIADJ = $12
+.endif
+         * = $1300 + MAINADJ
          ;sei         ;no interrupts
          ;lda #147    ;clear screen
          ;jsr BSOUT
@@ -226,7 +241,7 @@ l4       lda #>10000
          sta divisor+1
          lda #<10000
          sta divisor
-.if IO
+
          lda dividend+3   ;dividend = quotient
          jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
@@ -235,12 +250,12 @@ l4       lda #>10000
          tax
          lda quotient+1
          adc c+1
-         jsr pr0000
+         #osubr
          lda remainder
          sta c             ;c <- d%10000
          lda remainder+1
          sta c+1
-.endif
+
          lda k      ;k <- k - 14
          sec
          sbc #14
@@ -252,9 +267,7 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     ;lda #$1b
-         ;sta $d011   ;screen on
-         ;cli         ;interrupts enabled
+exit     ;cli         ;interrupts enabled
          rts
 
 

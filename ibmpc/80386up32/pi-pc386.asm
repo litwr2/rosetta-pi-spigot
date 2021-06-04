@@ -151,7 +151,6 @@ end if
          dec si      ;i <- i - 1   ;T2
          jne .l4          ;T10
                           ;To91
-if IO = 1
          mov eax,edi
          xor edx,edx
 if MULOPT
@@ -160,6 +159,7 @@ end if
          div ecx
          add ax,bx  ;c + d/10000
          mov bx,dx     ;c <- d%10000
+if IO = 1
          call pr0000
 end if
          sub bp,28      ;k <- k - 14

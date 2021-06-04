@@ -1,0 +1,17 @@
+bfn=pi-apple
+sed 's/CMOS6502 *= *1/CMOS6502=0/;s/APPLE2C *= *1/APPLE2C=0/' ${bfn}.asm > $bfn-e.asm
+for fn in $bfn-e $bfn
+do
+  tmpx $fn.asm -l $fn.lst
+  dd if=$fn.prg of=$fn.bin bs=1 skip=2
+  gawk '/@start@/{s=strtonum("0x"$2);print "s/@start@-1/"s-1"/;s/@start@-2/"s-2"/;s/@start@-3/"s-3"/;s/@start@/"s"/"}
+    /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
+    /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
+    /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
+    /@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
+    /@timer@/{print "s/@tilo@/"strtonum("0x"$2)"/;s/@timi@/"strtonum("0x"$2)+1"/;s/@tihi@/"strtonum("0x"$2)+2"/"}
+    /@EOP@/{print "s/@progsz@/"strtonum("0x"$4)*256-s"/"}' $fn.lst >z.sed
+  if [ $fn = $bfn-e ]; then echo 's/V[0-9]*/&-2E/;s/LOAD PI/&2E/' >>z.sed; fi
+  sed -f z.sed $bfn.cbas >$fn.bas
+  rm $fn.prg
+done

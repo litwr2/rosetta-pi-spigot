@@ -39,12 +39,12 @@
 
 ;OUTCHAR = $F2B0   ;$F6A4 for Atari 400/800
 
-DIV8OPT = 1           ;it slightly slower for 7532 or more digits but faster for 7528 or less
+CMOS6502 = 0
+IO = 1
+DIV8OPT = 1           ;1 slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
 DIV8SADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
 
 N = 700   ;200 digits
 ;N = 2800  ;800 digits
@@ -52,16 +52,35 @@ d = $cb   ;..$ce
 i = $e6   ;$e7
 k = $e0   ;$e1
 
-divisor = $e2     ;$e5 used for hi-byte
+divisor = $e2     ;$e5 used for hi-byte  and product ($e5 is not used if DIV8OPT=0)
 dividend = $d7	  ;..$da used for hi-bytes
-remainder = $dd   ;..$de used for hi-byte
+remainder = $dd   ;$de used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
 rbase = $db ;$dc
 
-         * = $1900 + 1
+osubr .macro
+.if IO
+     jsr pr0000
+.endif
+.ifeq IO
+     lda pr0000
+.endif
+.endm
+
+.if DIV8OPT
+MAINADJ = 1
+DIV32ADJ = 9
+DIVMIADJ = 16
+.endif
+.ifeq DIV8OPT
+MAINADJ = $a
+DIV32ADJ = 0
+DIVMIADJ = $12
+.endif
+         * = $1900+MAINADJ
          pla             ;@start@
          ;lda #125     ;screen clear code
          ;jsr OUTCHAR
@@ -237,6 +256,7 @@ l4       lda #>10000
          sta divisor+1
          lda #<10000
          sta divisor
+
          lda dividend+3   ;dividend = quotient
          jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
@@ -245,11 +265,12 @@ l4       lda #>10000
          tax
          lda quotient+1
          adc c+1
-         jsr pr0000
+         #osubr
          lda remainder
          sta c             ;c <- d%10000
          lda remainder+1
          sta c+1
+
          lda k      ;k <- k - 14
          sec
          sbc #14

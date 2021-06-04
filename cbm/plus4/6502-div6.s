@@ -44,9 +44,15 @@ lj      jmp div32
 div32x8           ;dividend+3 < divisor
         ;ldx divisor
         sty remainder+1
+.if CMOS6502
         ;jmp (divjmp,X) ;for CMOS 6502 or 65816, 3 ticks faster,  0.5% faster for 100 digits, 0.01% faster for 3000 - recalculate branches offset!
+        .byte $7c
+        .word divjmp
+.endif
+.ifeq CMOS6502
         stx mjmp+1
 mjmp    jmp (divjmp)
+.endif
 .endif
 
 div16            ;dividend+2 < divisor, CY = 0

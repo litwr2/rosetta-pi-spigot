@@ -39,7 +39,9 @@
 OSWRCH = $FFEE    ;print char in AC
 OSWORD = $FFF1
 
-DIV8OPT = 0           ;it slightly slower for 7532 or more digits but faster for 7528 or less
+CMOS6502 = 0
+IO = 1
+DIV8OPT = 0           ;1 slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 ;DIV8ADJ = 0
 ;DIV8SADJ = 0
@@ -52,14 +54,23 @@ d = $70   ;..$73
 i = $74   ;$75
 k = $76   ;$77
 
-divisor = $78     ;$79, $7a..$7b used for hi-byte
+divisor = $78     ;$79, $7a..$7b used for hi-byte and product ($7b is not used if DIV8OPT=0)
 dividend = $7c	  ;..$7f used for hi-bytes
-remainder = $82   ;..$83 used for hi-byte
+remainder = $82   ;$83 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
 rbase = $80 ;$81
+
+osubr .macro
+.if IO
+     jsr pr0000
+.endif
+.ifeq IO
+     lda pr0000
+.endif
+.endm
 
          * = $900 + $21
          ldx #<timer             ;@start@
@@ -222,6 +233,7 @@ l4       lda #>10000
          sta divisor+1
          lda #<10000
          sta divisor
+
          lda dividend+3   ;dividend = quotient
          jsr div32x16w    ;c + d/10000, AC = dividend+3
          clc
@@ -230,11 +242,12 @@ l4       lda #>10000
          tax
          lda quotient+1
          adc c+1
-         jsr pr0000
+         #osubr
          lda remainder
          sta c             ;c <- d%10000
          lda remainder+1
          sta c+1
+
          lda k      ;k <- k - 14
          sec
          sbc #14

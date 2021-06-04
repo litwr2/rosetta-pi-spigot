@@ -1,0 +1,7 @@
+N=pi-ibmpc
+fasm $N.asm -s $N.fas && fasm-listing $N.fas $N.lst && rm $N.fas && grep -n ': 0F' $N.lst
+N=pi-pc386
+fasm $N.asm -s $N.fas && fasm-listing $N.fas $N.lst && rm $N.fas
+N=pi-pc486
+sed 's/MULOPT *= *0/MULOPT=1/' pi-pc386.asm >$N.asm
+fasm $N.asm -s $N.fas && fasm-listing $N.fas $N.lst && rm $N.fas $N.asm

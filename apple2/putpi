@@ -1,0 +1,32 @@
+dn=pi.dsk
+#dn=disk1.dsk
+p=/home/micro/retro/Apple2/tools
+ac=$p/AppleCommander-ac-1.6.0.jar
+bt=$p/bastools-tools-bt-0.3.1.jar
+#java -jar $ac -dos140 $dn
+java -jar $bt -o boot boot.bas
+#java -jar $ac -d $dn PI
+java -jar $ac -d $dn PIMAIN2C
+#java -jar $ac -d $dn PI2E
+java -jar $ac -d $dn PIMAIN2E
+java -jar $ac -d $dn PIMAIN2GS
+#java -jar $ac -d $dn PI2GS
+java -jar $ac -d $dn BOOT
+java -jar $ac -p $dn BOOT A <boot
+echo Issue the next commands under an emulator
+echo LOAD BOOT
+echo INIT HELLO
+#echo press the return-key;read a
+mess apple2c -skip_gameinfo -flop1 $dn
+java -jar $ac -p $dn PI B 0xa00 <pi-apple.bin
+java -jar $bt -o pimain pi-apple.bas
+java -jar $ac -p $dn PIMAIN2C A <pimain
+java -jar $ac -p $dn PI2E B 0xa00 <pi-apple-e.bin
+java -jar $bt -o pimain pi-apple-e.bas
+java -jar $ac -p $dn PIMAIN2E A <pimain
+java -jar $ac -p $dn PI2GS B 0xa00 <2gs/pi-apple2gs.bin
+java -jar $bt -o pimain 2gs/pi-apple2gs.bas
+java -jar $ac -p $dn PIMAIN2GS A <pimain
+rm pimain boot
+#mess apple2c -flop1 $dn -debug&
+#mess apple2e -flop1 $dn -sl1 mouse -debug&

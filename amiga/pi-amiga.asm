@@ -177,9 +177,9 @@ start    lea.l libname(pc),a1         ;open the dos library
          move d7,(a3)     ;r[i] <- d%b
          bra.s .enddiv
 
-  if __VASM&28              ;68020/30?
-         align 2
-  endif
+;  if __VASM&28              ;68020/30?
+;         align 2            ;the real 68030 works slower with this align!
+;  endif
 .l2      sub.l d3,d5
          sub.l d7,d5
          lsr.l d5
@@ -212,20 +212,21 @@ start    lea.l libname(pc),a1         ;open the dos library
 .enddiv
          subq #2,d4    ;i <- i - 1
          bcc .l2       ;the main loop
+  ;printv *-.longdiv
   if MULUopt
          divu #10000,d5  ;MULU optimization
   else
          divu d1,d5      ;removed with MULU optimization
   endif
-  if IO
          add cv(pc),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
          clr d5
          swap d5
+  if IO
          bsr PR0000
   endif
-         sub.w #28,d6   ;kv, this limits to 9360 digits - #14 did not have this limit
+         sub.w #28,d6   ;kv, this limits to 9360 digits, #14 did not have this limit
          bne .l0
 
          move.l time(pc),d5
@@ -367,7 +368,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v12 [Beta 3]'
+msg1  dc.b 'number pi calculator v12'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else

@@ -1,3 +1,0 @@
-N=pi-pc386
-#N=pi-ibmpc
-fasm $N.asm -s $N.fas && fasm-listing $N.fas $N.lst && rm $N.fas

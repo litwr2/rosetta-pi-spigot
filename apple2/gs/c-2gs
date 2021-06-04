@@ -1,0 +1,9 @@
+fn=pi-apple2gs
+tmpx $fn.asm -l $fn.lst
+dd if=$fn.prg of=$fn.bin bs=1 skip=2
+rm $fn.prg
+gawk '/@start@/{s=strtonum("0x"$2);print "s/@start@-1/"s-1"/;s/@start@-2/"s-2"/;s/@start@-3/"s-3"/;s/@start@/"s"/"}
+/@EOP@/{print "s/@progsz@/"strtonum("0x"$4)*256-s"/"}
+/@timer@/{print "s/@tilo@/"strtonum("0x"$2)"/;s/@timi@/"strtonum("0x"$2)+1"/;s/@tihi@/"strtonum("0x"$2)+2"/"}
+/@N2@/{print "s/@N2@+1/"strtonum("0x"$2)+2"/;s/@N2@/"strtonum("0x"$2)+1"/"}' $fn.lst >z.sed
+sed -f z.sed $fn.cbas >$fn.bas

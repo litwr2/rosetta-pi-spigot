@@ -1,4 +1,4 @@
-;for TMPX assembler
+;for TMPX assembler, it works on Apple IIgs
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -36,29 +36,38 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-OSWRCH = $FFEE    ;print char in AC
+COUT = $FDED    ;print char in AC, the redirection is possible
+;COUT1 = $FDF0   ;print char in AC, screen only
+CROUT = $FD8E   ;print nl, corrupts AC
+;RDKEY = $FD0C   ;wait and read a char to AC from the kbd
+HOME = $FC58
+IOSAVE = $FF4A
+IOREST = $FF3F
+SETMOUSE = $12
+SERVEMOUSE = $13
+INITMOUSE = $19
 
-CMOS6502 = 0
+SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
 IO = 1
-DIV8OPT = 1           ;1 slower for 7532 or more digits but faster for 7528 or less
+DIV8OPT = 1           ;1 slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 DIV8ADJ = 8
 DIV8SADJ = 0
 
 N = 350   ;100 digits
-;N = 2800  ;800 digits
-d = $70   ;..$73
-i = $74   ;$75
-k = $76   ;$77
+;N = 14  ;4 digits
+;b = $8e   ;$8f
+d = $fa   ;..$fd
+i = $ec   ;$ed
+k = $ee   ;$ef
 
-divisor = $78     ;$79, $7a..$7b used for hi-byte and product ($7b is not used if DIV8OPT=0)
-dividend = $7c	  ;..$7f used for hi-bytes
-remainder = $82   ;$83 used for hi-byte
+divisor = $4a     ;$4b, $4c..$4d used for hi-byte and product ($4d is not used if DIV8OPT=0)
+dividend = $4e	  ;..$51 used for hi-bytes
+remainder = $ce   ;$cf used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $80 ;$81
 
 osubr .macro
 .if IO
@@ -69,206 +78,209 @@ osubr .macro
 .endif
 .endm
 
-.if DIV8OPT
 MAINADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
-.endif
-.ifeq DIV8OPT
-MAINADJ = $a
-DIV32ADJ = 0
-DIVMIADJ = $12
-.endif
-         * = $1020
+
+         .include "scpu.mac"
+
+         * = $a00
+start    jmp init  ;@start@
+
 .repeat MAINADJ,$ea
-         ;sei         ;no interrupts
-         ;lda #12
-         ;jsr OSWRCH
 
-         ldy #0             ;clear screen, @start@
-         lda #2
-         sta d
-         lda #>r            ;@EOP@ - end of program
-         sta d+1
-         ldx #N/128   ;fill r-array @high2N@
-         beq lf3
-
-lf0      lda #<2000
-         sta (d),y
-         iny
-         lda #>2000
-         sta (d),y
-         iny
+main     clc
+         #xce
+         #regs16
+         #lda_i16 2000
+         #ldx_i16 r+2
+         ldy #<N           ;fill r-array @N2@
+         .byte >N
+         sty k
+lf0      sta 0,x
+         inx
+         inx
+         dey
          bne lf0
 
-         inc d+1
-         dex
-         bne lf0
-
-lf3      ldy #(2*N)&255   ;fill r-array @low2N@
-         beq lf2
-
-lf1      lda #>2000
-         dey
-         sta (d),y
-         lda #<2000
-         dey
-         sta (d),y
-         bne lf1
-
-lf2      stx c
-         stx c+1
-         stx rbase
-
-         lda #<N        ;k <- N, @lowN@
-         sta k
-         lda #>N        ;@highN@
-         sta k+1
-
-loop     lda #0          ;d <- 0
-         sta d
-         sta d+1
-         sta d+2
-         sta d+3
+         sty c
+         lda k
+loop     #stz_z d    ;d <- 0
+         #stz_z d+2
 
          lda k          ;i <- 2k
-         asl
-         sta i
-         lda k+1
-         rol       ;sets CY=0
-         sta i+1
-         bcc loop2
-
-l8       stx i      ;@mainloop@
-         lda d      ;d <- (d - r[i] - new_d)/2 = d*i
-         sec
-         sbc remainder
-         sta d
-         lda d+1
-         sbc remainder+1
-         sta d+1
-         bcs tl1
-
-         sec
-         lda d+2
-         bne tl2
-
-         dec d+3
-tl2      dec d+2
-tl1      lda d
-         sbc quotient
-         sta d
-         lda d+1
-         sbc quotient+1
-         sta d+1
-         lda d+2
-         sbc quotient+2
-         sta d+2
-         lda d+3
-         sbc quotient+3
-         lsr
-         sta d+3
-         ror d+2
-         ror d+1
-         ror d
-loop2    ldy i
-         lda i+1    ; b <- 2*i
-         adc #>r    ;sets CY=0
-         sta rbase+1     ; r[i]
-         lda (rbase),y
+         asl           ;sets CY = 0
          tax
-         iny
-         lda (rbase),y
+loop2    stx i        ;@mainloop@
+         lda r,x      ;@EOP@
+         #regs8
+         tax            ;50 cycles, *10000
+         #xba
          tay
          lda m10000+256,x
+         ;clc
          adc m10000,y
-         sta product+1
+         ;sta product+1
+         #xba
          lda m10000+512,x
          adc m10000+256,y
          sta product+2
          lda m10000+512,y
-         adc #0
-         tay            ;sta product+3
+         adc #0           ;sets CY = 0
+         sta product+3
          lda m10000,x     ;r[i]*10000
          ;sta product
          ;lda product      ;d <- d + r[i]*10000
-         ;clc
+         #regs16
          adc d
          sta d
          sta dividend
-         lda product+1
-         adc d+1
-         sta d+1
-         sta dividend+1
          lda product+2
          adc d+2
          sta d+2
          ;sta dividend+2
-         sta remainder
-         tya            ;lda product+3
-         adc d+3
-         sta d+3
-         ;sta dividend+3
 
-         ldy i+1
          ldx i             ;b <- b - 1
-         bne l1
-
-         dey
-         sty i+1
-l1       dex
-         stx divisor
-         sty divisor+1
-         ;jsr div32x16x   ;AC = dividend+3
-.include "6502-div6.s"
-         ldy i
-         lda remainder    ;r[i] <- d%b
-         sta (rbase),y
-         lda remainder+1
-         iny
-         sta (rbase),y
-         ldx divisor    ;i <- i - 1
          dex
-         beq l8n
-         jmp l8
-
-l8n      lda i+1
+         stx divisor
+         ;jsr div32x16x  ;AC = remainder at the exit, div32x16x doesn't use XR
+.include "65816-div6.s"
+         sta r+1,x     ;r[i] <- d%b
+         dex      ;i <- i - 1
          beq l4
-         jmp l8     ;@mainloop@
 
-l4       lda #>10000
-         sta divisor+1
-         lda #<10000
+         ;stx i
+         lda d      ;d <- (d - r[i] - new_d)/2 = d*i
+         sec
+         sbc remainder
+         sta d
+         bcs tl1
+
+         sec
+         dec d+2
+tl1      ;lda d
+         sbc quotient
+         sta d
+         lda d+2
+         sbc quotient+2
+         lsr
+         sta d+2
+         ror d       ;sets CY = 0
+         jmp loop2   ;@mainloop@
+
+l4       #lda_i16 10000
          sta divisor
 
-         lda dividend+3   ;dividend = quotient
-         jsr div32x16w    ;c + d/10000, AC = dividend+3
+         jsr div32x16m    ;c + d/10000, AC = dividend+3
          clc
          lda quotient
          adc c
-         tax
-         lda quotient+1
-         adc c+1
          #osubr
          lda remainder
          sta c             ;c <- d%10000
-         lda remainder+1
-         sta c+1
 
          lda k      ;k <- k - 14
          sec
          sbc #14
+         .byte 0
          sta k
-         bcs l11
-
-         dec k+1
-l11      ora k+1
          beq exit
          jmp loop
 
-exit     ;cli         ;interrupts enabled
+exit     sec
+         #xce
+         sei
+mlo      lda #0
+         sta $3fe
+mhi      lda #0
+         sta $3ff
+         lda #0
+         ldx #SETMOUSE
+         jsr mousesub
+exitprg  jmp IOREST
+
+mousesub stx p6+1
+p6       ldx $c400
+         stx p2+1
+         pha
+         lda p6+2
+         tax
+         asl
+         asl
+         asl
+         asl
+         tay
+         pla
+p2       jmp 0
+
+timeirq  
+p3       jsr 0
+         bcs nomouse
+
+         inc time
+         bne nomouse
+
+         inc time+1
+         bne nomouse
+
+         inc time+2
+nomouse
+         rti
+
+pr0000 .block  ;prints C = B:A
+         sta d+2
+         #lda_i16 1000
+         sta d
+         jsr pr0
+         #lda_i16 100
+         sta d
+         jsr pr0
+         #lda_i16 10
+         sta d
+         jsr pr0
+         ldx d+2
+prd      txa
+         ;#regs8
+         sec
+         #xce
+         eor #$b0
+         jsr COUT
+         clc
+         #xce
+         #regs16
          rts
 
+pr0      #ldx_i16 65535
+prn      inx
+         lda d+2
+         cmp d
+         bcc prd
+
+         sbc d
+         sta d+2
+         bcs prn
+.bend
+
+div32x16m       ;dividend+2 < divisor
+        lda dividend+2
+        clc
+        ldy #16
+        .byte 0
+.block
+l3      rol dividend
+        rol
+        cmp divisor
+        bcc l1
+
+        sbc divisor
+l1      dey
+        bne l3
+.bend
+        rol dividend
+        sta remainder
+        #stz_z dividend+2
+	rts
+
+c .byte 0,0
+time .byte 0,0,0    ;@timer@
 
     * = (* + 256) & $ff00
 m10000
@@ -321,51 +333,83 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.if DIV8OPT
-.include "6502-div8.s"
-.endif
-.include "6502-div7.s"
+.include "65816-div7.s"
 
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
+init     jsr IOSAVE
+         ;jsr HOME  ;clear screen
+
+mx       jsr setmouse
+
+         ldx #2          ;clear timer
          lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp OSWRCH
+loopt    sta time,x
+         dex
+         bpl loopt
 
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
+         sei
+         ldx #INITMOUSE
+         jsr mousesub
+         lda #8
+         ldx #SETMOUSE
+         jsr mousesub
+         lda $3fe
+         sta mlo+1
+         lda $3ff
+         sta mhi+1
+         lda #<timeirq
+         sta $3fe
+         lda #>timeirq
+         sta $3ff
+         cli
+         jmp main
 
-         cpx d
-         bcc prd
+         r = * + 24
 
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
+setmouse lda #$ad   ;opcode for LDA $xxxx
+         sta mx
+.if SEEKMOUSE
+         ldx #$c1
+         stx p4+2
+loop3    ldx #4
+loop4    ldy amagic,x
+         lda vmagic,x
+p4       cmp $c000,y
+         beq match
 
-c .byte 0,0
+         inc p4+2
+         ldy p4+2
+         cpy #$c8
+         bne loop3
 
-r = (* + 256) & $ff00
+         jsr mouserr
+         pla
+         pla
+         jmp exitprg
+
+amagic .byte 5,7,$b,$c,$fb
+vmagic .byte $38,$18,1,$20,$d6
+
+match    dex
+         bpl loop4
+
+         lda p4+2
+         sta p7+2
+         sta p3+2
+         sta p2+2
+         sta p6+2
+.endif
+p7       lda $c400+SERVEMOUSE
+         sta p3+1
+         rts
+
+mouserr  ldx #0
+loop8    lda msg,x
+         beq exiterr
+
+         jsr COUT
+         inx
+         bne loop8
+exiterr  rts
+
+msg .text "can't find a mouse card"
+    .byte 0

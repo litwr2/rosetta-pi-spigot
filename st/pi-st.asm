@@ -143,9 +143,9 @@ start    move.l #msg1,-(sp)
          move d7,(a3)     ;r[i] <- d%b
          bra.s .enddiv
 
-  if __VASM&28              ;68020/30?
-         align 2
-  endif
+;  if __VASM&28              ;68020/30?
+;         align 2      ;it seems that this doesn't accelerate
+;  endif
 
 .l2      sub.l d3,d5
          sub.l d7,d5
@@ -184,12 +184,12 @@ start    move.l #msg1,-(sp)
   else
          divu d1,d5      ;removed with MULU optimization
   endif
-  if IO
          add cv(pc),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,cv
          clr d5
          swap d5
+  if IO
          bsr PR0000
   endif
          sub.w #28,d6
@@ -355,7 +355,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v8 [Beta]'
+msg1  dc.b 27,'vnumber pi calculator v8'
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else
