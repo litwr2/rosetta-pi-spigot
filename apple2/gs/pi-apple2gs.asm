@@ -80,7 +80,7 @@ osubr .macro
 
 MAINADJ = 0
 
-         .include "scpu.mac"
+         .include "tmpx65816.mac"
 
          * = $a00
 start    jmp init  ;@start@
