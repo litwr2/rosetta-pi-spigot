@@ -1,0 +1,2 @@
+If time value printed is 0 then use POKE addr,9 and run again.
+The addr-value is 8602 for the IIe/IIc, and 4320 for the IIgs.
