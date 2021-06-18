@@ -70,10 +70,7 @@ start    move.l #msg1,-(sp)
          trap #1
          addq.l #6,sp
 
-         move.l #start+$10000-ra,d4
-         divu #7,d4
-         ext.l d4
-         and.b #$fc,d4
+         move.l #((start+$10000-ra)/7)&$fffc,d4
          move d4,d5
          bsr PR0000
          move.l #msg5,-(sp)
@@ -355,7 +352,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v8'
+msg1  dc.b 27,'vnumber pi calculator v9'
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else

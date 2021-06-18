@@ -92,10 +92,7 @@ start    lea.l libname(pc),a1         ;open the dos library
          move.l #msg1,d2
          moveq #msg4-msg1,d3
          jsr Write(a6)
-         move.l #start+$10000-ra,d7
-         divu #7,d7
-         ext.l d7
-         and.b #$fc,d7                 ;d7=maxn
+         move.l #((start+$10000-ra)/7)&$fffc,d7 ;d7=maxn
 
 .l20     move.l cout(pc),d1
          move.l #msg4,d2
@@ -226,7 +223,7 @@ start    lea.l libname(pc),a1         ;open the dos library
   if IO
          bsr PR0000
   endif
-         sub.w #28,d6   ;kv, this limits to 9360 digits, #14 did not have this limit
+         sub.w #28,d6   ;kv, this limits to 9360 digits, #14 did not set this limit here
          bne .l0
 
          move.l time(pc),d5
@@ -368,7 +365,7 @@ getnum   jsr Input(a6)          ;get stdin
 
 string = msg1
 libname  dc.b "dos.library",0
-msg1  dc.b 'number pi calculator v12'
+msg1  dc.b 'number pi calculator v13'
   if __VASM&28              ;68020/30?
       dc.b '(68020)'
   else
