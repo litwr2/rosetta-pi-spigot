@@ -49,10 +49,7 @@ INITMOUSE = $19
 
 SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
 IO = 1
-DIV8OPT = 1           ;1 slightly slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
 
 N = 350   ;100 digits
 ;N = 14  ;4 digits

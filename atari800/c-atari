@@ -1,13 +1,19 @@
-tmpx pi-atari.asm -l pi-atari.lst
-gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
-/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
-/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
-/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
-/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
-/@ti@/{print "s/@tilo@/"strtonum("0x"$2)"/;s/@timi@/"strtonum("0x"$2)+1"/;s/@tihi@/"strtonum("0x"$2)+2"/"}
-/@EOP@/{print "s/@EOP@/"strtonum("0x"$4)*256"/"}' pi-atari.lst >z.sed
-sed -f z.sed pi-atari.cbas >pi-atari.bas
-dd if=pi-atari.prg of=PI bs=1 skip=2
-tr '\n[:lower:]' '\233[:upper:]' >PI.LST <pi-atari.bas
-rm *.prg
+A=pi-atari
+tmpx $A.asm -l $A.lst
+dd if=$A.prg of=PI bs=1 skip=2
+gawk -f relocator.awk $A.lst >reloc-data.s
+tmpx relocator.asm -l relocator.lst
+dd if=relocator.prg of=RELOC bs=1 skip=2
+cat RELOC PI >PIOBJ
+gawk '/@start@/{print "s/@OP@/"strtonum("0x"substr($2,3))"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)-511"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)-511"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)-511"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)-511"/"}
+/@ti@/{print "s/@tilo@/"strtonum("0x"$2)-512"/;s/@timi@/"strtonum("0x"$2)-511"/;s/@tihi@/"strtonum("0x"$2)-510"/"}
+/@EOP@/{print "s/@EOP@/"strtonum("0x"$4)*256"/"}' $A.lst >z.sed
+ls -l PI|awk '{print "s/@PSZ@/"$5"/"}' >>z.sed
+sed -f z.sed $A.cbas >$A.bas
+tr '\n[:lower:]' '\233[:upper:]' >PI.LST <$A.bas
+rm *.prg RELOC PI z.sed reloc-data.s
 echo PI.LST is a text file and it may be converted into Basic by ENTER and SAVE

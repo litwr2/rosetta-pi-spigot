@@ -10,6 +10,6 @@ tr '\n[:lower:]' '\r[:upper:]' >PILOAD3 <pi-bbc-cp.bas
 
 beeb delete z1.ssd -y PI3 PILOAD3
 beeb putfile z1.ssd PI3 PILOAD3
-rm *.prg
+rm *.prg PI3 PILOAD3
 
-echo PILOAD3 is a text file and it may be converted to Basic by *EXEC and SAVE
+echo PILOAD3 is a text file and it may be converted into Basic by *EXEC PILOAD3 and SAVE"PICP"

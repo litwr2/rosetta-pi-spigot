@@ -33,7 +33,7 @@
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr converted it to 6502
 ;tricky provided some help
-;MMS gave some support
+;MMS and BigEd gave some support
 ;Thorham and meynaf helped too
 
 OSWRCH = $FFEE    ;print char in AC
@@ -45,11 +45,11 @@ DIV8OPT = 0           ;1 slower for 7532 or more digits but faster for 7528 or l
 OPT = 5               ;it's a constant for the pi-spigot
 ;DIV8ADJ = 0
 ;DIV8SADJ = 0
-DIV32ADJ = 12
-DIVMIADJ = 55
+DIV32ADJ = 0
+DIVMIADJ = 0
 
-N = 350   ;100 digits
-;N = 2800  ;800 digits
+D = 100
+N = D/2*7
 d = $70   ;..$73
 i = $74   ;$75
 k = $76   ;$77
@@ -322,8 +322,6 @@ exit     ldx #<timer
          jsr pr0000
 el       jmp el
 
-.include "6502-div7.s"
-
     * = (* + 256) & $ff00
 m10000
  .byte 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
@@ -378,6 +376,8 @@ m10000
 .if DIV8OPT
 .include "6502-div8.s"
 .endif
+.include "6502-div7.s"
+.include "6502-divg.s"
 
 pr0000 .block
          sta d+2

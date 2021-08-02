@@ -226,7 +226,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
 
          pop hl
          pop hl
-if IO
+
          ld h,b
          ld l,c
          ld bc,10000
@@ -237,6 +237,7 @@ if IO
          ld l,c
 
          add hl,de   ;c + d/10000
+if IO
          call PR0000
 endif
          ld hl,(kv)      ;k <- k - 14
@@ -368,7 +369,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v8',13,10
+msg1  db 'number ',165,' calculator v9',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'

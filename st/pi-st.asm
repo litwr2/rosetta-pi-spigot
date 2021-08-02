@@ -44,8 +44,7 @@ IO = 1
 
 timer = $4ba
 
-D = 1000
-N = 7*D/2 ;D digits, e.g., N = 350 for 100 digits
+;N = 7*D ;D digits, e.g., we need N = 700 bytes for 100 digits
 
 div32x16 macro    ;D7=D6/D4, D6=D6%D4
      moveq.l #0,d7

@@ -33,7 +33,7 @@
 ;the fast 32/16-bit division was made by Ivagor for z80
 ;litwr converted it to 6502
 ;tricky provided some help
-;MMS gave some support
+;MMS and BigEd gave some support
 ;Thorham and meynaf helped too
 
 OSWRCH = $FFEE    ;print char in AC
@@ -42,11 +42,9 @@ CMOS6502 = 0
 IO = 1
 DIV8OPT = 1           ;1 slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
 
-N = 350   ;100 digits
-;N = 2800  ;800 digits
+D = 100
+N = D/2*7
 d = $70   ;..$73
 i = $74   ;$75
 k = $76   ;$77
@@ -62,25 +60,26 @@ rbase = $80 ;$81
 
 osubr .macro
 .if IO
-     jsr pr0000
+     jsr pr0000    ;##+1=2
 .endif
 .ifeq IO
-     lda pr0000
+     lda pr0000    ;##+1=2
 .endif
 .endm
 
 .if DIV8OPT
-MAINADJ = 0
-DIV32ADJ = 9
-DIVMIADJ = 16
+MAINADJ = $20
+DIV32ADJ = 0
+DIVMIADJ = 0
+DIV8ADJ = 16
+DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
-MAINADJ = $a
+MAINADJ = $2a
 DIV32ADJ = 0
-DIVMIADJ = $12
+DIVMIADJ = 0
 .endif
-         * = $1020
-.repeat MAINADJ,$ea
+         * = $200+MAINADJ
          ;sei         ;no interrupts
          ;lda #12
          ;jsr OSWRCH
@@ -88,7 +87,7 @@ DIVMIADJ = $12
          ldy #0             ;clear screen, @start@
          lda #2
          sta d
-         lda #>r            ;@EOP@ - end of program
+         lda #>r            ;@EOP@ - end of program  ;##+1=H
          sta d+1
          ldx #N/128   ;fill r-array @high2N@
          beq lf3
@@ -116,8 +115,8 @@ lf1      lda #>2000
          sta (d),y
          bne lf1
 
-lf2      stx c
-         stx c+1
+lf2      stx c          ;##+1=2
+         stx c+1        ;##+1=2
          stx rbase
 
          lda #<N        ;k <- N, @lowN@
@@ -173,23 +172,23 @@ tl1      lda d
          ror d
 loop2    ldy i
          lda i+1    ; b <- 2*i
-         adc #>r    ;sets CY=0
+         adc #>r    ;sets CY=0    ;##+1=H
          sta rbase+1     ; r[i]
          lda (rbase),y
          tax
          iny
          lda (rbase),y
          tay
-         lda m10000+256,x
-         adc m10000,y
+         lda m10000+256,x   ;##+1=2
+         adc m10000,y       ;##+1=2
          sta product+1
-         lda m10000+512,x
-         adc m10000+256,y
+         lda m10000+512,x   ;##+1=2
+         adc m10000+256,y   ;##+1=2
          sta product+2
-         lda m10000+512,y
+         lda m10000+512,y   ;##+1=2
          adc #0
          tay            ;sta product+3
-         lda m10000,x     ;r[i]*10000
+         lda m10000,x     ;r[i]*10000  ;##+1=2
          ;sta product
          ;lda product      ;d <- d + r[i]*10000
          ;clc
@@ -230,11 +229,11 @@ l1       dex
          ldx divisor    ;i <- i - 1
          dex
          beq l8n
-         jmp l8
+         jmp l8     ;##+1=2
 
 l8n      lda i+1
          beq l4
-         jmp l8     ;@mainloop@
+         jmp l8     ;@mainloop@   ;##+1=2
 
 l4       lda #>10000
          sta divisor+1
@@ -242,18 +241,18 @@ l4       lda #>10000
          sta divisor
 
          lda dividend+3   ;dividend = quotient
-         jsr div32x16w    ;c + d/10000, AC = dividend+3
+         jsr div32x16w    ;c + d/10000, AC = dividend+3 ;##+1=2
          clc
          lda quotient
-         adc c
+         adc c      ;##+1=2
          tax
          lda quotient+1
-         adc c+1
+         adc c+1    ;##+1=2
          #osubr
          lda remainder
-         sta c             ;c <- d%10000
+         sta c            ;c <- d%10000  ;##+1=2
          lda remainder+1
-         sta c+1
+         sta c+1     ;##+1=2
 
          lda k      ;k <- k - 14
          sec
@@ -264,11 +263,54 @@ l4       lda #>10000
          dec k+1
 l11      ora k+1
          beq exit
-         jmp loop
+         jmp loop     ;##+1=2
 
 exit     ;cli         ;interrupts enabled
          rts
 
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0    ;##+1=2
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0    ;##+1=2
+         lda #10
+         sta d
+         jsr pr0    ;##+1=2
+         txa
+         tay
+prd      tya
+         eor #$30
+         jmp OSWRCH
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
+.include "6502-divg.s"
+
+c .byte 0,0
 
     * = (* + 256) & $ff00
 m10000
@@ -325,47 +367,5 @@ m10000
 .include "6502-div8.s"
 .endif
 .include "6502-div7.s"
-
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp OSWRCH
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
-
-c .byte 0,0
 
 r = (* + 256) & $ff00

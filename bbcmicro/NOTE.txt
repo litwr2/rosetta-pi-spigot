@@ -1,27 +1,22 @@
-Use *SHADOW to get more digits.  Use *FX16,0 to get them faster.
+*** 6502 ***
 
-A way to get 3000 digits with the expanded model B (by BigEd)
+Use video mode 7 to get maximum number of digits.
+Use *FX16,0 to get them faster.
+Use *SHADOW to get even more digits - this requires additional memory for your system.
 
-*info pi1000
-$.PI1000      FF0E00 FF802B 0001C6 003
-*info pi
-$.PI          001069 001069 00185A 005
+A way to get maximum number of digits with disabling the disc driver - video mode 7 is assumed - try this if PAGE is greater than &E00.
 
-*load pi1000 6000
-*load pi 4069
+p.~pa.
+*load pi 5800
+*load piobj 6000
 *tape
-
-PA.=&7000
-NEW
-FOR I%=0 TO &200STEP4:I%!&E00=I%!&6000:N.
-FOR I%=0 TO &2000STEP4:I%!&1000=I%!&4000:N.
-PA.=&E00
-OLD
-LIST
-
- 20 MODEF%:N%=((HIMEM-&2900)DIV7)AND-4:HIMEM=M%
-
+pa.=&7000
+new
+fori%=0to511step4:i%!&e00=i%!&5800:n.
+pa.=&e00
+old
+list
 *fx3,4
-RUN
-
-This will require some corrections due to changes in the programs.
+40 d%=&6000
+90 calld%
+run

@@ -41,13 +41,11 @@ BSOUT = $FFD2    ;print char in AC
 
 CMOS6502 = 0
 IO = 1
-DIV8OPT = 0           ;1 is slower for 7532 or more digits but faster for 7528 or less
-OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
+DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
+OPT = 5               ;5 is a constant for the pi-spigot
 
-N = 350   ;100 digits
-;N = 2800  ;800 digits
+D = 100
+N = D/2*7
 ;b = $87   ;$88
 d = $5d   ;..$60
 i = $61   ;$62
@@ -75,14 +73,16 @@ osubr .macro
          .include "pi-c128.inc"
 
 .if DIV8OPT
-MAINADJ = $b2
-DIV32ADJ = 9
-DIVMIADJ = 16
+MAINADJ = $b1
+DIV32ADJ = 0  ;3
+DIVMIADJ = 0  ;14
+DIV8ADJ = 16
+DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
 MAINADJ = $bc
 DIV32ADJ = 0
-DIVMIADJ = $12
+DIVMIADJ = 0  ;$12
 .endif
          * = $1d69 + MAINADJ
        lda #$e      ;@start@
@@ -278,6 +278,50 @@ exit
          sta $ff00   ;restores Basic MMU settings
          rts
 
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0
+         lda #10
+         sta d
+         jsr pr0
+         txa
+         tay
+prd      tya
+         eor #$30
+         jmp BSOUT
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
+.include "6502-divg.s"
+
+c .byte 0,0
+
     * = (* + 256) & $ff00
 m10000
  .byte 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
@@ -334,47 +378,5 @@ m10000
 .endif
 .include "6502-div7.s"
 
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp BSOUT
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
-
-c .byte 0,0
-
-r = (* + 256) & $ff00
+r = (* + 256) & $ff00    ;variables are at other bank!
 

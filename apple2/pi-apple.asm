@@ -52,12 +52,11 @@ APPLE2C = 1           ;the Apple2c or enhanced Apple IIe can use a faster interr
 SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
 IO = 1
 DIV8OPT = 1           ;1 slightly slower for 7532 or more digits but faster for 7528 or less
-OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
+OPT = 5               ;5 is a constant for the pi-spigot
 
-N = 350   ;100 digits
-;N = 14  ;4 digits
+
+D = 100
+N = D/2*7
 ;b = $8e   ;$8f
 d = $fa   ;..$fd
 i = $ec   ;$ed
@@ -82,19 +81,21 @@ osubr .macro
 .endm
 
 .if DIV8OPT
+DIV8ADJ = 16
+DIV8SADJ = 0
 .if CMOS6502
 MAINADJ = $20
 .endif
 .ifeq CMOS6502
 MAINADJ = $1d
 .endif
-DIV32ADJ = 9
-DIVMIADJ = 16
+DIV32ADJ = 0
+DIVMIADJ = 0
 .endif
 .ifeq DIV8OPT
 MAINADJ = $27
 DIV32ADJ = 0
-DIVMIADJ = $12
+DIVMIADJ = 0
 .endif
 
          * = $a00
@@ -434,6 +435,7 @@ m10000
 .include "6502-div8.s"
 .endif
 .include "6502-div7.s"
+.include "6502-divg.s"
 
 init     sta exitprg+1      ;apple IIe things
          jsr IOSAVE
@@ -450,7 +452,7 @@ loopt    sta time,x
          sei
          ldx #INITMOUSE
          jsr mousesub
-         lda #8
+         lda #9
          ldx #SETMOUSE
          jsr mousesub
          lda $3fe

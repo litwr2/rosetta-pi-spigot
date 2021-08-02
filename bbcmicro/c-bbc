@@ -1,40 +1,38 @@
-#it uses z1.ssd disc image
-tmpx pi-bbc.asm -l pi-bbc.lst
-gawk '/@start@/{
-s=strtonum("0x"$2)
-printf "$.PI %x %x",s,s >"PI.inf"
-s=s+0x1100
-printf "$.PI2 %x %x",s,s >"PI2.inf"
-}' pi-bbc.lst
-
-gawk '/@start@/{print "s/@start@/\\&"$2"/"}
-/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
-/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
-/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
-/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
-/@EOP@/{print "s/@EOP@/\\&"$4"00/"}' pi-bbc.lst >z.sed
-sed -f z.sed pi-bbc.cbas >pi-bbc.bas
-dd if=pi-bbc.prg of=PI bs=1 skip=2
-tr '\n[:lower:]' '\r[:upper:]' >PILOAD <pi-bbc.bas
-
-sed -r 's/(\* *= *\$[0-9]+)/\1+$1100/' pi-bbc.asm >pi-bbc-2100.asm
-
-tmpx pi-bbc-2100.asm -l pi-bbc-2100.lst
-gawk '/@start@/{print "s/@start@/\\&"$2"/"}
-/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
-/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
-/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
-/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
-/@EOP@/{print "s/@EOP@/\\&"$4"00/"}' pi-bbc-2100.lst >z-2100.sed
-sed -f z-2100.sed pi-bbc.cbas | sed 's/d pi/d pi2/' >pi-bbc-2100.bas
-dd if=pi-bbc-2100.prg of=PI2 bs=1 skip=2
-tr '\n[:lower:]' '\r[:upper:]' >PILOAD2 <pi-bbc-2100.bas
-
+D=z1.ssd
+A=pi-bbc
+tmpx $A.asm -l $A.lst
+dd if=$A.prg of=PI bs=1 skip=2
+gawk -f relocator.awk $A.lst >reloc-data.s
+tmpx relocator.asm -l relocator.lst
+dd if=relocator.prg of=RELOC bs=1 skip=2
+cat RELOC PI >PIOBJ
+gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)-511"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)-511"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)-511"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)-511"/"}
+/@EOP@/{print "s/@EOP@/"strtonum("0x"$4"00")-512"/"}' $A.lst >z.sed
+ls -l PI|awk '{print "s/@PSZ@/"$5"/"}' >>z.sed
+sed -f z.sed $A.cbas >$A.bas
+tr '\n[:lower:]' '\r[:upper:]' >PILOAD <$A.bas
 sed 's/$/\r/' BOOT >'!BOOT'
+beeb delete $D -y !BOOT PIOBJ PILOAD PI
+beeb putfile $D !BOOT PIOBJ PILOAD
+beeb opt4 $D 0
 
-beeb delete z1.ssd -y !BOOT PI PI2 PILOAD PILOAD2
-beeb putfile z1.ssd !BOOT PI PI2 PILOAD PILOAD2
-rm *-2100.*
-rm *.prg
+if false; then   #distro disc
+R=pi57.ssd
+rm $R
+beeb blank_ssd $R
+beeb putfile $R !BOOT PIOBJ
+beeb opt4 $R 3
+echo exec PILOAD from $D and save it on $R
+~/retro/bbc/b-em-2.2/b-em $R&
+else
+mess bbcb -flop1 $D -debug&
+fi
 
-echo PILOAD and PILOAD2 are text files and they may be converted to Basic by *EXEC and SAVE
+rm *.prg !BOOT PI RELOC z.sed reloc-data.s PIOBJ PILOAD
+
+echo PILOAD is a text file and it may be converted into Basic by *EXEC PILOAD and SAVE"PI"
+#echo issue OPT4 3 for the correct autoboot, OPT 4 0 to suppress autoboot

@@ -22,12 +22,10 @@ l1
 div32x16x
 .block
         cpy #0          ;AC =  dividend+3, YR = divisor + 1, XR = divisor, remainder = dividend+2
+        bmi lminus
 .if DIV8OPT
         beq div32x8
 .endif
-        bpl lplus
-        jmp div16minus
-lplus
         ;;lda dividend+3
         cmp divisor+1
         bcc div16
@@ -37,7 +35,8 @@ lplus
         ldx remainder
         cpx divisor
         bcc div16
-lj      jmp div32
+lj      jmp div32           ;##+1=2
+lminus  jmp div16minus      ;##+1=2
 .bend
 
 .if DIV8OPT
@@ -46,12 +45,14 @@ div32x8           ;dividend+3 < divisor
         sty remainder+1
 .if CMOS6502
         ;jmp (divjmp,X) ;for CMOS 6502 or 65816, 3 ticks faster,  0.5% faster for 100 digits, 0.01% faster for 3000 - recalculate branches offset!
-        .byte $7c
+        .byte $7c           ;##+1=2
         .word divjmp
 .endif
 .ifeq CMOS6502
-        stx mjmp+1
-mjmp    jmp (divjmp)
+         cpx #0
+         bmi *+5
+         jmp div32x8f      ;##+1=2
+         jmp div32x8e      ;##+1=2
 .endif
 .endif
 

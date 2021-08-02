@@ -1,3 +1,4 @@
-
-If a time value printed is 0 then use POKE addr,9 and run again.
-The addr-value is 8602 for the IIe/IIc, and 4320 for the IIgs.
+Check if timings are shown if we use 8 instead of 9 in the SETMOUSE call.
+Use POKE addr,8 and run pi-spigot again.
+The addr-value is 6145 for the IIe driver, 6648 the IIc driver, and 4320 for the IIgs driver.
+The IIgs driver uses 8 now, so if timings shown are 0 use POKE4320,9.

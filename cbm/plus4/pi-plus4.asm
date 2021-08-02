@@ -42,15 +42,10 @@ BSOUT = $FFD2    ;print char in AC
 CMOS6502 = 0
 IO = 1
 DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
-OPT = 5               ;it's a constant for the pi-spigot
-DIV8ADJ = 8
-DIV8SADJ = 0
+OPT = 5               ;5 is a constant for the pi-spigot
 
-N = 14
-;N = 350   ;100 digits
-;N = 700   ;200 digits
-;N = 3500  ;1000 digits
-;N = 7792*7/2
+D = 100
+N = D/2*7
 d = $d8   ;..$db
 i = $d4 ;$d5
 ;b = $d6 ;$d7
@@ -83,14 +78,16 @@ osubr .macro
          .include "pi-plus4.inc"
 
 .if DIV8OPT
-MAINADJ = $b
-DIV32ADJ = 9
-DIVMIADJ = 16
+MAINADJ = 7
+DIV32ADJ = 0   ;3
+DIVMIADJ = 0   ;14
+DIV8ADJ = 16
+DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
 MAINADJ = 0
 DIV32ADJ = 0
-DIVMIADJ = $12
+DIVMIADJ = 0   ;$12
 .endif
          * = $1210 + MAINADJ
          ldy #<irqh    ;@start@
@@ -111,192 +108,7 @@ nontsc   sty $fffe
          ;lda #147    ;clear screen
          ;jsr BSOUT
 
-;       ldx #7
-;szpl
-;       lda $2b,x
-;       pha
-;       dex
-;       bpl szpl
-
-.if 0   ;timings
-.block
-tdiv = 9
-       lda #$b
-       sta $ff06
-       lda #$d3
-       sta $ff13
-       lda #10
-       sta zzr
-       lda #tdiv       ;@lowinstr@
-       sta divisor
-       lda #0
-       sta divisor+1
-       lda #0
-       sta zzq
-       sta zzq+1
-       sta zzq+2
-       sta zzq+3
-loop   ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta zzs
-       stx zzs+1
-
-       and #3
-       sta dividend+3
-       stx dividend+2
-       ldy $ff00
-       ldx $ff04
-       sty dividend+1
-       stx dividend
-
-       jsr div32x16x
-       ldy #$28
-       sty $ff07
-       lda $ff02
-       ldx $ff03
-       ldy #$8
-       sty $ff07
-       sta fac1
-       stx fac1+1
-       lda zzs
-       sec
-       sbc fac1
-       sta zzs
-       lda zzs+1
-       sbc fac1+1
-       sta zzs+1
-       lda zzq
-       clc
-       adc zzs
-       sta zzq
-       lda zzq+1
-       adc zzs+1
-       sta zzq+1
-       lda zzq+2
-       adc #0
-       sta zzq+2
-       lda zzq+3
-       adc #0
-       sta zzq+3
-       dec zzr+1
-       bne loop
-
-       dec zzr
-       bne loop
-
-       lda #$d1
-       sta $ff13
-       lda #$1b
-       sta $ff06
-       jmp rzpl0
-zzs .byte 0,0         ;@zzq@
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
-.if 0    ;testing
-.block
-tdiv = 9
-       lda #$28
-       sta $ff07
-       ldx #1
-       stx d
-       ldx #0
-       stx d+1
-       stx d+2
-       stx d+3
-xl1    lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-       jsr div32x16x
-       lda quotient
-       sta zzq
-       lda quotient+1
-       sta zzq+1
-       lda quotient+2
-       sta zzq+2
-       lda quotient+3
-       sta zzq+3
-       lda remainder
-       sta zzr
-       lda remainder+1
-       sta zzr+1
-       lda #0
-       sta divisor+1
-       lda #tdiv
-       sta divisor
-       lda d
-       sta dividend
-       lda d+1
-       sta dividend+1
-       lda d+2
-       sta dividend+2
-       lda d+3
-       sta dividend+3
-
-       ldy #0
-       jsr div32x8f
-       ;jsr div32x16
-       lda quotient
-       cmp zzq
-       bne err
-       lda quotient+1
-       cmp zzq+1
-       bne err
-       lda quotient+2
-       cmp zzq+2
-       bne err
-       lda quotient+3
-       cmp zzq+3
-       bne err
-       lda remainder
-       cmp zzr
-       bne err
-       lda remainder+1
-       cmp zzr+1
-       bne err
-       inc d
-       bne xl1j
-       inc d+1
-       bne xl1j
-       inc d+2
-       bne xl1j
-       inc d+3
-       lda d+3
-       cmp #4
-       bne xl1j
-       lda #8
-       sta $ff07
-       jmp rzpl0
-xl1j   jmp xl1
-err    ldx #0
-rzpl
-       pla
-       sta $2b,x
-       inx
-       cpx #8
-       bne rzpl
-       stx $ff07
-       brk
-zzq .byte 0,0,0,0
-zzr .byte 0,0
-.bend
-.endif
          sta $ff3f   ;selects RAM
-
          ldy #0
          lda #2
          sta d
@@ -489,14 +301,6 @@ exit     sta $ff3e   ;selects ROM
          lda #8
          sta $ff07   ;@ntsc-off@
          ;cli         ;interrupts enabled
-rzpl0
-;       ldx #0
-;rzpl
-;       pla
-;       sta $2b,x
-;       inx
-;       cpx #8
-;       bne rzpl
          rts
 irqh
        dec $7fd
@@ -562,6 +366,10 @@ prc      txa
          bcs prn
 .bend
 
+.include "6502-divg.s"
+
+c .byte 0,0
+
     * = (* + 256) & $ff00
 m10000
  .byte 0,16,32,48,64,80,96,112,128,144,160,176,192,208,224,240
@@ -618,7 +426,5 @@ m10000
 .endif
 .include "6502-div7.s"
 
-c .byte 0,0
-
-r = (* + 24 + 256) & $ff00
+r = (* + 0 + 256) & $ff00   ;+0 reserves space for Baic variables - check $2b!
 
