@@ -1,0 +1,1 @@
+../bbcmicro/relocator.awk
