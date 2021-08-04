@@ -15,11 +15,17 @@ div32x16x     ;D=A:B - divisor (A - high!)
         negb     ;assumed that D is odd
         coma
         std <neg_divisor
+   if DIVNOMINUS==0
         bmi lplus
-   if DIVNOMINUS=0
         jmp div16minus
-   endif
         ;lbpl div16minus  ;slower!
+   endif
+
+lplus
+        addd <dividend
+        bcc div16
+        jmp div32
+        ;lbcc div32   ;slower!
 
    if DIV8OPT
 div8
@@ -30,12 +36,6 @@ div8
         jmp div32x8f
 todiv8e jmp div32x8e
    endif
-
-lplus
-        addd <dividend
-        bcc div16
-        jmp div32
-        ;lbcc div32   ;slower!
 
 div16            ;<dividend+2 < divisor
         ldd <dividend

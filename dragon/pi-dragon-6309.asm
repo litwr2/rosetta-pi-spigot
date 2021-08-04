@@ -38,9 +38,8 @@
 
 IO equ 1
 
-N equ 350    ;100 digits
-;N equ 2800  ;800 digits
-;N equ 3500    ;1000 digits
+DIGI equ 100
+N equ DIGI/2*7
 
   if DRACO
 OPCHR equ $800C    ;print char in AC
@@ -163,12 +162,12 @@ exitdiv  divq <divisor
          leax -1,x         ;i <- i - 1
          bne l4
 
-    if IO
          ldd <quotient
          divq #10000
          addw <c          ;c + d/10000
          std <c           ;c <- d%10000
          tfr w,d
+    if IO
          jsr <pr0000
     endif
          ldd >$112

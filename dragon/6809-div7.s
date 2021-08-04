@@ -21,16 +21,20 @@ lz1     leax -1,x
 
 div1 macro
        	rolb
-	rola	
-        bcs *+6
+	    rola	
+        bcc 1F
 
-        cmpd <divisor
-        bcs *+4
+        subd <divisor
+        bra 2F
 
-        addd <neg_divisor
+1        addd <neg_divisor
+        bcs 2F
+
+        subd <neg_divisor
+2
      endm
 
-   if DIVNOMINUS=0
+   if DIVNOMINUS==0
 div16minus            ;dividend < divisor > $7fff, it used only if number of digits > 4704
         ldd <dividend
 	asl <dividend+2

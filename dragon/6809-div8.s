@@ -19,10 +19,12 @@ div3 macro
         suba <neg_divisor+1
      endm
 
-div32x8e     ;dividend < divisor+1
+div32x8e     ;dividend < divisor+1, divisor+1 > $7f 
         ldd <dividend
 
    if OPT==1
+        div2
+        div2
         div2
         div2
    endif
@@ -30,15 +32,36 @@ div32x8e     ;dividend < divisor+1
         aslb   ;OPT-1 times
         rola
         div2   ;9-OPT times
+        div2
+        div2
    endif
    if OPT==3
         aslb
         rola
         aslb
         rola
+        div2
+        div2
    endif
+   if OPT==4
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
         div2
-        div2
+   endif
+   if OPT==5
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+        aslb
+        rola
+   endif
         div2
         div2
         div2
@@ -73,11 +96,12 @@ div32x8e     ;dividend < divisor+1
         ldb <remainder+1
         jmp enddivision
 
-div32x8f
+div32x8f             ;divisor+1 < $80
         negb
         stb <neg_divisor+1
         ldd <dividend
-        stu <remainder+1   ;instead of slower clr <quotient
+        ;stu <neg_divisor+1   ;instead of slower clr <quotient
+        clr <dividend
         cmpa <divisor+1
         bcs div8z
 
@@ -87,19 +111,37 @@ div32x8f
         aslb   ;OPT?
         div3   ;8-OPT?
         div3
+        div3
+        div3
    endif
    if OPT==2
         aslb
         aslb
+        div3
+        div3
         div3
    endif
    if OPT==3
         aslb
         aslb
         aslb
+        div3
+        div3
    endif
+   if OPT==4
+        aslb
+        aslb
+        aslb
+        aslb
         div3
-        div3
+   endif
+   if OPT==5
+        aslb
+        aslb
+        aslb
+        aslb
+        aslb
+   endif
         div3
         div3
         div3

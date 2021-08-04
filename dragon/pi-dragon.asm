@@ -36,14 +36,13 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-DIV8OPT equ 0      ;1 is slower
-OPT equ 5          ;it's a constant for the pi-spigot
-DIVNOMINUS equ 0   ;0 limits to 4704 digits, this may slightly shrink size and increase speed
+DIV8OPT equ 0      ;1 is slower for 1000 and more digits
+OPT equ 5          ;5 is a constant for the pi-spigot
+DIVNOMINUS equ 1   ;1 limits to 4704 digits, this may slightly shrink size and increase speed
 IO equ 1
 
-N equ 350    ;100 digits
-;N equ 2800   ;800 digits
-;N equ 3500   ;1000 digits
+DIGI equ 100
+N equ DIGI/2*7
 
   if DRACO
 OPCHR equ $800C    ;print char in AC
@@ -200,17 +199,17 @@ tl1      sbcb <quotient+3
          jmp <loop2
 
 l4
-    if IO
          ldd #10000
          std <divisor
          ldd <dividend    ;dividend = quotient
          jsr div32x16w    ;c + d/10000
          ldd <quotient+2
          addd <c
+    if IO
          jsr <pr0000
+    endif
          ldd <remainder
          std <c             ;c <- d%10000
-    endif
          ldd >$112
          stu >$112
          addd <timer+1
