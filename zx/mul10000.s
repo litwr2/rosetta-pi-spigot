@@ -1,0 +1,1 @@
+../amstrad/cpc6128/mul10000.s
