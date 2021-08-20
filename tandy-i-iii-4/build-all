@@ -1,0 +1,8 @@
+compile pi-trsdos.asm
+mv pi-trsdos.cmd pim1.cmd
+cp pi-trsdos.asm pi-trsdos3.asm
+compile pi-trsdos3.asm -E MODEL3=1
+mv pi-trsdos3.cmd pim3.cmd
+compile pi-trsdos6.asm
+mv pi-trsdos6.cmd pim4.cmd
+rm pi-trsdos3.asm *.hex

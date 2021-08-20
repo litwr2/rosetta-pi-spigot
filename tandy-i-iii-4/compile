@@ -1,0 +1,7 @@
+if [ _$1_ = __ ]; then exit; fi
+F=${1%.asm}
+pasmo6 --hex $2 $3 --listing $F.lst $F.asm $F.hex.nostart
+awk -f fixhex.awk $F.hex.nostart >$F.hex
+trld $F.hex $F.cmd
+#trld $F.hex $F.500.cas
+rm $F.hex.nostart
