@@ -545,7 +545,7 @@ if C128
     pop bc
     pop hl
     add hl,de
-    
+
     push hl
     ld a,(bc)
     push bc
@@ -892,7 +892,7 @@ msx_timer_intr
       ld a,(time+2)
       inc a
       ld (time+2),a
-exit_intr      
+exit_intr
       pop af
 msx_intr_save
       jp 0

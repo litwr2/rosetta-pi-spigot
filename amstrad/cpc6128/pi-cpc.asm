@@ -30,8 +30,8 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
-;litwr made the spigot for Amstrad CPC
+;the fast 32/16-bit division was made by Ivagor for the z80
+;litwr made the spigot for the Amstrad CPC
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped too

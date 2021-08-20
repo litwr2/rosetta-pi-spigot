@@ -31,8 +31,8 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
-;litwr made the spigot for Amstrad CPC
+;the fast 32/16-bit division was made by Ivagor for the z80
+;litwr made the spigot for the Amstrad CPC
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped too
@@ -42,11 +42,10 @@ BDOS equ 5
 IO equ 1
 
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
-OPT equ 5       ;it's a constant for the pi-spigot
+OPT equ 5       ;5 is a constant for the pi-spigot
 
-;N equ 3500   ;1000 digits
-;N equ 2800  ;800 digits
-N equ 8500/2*7   ;8500 digits
+D equ 100
+N equ D/2*7   ;8500 digits
 
 include "z80-div.s"
 
@@ -147,7 +146,7 @@ lf0      ld (hl),e
          inc b
          jr nz,lf0
 
-         ld (cv),bc
+         ;ld (cv),bc
 loop     ld hl,0          ;d <- 0
          push hl
          push hl
@@ -369,7 +368,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v9',13,10
+msg1  db 'number ',165,' calculator v10',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'
@@ -379,8 +378,8 @@ del   db 8,' ',8,'$'
 maxnum dw 0
 getnum proc
 local l0,l1,l5,l8
-        ld b,0  ;cx - length
-        ld hl,0 ;bp - number
+        ld b,0  ;length
+        ld hl,0 ;number
 l0      push hl
         push bc
         ld c,6   ;direct console i/o
