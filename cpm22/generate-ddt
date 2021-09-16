@@ -1,0 +1,11 @@
+if [ _$1_ = __ -o _$2_ = __ ]; then
+    echo USAGE: generate-ddt COM-file full-cpm-filename
+    echo '  e.g., generate-ddt hello.com B:HELLO.COM'
+    exit
+fi
+F=${1%.com}
+echo "Call DDT/SID/ZSID on your system and paste the generated text there"
+od -v -A n -t x1 $F.com | awk 'BEGIN {print "s100"}
+{ for (i = 1; i <= NF; i++) { n++; print $i } }
+END { print ".\ng0\nsave", int((n + 255)/256), "'$2'"}' | tee $F.ddt
+#rm $F.com

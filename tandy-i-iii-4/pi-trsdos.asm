@@ -390,7 +390,7 @@ include "mul10000.s"
 
 ra
 msg1  db 'number pi calculator v1 for the Model I'
-if MODEL3  
+if MODEL3
       db 'II'
 endif
       db 13,'number of digits (up to ',0

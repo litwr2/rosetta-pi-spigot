@@ -1,10 +1,11 @@
 ;for pasmo assembler
-;it is for Tiki-100 KP/M, Amstrad CPC6128 CP/M 2.2, 
+;it is for the Tiki-100 KP/M, Amstrad CPC6128 CP/M 2.2, 
 ;Amstrad PCW8xxx/9xxx CP/M 3, MSX-DOS, Commodore 128 CP/M 3
 ;Acorn z80 2nd processor CP/M, Torch z80 2nd processor CPN
 ;it uses Tiki-100 timer, Amstrad CPC firmware, MSX timer,
 ;MSX (optionally) or Amstrad PCW timer interrupt,
 ;Commodore 128 Time of Day of CIA1
+;TRS-80 Model II/12/16 Pickles and Trout CP/M
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -48,16 +49,18 @@ CPM3TIMER equ 0
 IO equ 1
 
 TIKI100 equ 0
-AMSTRADCPC equ 0
+AMSTRADCPC equ 1
 AMSTRADPCW equ 0
-C128 equ 1
+C128 equ 0
 MSX equ 0
 MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
 ACORNBBCZ80 equ 0
 TORCHBBCZ80 equ 0
+PICKLESANDTROUT equ 0   ;TRS-80 model II/12/16
+ATON equ 0              ;TRS-80 model II/12/16
 GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 
-if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + GENERIC != 1
+if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + PICKLESANDTROUT + ATON + GENERIC != 1
 show ERROR
 endif
 if AMSTRADCPC + CPM3TIMER > 1
@@ -84,6 +87,8 @@ OSWORD equ $FFF1
 Cto6502 equ $FFC9
 Nto6502 equ $FFC3
 Afrom6502 equ $FFC6
+;Pickles and Trout CP/M for the TRS-80 Model II
+SSF equ $40
 
 BDOS equ 5
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
@@ -101,8 +106,10 @@ start    proc
 
 if BIOS_OUTPUT
    ld hl,(1) ;BIOS base table
-   push hl    ;subtract 3?
-   ld de,9   ;conout offset
+   ld de,-3
+   add hl,de
+   push hl
+   ld de,9+3   ;9 - conout offset
    add hl,de
    ld (bios4+1),hl
 endif
@@ -184,6 +191,28 @@ if CPM3TIMER
     ld de,days1
     call BDOS
     ld (secs1),a
+endif
+if PICKLESANDTROUT
+    ld b,0eh   ;read real time clock
+    call SSF
+    ld (time),de
+    ld (time+2),hl
+endif
+if ATON
+    ld de,fcb
+    rst 16
+    ld hl,(fcb+3)
+    ld de,3
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (time),de
+    inc hl
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    ld (time+2),de
 endif
 if TIKI100
     ld hl,(TIKI100_TIMER_LO)
@@ -417,6 +446,27 @@ lct8  ld (hl),a
       sub 76h
 lct9  ld (hl),a
 endif
+if PICKLESANDTROUT
+    ld b,0eh
+    call SSF
+    ex de,hl
+endif
+if ATON
+    ld de,fcb
+    rst 16
+    ld hl,(fcb+3)
+    ld de,3
+    add hl,de
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld a,(hl)
+    inc hl
+    ld h,(hl)
+    ld l,a
+    ex de,hl
+endif
 if TIKI100
     ld hl,(TIKI100_TIMER_LO)
     ld de,(TIKI100_TIMER_HI)
@@ -624,7 +674,7 @@ endif
 if AMSTRADCPC or AMSTRADPCW
      ld bc,300
 endif
-if ACORNBBCZ80 or TORCHBBCZ80
+if ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or ATON
      ld bc,100
 endif
 if GENERIC = 0
@@ -647,7 +697,7 @@ if TIKI100
         ld bc,80      ;10000/125 = 80
         call mul16
 endif
-if ACORNBBCZ80 or TORCHBBCZ80
+if ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or ATON
         ld bc,100     ;10000/100 = 100
         call mul16
 endif
@@ -951,6 +1001,15 @@ kv dw 0
 if ACORNBBCZ80
    db 0
 endif
+if ATON
+fcb db 7  ;clock
+    db 1  ;read
+    ds 1  ;any
+    dw opstat
+    dw timebuf
+opstat ds 7
+timebuf ds 7
+endif
 if CPM3TIMER
 days1  dw 0
 hours1 db 0
@@ -969,15 +1028,21 @@ endif
 if AMSTRADCPC
       db 184
 endif
-if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or GENERIC
+if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or GENERIC
       db 'Pi'
 endif
 
-      db ' calculator v12',13,10
+      db ' calculator v13',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
       db 'Generic'
+endif
+if PICKLESANDTROUT
+      db 'TRS-80 Model II - Pickles and Trout CP/M'
+endif
+if ATON
+      db 'TRS-80 Model II - Aton CP/M'
 endif
 if TIKI100
       db 'Tiki-100'
@@ -1024,7 +1089,7 @@ l00     ld c,6   ;direct console i/o
         ld e,0ffh
         call BDOS
         or a
-        jr z, l00
+        jr z,l00
 
         pop bc
         pop hl
@@ -1032,7 +1097,11 @@ l00     ld c,6   ;direct console i/o
         cp 13
         jr z,l5
 
+if MSX or PICKLESANDTROUT
+        cp 8
+else ;AMSTRADCPC or AMSTRADPCW or C128 or ACORNBBCZ80 or TORCHBBCZ80 or TIKI100 or ATON
         cp 07fh    ;backspace
+endif
         jr z,l1
 
         cp '0'
