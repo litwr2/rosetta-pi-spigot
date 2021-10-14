@@ -1,4 +1,5 @@
 ;for fasm assembler
+;for MS-DOS for Tiki-100 at 8088 mode (thanks to per for the provided support)
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -35,24 +36,35 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
+TIKI100 equ 0
+BBC80186 equ 1
+
+if TIKI100 + BBC80186 <> 1
+ERROR
+end if
+
+TIKI100_TIMER_LO equ $FF8C
+TIKI100_TIMER_HI equ $FF8E
+BBC_OSWORD equ $4A
+
 IO = 1
 
 macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
 local .div32, .exitdiv
-     cmp dx,si   ;T3/3/2/2
-     jc .div32   ;T16/13/9/9  - T4/4/3/3
+     cmp dx,si
+     jc .div32
 
-     mov bx,ax   ;T2/2/2/2
-     mov ax,dx   ;T2/2/2/2
-     xor dx,dx   ;T3/3/2/2
-     div si      ;T144-162/38/22/22
-     xchg ax,bx  ;T4/4/3/3
-     jmp .exitdiv  ;T15/14/8/8
+     mov bx,ax
+     mov ax,dx
+     xor dx,dx
+     div si
+     xchg ax,bx
+     jmp .exitdiv
 
 .div32:
-     xor BX,BX   ;T3/3/2/2
+     xor BX,BX
 .exitdiv:
-     div si      ;T144-162/38/22/22
+     div si
 }
 
          use16
@@ -103,14 +115,13 @@ start:
          mov [.m101+4],ax
          mov [.m100+1],ax
 
-         mov ah,2ch
-         int 21h
-         mov [time+2],cx
-         mov [time],dx
+         call gettime
+         mov [time],bx
+         mov [time+2],dx
 
          push ds
          pop es
-.m100:   mov cx,0        ;fill r-array
+.m100:   mov cx,0       ;fill r-array
          mov ax,2000
          mov di,ra+2
          rep stosw
@@ -123,43 +134,40 @@ start:
 
          mov si,[kv]
          add si,si       ;i <-k*2
-         mov cx,10000      ;T4/4/2/2
+         mov cx,10000
          jmp .l2
 
 .div32long:
-     mov bx,ax   ;T2/2/2/2
-     mov ax,dx   ;T2/2/2/2
-     xor dx,dx   ;T3/3/2/2
-     div si      ;T144-162/38/22/22
-     xchg ax,bx  ;T4/4/3/3
-     jmp .exitdiv  ;T15/14/8/8
+     mov bx,ax
+     mov ax,dx
+     xor dx,dx
+     div si
+     xchg ax,bx
+     jmp .exitdiv
 
-                     ;T - timing, 8088/80186/80286/80386
-.l4:     sub di,dx         ;T3/3/2/2
-         sbb bp,0          ;T4/4/3/2
-         sub di,ax         ;T3/3/2/2
-         sbb bp,bx         ;T3/3/2/2
-         shr bp,1          ;T2/2/2/3
-         rcr di,1          ;T2/2/2/9
-.l2:     mov ax,[si+ra]  ;r[i]   ;T21/9/5/4
-         mul cx          ;r[i]*10000  ;T118-133/35-37/21/9-22, Ta125/a36/21/20
-         add ax,di         ;T3/3/2/2
-         mov di,ax         ;T2/2/2/2
-         adc dx,bp         ;T3/3/2/2
-         mov bp,dx         ;T2/2/2/2
-         dec si        ;b <- 2*i-1  ;T3/3/2/2
-         ;BX:AX = DX:AX/SI, DX = DX:AX%SI ;Ta163/a48/a29/a29
-     cmp dx,si   ;T3/3/2/2
-     jnc .div32long   ;T16/13/9/9  - T4/4/3/3
+.l4:     sub di,dx
+         sbb bp,0
+         sub di,ax
+         sbb bp,bx
+         shr bp,1
+         rcr di,1
+.l2:     mov ax,[si+ra]     ; r[i]
+         mul cx         ;r[i]*10000, mul16x16
+         add ax,di
+         mov di,ax
+         adc dx,bp
+         mov bp,dx
+         dec si        ;b <- 2*i-1
+         cmp dx,si
+     jnc .div32long
 
-     xor BX,BX   ;T3/3/2/2
+     xor BX,BX
 .exitdiv:
-     div si      ;T144-162/38/22/22
+     div si
 
-         mov [si+ra+1],dx   ;r[i] <- d%b  ;T22/12/3/2
-         dec si      ;i <- i - 1   ;T3/3/2/2
-         jne .l4                   ;T16/14/9/9
-                           ;Toa380/a152/a92/a97
+         mov [si+ra+1],dx   ;r[i] <- d%b
+         dec si      ;i <- i - 1
+         jne .l4
 if IO = 1
          mov dx,bx
          div cx
@@ -172,94 +180,60 @@ end if
          jne .l0
 
 .l5:     mov dl,' '
-         call PR00.le
+         call PR0000.le
 
-         mov ah,2ch
-         int 21h
-         sub dl,byte [time]
-         sub dh,byte [time+1]
-         sub cl,byte [time+2]
-         sub ch,byte [time+3]
-         jns .l12
+         call gettime
+         sub bx,[time]
+         sbb dx,[time+2]
+         mov ax,dx
+if TIKI100
+         mov di,8      ;1000/125
+else if BBC80186
+         mov di,10     ;1000/100
+end if
+         mul di
+         mov si,ax
+         mov ax,bx
+         mul di
+         add dx,si
+         mov di,string
+         mov si,10
+         div32x16
+         mov [di],dl
+         inc di
+         mov dx,bx
+         div32x16
+         mov [di],dl
+         inc di
+         mov dx,bx
+         div si
+         mov [di],dl
+         inc di
+         xor dx,dx
+         mov byte [di],'.'-'0'
+         inc di
+.l12:    or ax,ax
+         jz .l11
 
-         add ch,24
-.l12:    xor ax,ax    ;ch*3600
-         xor bx,bx
-         mov al,ch
-         add al,al
-         add al,ch    ;*3
-         cbw
-         mov bp,ax
-         add ax,ax
-         add ax,bp    ;*3
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1
-         add ax,ax
-         rol bx,1     ;*16 = bx:ax
-         push bx
-         push ax
-         mov al,cl    ;cl*60
-         cbw
-         mov bp,ax
-         add ax,ax
-         add ax,bp    ;*3
-         mov bp,ax
-         add ax,ax
-         add ax,ax
-         add ax,bp    ;*5
-         add ax,ax
-         add ax,ax    ;*4 = ax
-         pop cx
-         pop bx
-         push dx
-         cwd
-         add cx,ax
-         adc bx,dx
-         pop dx
-         push dx
-         mov al,dh
-         cbw
-         cwd
-         add cx,ax
-         adc bx,dx
-         pop dx
+         div si
+         mov [di],dl
+         inc di
+         xor dx,dx
+         jmp .l12
+
+.l11:    dec di
+         mov dl,[di]
+         call PR0000.l2
+         cmp di,string
          jne .l11
+         ;sti
+         int 20h
 
-         or dl,dl
-         jns .l14
-
-         dec cx
-         add dl,100
-.l14:    push dx
-         call PR00000
-         mov dl,'.'
-         call PR00.le
-         pop cx
-         xor ch,ch
-         call PR00
-.l11:    int 20h
-
-PR00000:    ;prints cx
-        mov bx,10000
-	CALL PR00.l0
 PR0000:     ;prints cx
         mov bx,1000
-	CALL PR00.l0
+	CALL .l0
         mov bx,100
-	CALL PR00.l0
-PR00:
+	CALL .l0
         mov bx,10
 	CALL .l0
 	mov dl,cl
@@ -277,6 +251,52 @@ PR00:
 	mov cx,bp
 	jmp .l2
 
+gettime:
+if TIKI100
+        push	ds           ;returns timer value at dx:bx
+        mov ax,0c000h
+	mov ds,ax			; Point to Z80-memory window segment
+.wait0:	in	al,7Fh			; Wait for Z80 to be idle
+	test	al,1
+	jz	.wait0
+
+	mov	al,11h			; Take control
+	out	7Fh,al
+.wait1:	in	al,7Fh			; Wait for Z80 memory-window to open
+	test	al,10h
+	jz	.wait1
+
+	mov	bx,WORD [TIKI100_TIMER_LO]	; Do things in Z80-Memory
+	mov	dx,WORD [TIKI100_TIMER_HI]
+	mov	al,1			; Close memory-window
+	out	7Fh,al
+.wait2:	in	al,7Fh			; Make sure the Z80 is back at the bus
+	test	al,10h
+	jnz	.wait2
+
+	pop	ds
+else if BBC80186
+        int 0feh   ;read SYSDAT address
+        push ax
+        push ds
+        mov ds,ax
+        mov al,81h
+        call dword [28h]  ;call XIOS, claim Tube
+        pop ds
+        mov al,1
+        mov bx,string
+        int BBC_OSWORD  ;get timer
+        mov ax,ds
+        pop ds
+        push ax
+        mov al,82h
+        call dword [28h]  ;call XIOS, release Tube
+        pop ds
+        mov bx,word [string]
+        mov dx,word [string+2]
+end if
+        retn
+
         align 2
 cv  dw 0
 kv  dw 0
@@ -286,11 +306,8 @@ maxnum dw 0
 
 getnum: xor cx,cx    ;length
         xor bp,bp    ;number
-.l0:    mov ah,7
-        int 21h
-        or al,al
-        jz .l0
- 
+.l0:    xor ah,ah
+        int 16h 
         cmp al,13
         je .l5
 
@@ -342,7 +359,13 @@ getnum: xor cx,cx    ;length
         retn
 
 string rb 6
-msg1  db 'number pi calculator v8 for DOS',13,10
+msg1  db 'number Pi calculator v7 for DOS ('
+if TIKI100
+      db 'Tiki-100 8088 board'
+else if BBC80186
+      db 'Acorn TUBE 80186'
+end if
+      db ')',13,10
       db 'number of digits (up to $'
 msg4  db ')? $'
 msg3  db ' digits will be printed'

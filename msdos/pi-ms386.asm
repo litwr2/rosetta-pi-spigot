@@ -36,24 +36,7 @@
 ;Thorham and meynaf helped too
 
 IO = 1
-
-macro div32x16 { ;BX:AX = DX:AX/SI, DX = DX:AX%SI
-local .div32, .exitdiv
-     cmp dx,si   ;T3/3/2/2
-     jc .div32   ;T16/13/9/9  - T4/4/3/3
-
-     mov bx,ax   ;T2/2/2/2
-     mov ax,dx   ;T2/2/2/2
-     xor dx,dx   ;T3/3/2/2
-     div si      ;T144-162/38/22/22
-     xchg ax,bx  ;T4/4/3/3
-     jmp .exitdiv  ;T15/14/8/8
-
-.div32:
-     xor BX,BX   ;T3/3/2/2
-.exitdiv:
-     div si      ;T144-162/38/22/22
-}
+MULOPT = 0   ;1 is slower for the 80386 but must be faster for the 80486
 
          use16
          org 100h
@@ -70,8 +53,6 @@ start:
          xor dx,dx
          div bx
          and al,0fch
-         mov cx,ax
-         inc ax
          mov [maxnum],ax
          call PR0000
          mov dx,msg4
@@ -90,85 +71,95 @@ start:
          je .l7
 
          push ax
-         mov cx,ax
          call PR0000
          mov dx,msg3
          mov ah,9
          int 21h
          pop ax
 
-.l7:     shr ax,1
-         mov bx,7
+.l7:     mov bx,7
          mul bx
-         mov [.m101+4],ax
-         mov [.m100+1],ax
+         mov bp,ax
+         shr ax,2
+         push ax
 
          mov ah,2ch
          int 21h
          mov [time+2],cx
          mov [time],dx
 
+         xor esi,esi
          push ds
          pop es
-.m100:   mov cx,0        ;fill r-array
-         mov ax,2000
+         pop cx       ;fill r-array
+         mov eax,2000*65537
          mov di,ra+2
-         rep stosw
+         rep stosd
 
-         mov [cv],cx
-.m101:   mov [kv],0
-
-.l0:     xor bp,bp
-         mov di,bp          ;d = BP:DI <- 0
-
-         mov si,[kv]
-         add si,si       ;i <-k*2
-         mov cx,10000      ;T4/4/2/2
+         mov bx,cx
+.l0:     xor edi,edi          ;d <- 0
+         mov si,bp
+         ;add si,si       ;i <-k*2
+if MULOPT = 0
+         mov ecx,10000
+else
+         xor edx,edx
+         xor ecx,ecx
+end if
          jmp .l2
 
-.div32long:
-     mov bx,ax   ;T2/2/2/2
-     mov ax,dx   ;T2/2/2/2
-     xor dx,dx   ;T3/3/2/2
-     div si      ;T144-162/38/22/22
-     xchg ax,bx  ;T4/4/3/3
-     jmp .exitdiv  ;T15/14/8/8
+.longdiv:
+         rol eax,16
+if MULOPT
+         xor edx,edx
+end if
+         div esi
+         jmp .lxc
 
-                     ;T - timing, 8088/80186/80286/80386
-.l4:     sub di,dx         ;T3/3/2/2
-         sbb bp,0          ;T4/4/3/2
-         sub di,ax         ;T3/3/2/2
-         sbb bp,bx         ;T3/3/2/2
-         shr bp,1          ;T2/2/2/3
-         rcr di,1          ;T2/2/2/9
-.l2:     mov ax,[si+ra]  ;r[i]   ;T21/9/5/4
-         mul cx          ;r[i]*10000  ;T118-133/35-37/21/9-22, Ta125/a36/21/20
-         add ax,di         ;T3/3/2/2
-         mov di,ax         ;T2/2/2/2
-         adc dx,bp         ;T3/3/2/2
-         mov bp,dx         ;T2/2/2/2
-         dec si        ;b <- 2*i-1  ;T3/3/2/2
-         ;BX:AX = DX:AX/SI, DX = DX:AX%SI ;Ta163/a48/a29/a29
-     cmp dx,si   ;T3/3/2/2
-     jnc .div32long   ;T16/13/9/9  - T4/4/3/3
+         align 4
+.l4:     sub edi,edx      ;T2
+         sub edi,eax      ;T2
+         shr edi,1        ;T3
+.l2:     movzx eax,word [si+ra]     ;r[i]   ;T6
+if MULOPT = 0
+     mul ecx          ;T9-38/13-42, sets EDX=0
+else
+     mov ecx,eax      ;T2/1
+     shl eax,3        ;T3/2
+     sub ecx,eax      ;T2/1
+     add eax,eax      ;T2/1
+     sub ecx,eax      ;T2/1
+     sub ecx,eax      ;T2/1
+     shl ecx,8        ;T3/2
+     sub eax,ecx      ;T2/1
+                      ;=T18/10
+end if
+         add eax,edi      ;T2/1
+         mov edi,eax      ;T2/1
+         dec si        ;b <- 2*i-1   ;T2
+         rol eax,16     ;T3/2
+         cmp ax,si      ;T2/1
+         jnc .longdiv   ;T3/1
 
-     xor BX,BX   ;T3/3/2/2
-.exitdiv:
-     div si      ;T144-162/38/22/22
-
-         mov [si+ra+1],dx   ;r[i] <- d%b  ;T22/12/3/2
-         dec si      ;i <- i - 1   ;T3/3/2/2
-         jne .l4                   ;T16/14/9/9
-                           ;Toa380/a152/a92/a97
+         mov dx,ax      ;T2/1
+         shr eax,16     ;T3/2
+         div si         ;T22/24
+.lxc:    mov [si+ra+1],dx   ;r[i] <- d%b  ;T2
+         dec si      ;i <- i - 1   ;T2
+         jne .l4          ;T10
+                          ;To91
+         mov eax,edi
+         xor edx,edx
+if MULOPT
+         mov ecx,10000
+end if
+         div ecx
+         add ax,bx  ;c + d/10000
+         mov bx,dx     ;c <- d%10000
 if IO = 1
-         mov dx,bx
-         div cx
-         add ax,[cv]  ;c + d/10000
-         mov [cv],dx     ;c <- d%10000
-         mov cx,ax
          call PR0000
 end if
-         sub [kv],14      ;k <- k - 14
+         sub bp,28      ;k <- k - 14
          jne .l0
 
 .l5:     mov dl,' '
@@ -243,43 +234,42 @@ end if
          dec cx
          add dl,100
 .l14:    push dx
+         mov ax,cx
          call PR00000
          mov dl,'.'
          call PR00.le
-         pop cx
-         xor ch,ch
+         pop ax
+         xor ah,ah
          call PR00
 .l11:    int 20h
 
-PR00000:    ;prints cx
-        mov bx,10000
+PR00000:    ;prints ax
+        mov si,10000
 	CALL PR00.l0
-PR0000:     ;prints cx
-        mov bx,1000
+PR0000:     ;prints ax
+        mov si,1000
 	CALL PR00.l0
-        mov bx,100
+        mov si,100
 	CALL PR00.l0
 PR00:
-        mov bx,10
+        mov si,10
 	CALL .l0
-	mov dl,cl
+	mov dl,al
 .l2:	add dl,'0'
 .le:    mov ah,2
    	int 21h
+	mov ax,cx
         retn
 
 .l0:    mov dl,0ffh
 .l4:	inc dl
-        mov bp,cx
-	sub cx,bx
+        mov cx,ax
+	sub ax,si
 	jnc .l4
-
-	mov cx,bp
+	mov ax,cx
 	jmp .l2
 
         align 2
-cv  dw 0
-kv  dw 0
 time dw 0,0
 ra = $ - 2
 maxnum dw 0
@@ -290,7 +280,7 @@ getnum: xor cx,cx    ;length
         int 21h
         or al,al
         jz .l0
- 
+
         cmp al,13
         je .l5
 
@@ -332,7 +322,7 @@ getnum: xor cx,cx    ;length
 .l5:    jcxz .l0
 
         cmp bp,[maxnum]
-        jnc .l0
+        ja .l0
 
         or bp,bp
         jz .l0
