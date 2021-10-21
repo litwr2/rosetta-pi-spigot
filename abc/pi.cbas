@@ -1,0 +1,10 @@
+10 IF PEEK2(@start@)=10995 THEN70
+40 PRINT"WAIT":FOR H%=0 TO 44:READ A$
+50 FOR D%=1 TO 80 STEP 2:POKE@start@+H%*40+INT(D%/2),ASC(MID$(A$,D%,1))*16-1105+ASC(MID$(A$,D%+1,1)):NEXT D%
+60 NEXT H%
+70 PRINT"number Pi calculator v1"
+80 PRINT"number of digits (up to @digi@)";:INPUT F:D%=INT((F+3)/4)*4:IF D%<=0 OR D%>@digi@ THEN80
+90 IF F<>D% THEN PRINT D%;" digits will be printed"
+110 F=D%/2*7:POKE@Nlo@,F-INT(F/256)*256,INT(F/256)
+120 H%=CALL(@start@):F=PEEK(@hournew@)-PEEK(@hourold@):IF F<0 THEN F=F+24
+130 PRINT " ";F*3600+(PEEK(@minutenew@)-PEEK(@minuteold@))*60+PEEK(@secnew@)-PEEK(@secold@)+(PEEK(@ticknew@)-PEEK(@tickold@))/93.75

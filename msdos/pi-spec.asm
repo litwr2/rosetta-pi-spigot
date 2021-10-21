@@ -1,5 +1,5 @@
 ;for fasm assembler
-;for MS-DOS for Tiki-100 at 8088 mode (thanks to per for the provided support)
+;for MS-DOS for the Tiki-100 in the 8088 mode (thanks to per for the provided support) and for the BBC Master 512
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 

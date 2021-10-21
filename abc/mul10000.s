@@ -1,0 +1,1 @@
+/home/micro/new/rosetta-pi-spigot/zx/../amstrad/cpc6128/mul10000.s

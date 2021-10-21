@@ -1,0 +1,26 @@
+f=pi-abc800
+pasmo6 --listing $f.lst $f.asm calcpi.bin || exit
+gawk 'BEGIN{s=0xdb00}
+/SA *equ/{
+   printf "s/@start@/%d/\n", strtonum("0x"$1)
+   printf "s/@startlo@/%d/\n", (strtonum("0x"$1)-1)%256
+   printf "s/@starthi@/%d/\n", int((strtonum("0x"$1)-1)/256)
+}/BC,N/{
+   printf "s/@Nlo@/%d/\n", strtonum("0x"$1)+1
+}
+/ra *DB/{
+   printf "s/@digi@/%d/g\n", int((s-strtonum("0x"$1))/28)*4
+   printf "s/@hournew@/%d/\n", strtonum("0x"$1)
+   printf "s/@minutenew@/%d/\n", strtonum("0x"$1)+1
+   printf "s/@secnew@/%d/\n", strtonum("0x"$1)+2
+   printf "s/@ticknew@/%d/\n", strtonum("0x"$1)+3
+}/time *DW/{
+   printf "s/@hourold@/%d/\n", strtonum("0x"$1)
+   printf "s/@minuteold@/%d/\n", strtonum("0x"$1)+1
+   printf "s/@secold@/%d/\n", strtonum("0x"$1)+2
+   printf "s/@tickold@/%d/\n", strtonum("0x"$1)+3
+}' $f.lst >z.sed || exit
+sed -f z.sed pi.cbas >pi.bas
+gcc bin2basic.c || exit
+./a.out <calcpi.bin >>pi.bas || exit
+rm a.out calcpi.bin

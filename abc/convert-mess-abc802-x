@@ -1,0 +1,50 @@
+#for MESS/MAME emu of the ABC802
+A=`wmctrl -l|awk '/abc802/&&/MESS/{print $1}'`
+awk 'BEGIN {
+   speed = 140   #180 for 100% speed, 140 for 200% under mess/mame
+   for (i = 0; i < 10; i++) t[sprintf("%d", i)] = sprintf("%d", i)
+   for (i = 0; i < 26; i++) {
+       t[sprintf("%c", i + 65)] = "shift+" sprintf("%c", i + 65)
+       t[sprintf("%c", i + 97)] = sprintf("%c", i + 97)
+   }
+   t[" "] = "space"
+   t["!"] = "shift+1"
+   t["\""] = "shift+2"
+   t["#"] = "shift+3"
+   t["$"] = "shift+4"
+   t["%"] = "shift+5"
+   t["&"] = "shift+6"
+   t[sprintf("%c", 39)] = "backslash"
+   t["("] = "shift+8"
+   t[")"] = "shift+9"
+   t["*"] = "shift+backslash"
+   t["+"] = "minus"
+   t[","] = "comma"
+   t["-"] = "slash"
+   t["."] = "period"
+   t["/"] = "shift+7"
+   t[":"] = "shift+period"
+   t[";"] = "shift+comma"
+   t["<"] = "grave"
+   t["="] = "shift+0"
+   t[">"] = "shift+grave"
+   t["?"] = "shift+minus"
+t["@"] = "at"
+t["["] = "bracketleft"
+t["\\"] = "backslash"
+t["]"] = "bracketright"
+t["`"] = "grave"
+   t["_"] = "shift+slash"
+   t["^"] = "shift+backslash shift+backslash"
+t["{"] = "braceleft"
+t["|"] = "bar"
+t["}"] = "braceright"
+t["~"] = "asciitilde"
+   print "mssleep",speed
+}
+{
+  printf "xdotool windowactivate --sync '$A'  key --delay %d ", speed
+  for (i = 1; i <= length($0); i++) printf " %s", t[substr($0, i, 1)]
+  print " Return"
+  print "mssleep",speed
+}' $1
