@@ -1,0 +1,11 @@
+Use sources for Dragon-32/64.
+
+Put PI-COCO.ASC and PI-COCO.BIN on a disk image, then run PI-COCO.ASC
+
+It is possible to run the demo under XROAR emulator directly.  Just make the next steps
+1. Run PI-COCO.ASC using Menu
+2. Wait until an error message appears
+3. Load file PI-COCO.BIN using Menu
+4. RUN (use F12 or Shift-F12 to use the full throttle)
+
+The screen will always be on if we run the program on the CoCo 3.

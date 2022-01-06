@@ -6,10 +6,10 @@ for 6309 system.  Use just RUN next time.  Make hardware reset between the usage
 
 It is possible to run the demo without a disk under XROAR emulator.  Just make the next steps
 1. Run PI-DRAGON.ASC (or PI-DRAGON-6309.ASC) using Menu
-3. RUN
-4. Wait until an error message appears
-5. Load file PI-DRAGON.BIN (or PI-DRAGON-6309.BIN) using Menu
-6. RUN (use F12 or Shift-F12 to use the full throttle)
-7. If an error message appears RUN again
+2. RUN
+3. Wait until an error message appears
+4. Load file PI-DRAGON.BIN (or PI-DRAGON-6309.BIN) using Menu
+5. RUN (use F12 or Shift-F12 to use the full throttle)
+6. If an error message appears RUN again
 
 There are problems with Dragon 64.  After EXEC48000 it can make more than 4000 digits but it should make more than 5000...

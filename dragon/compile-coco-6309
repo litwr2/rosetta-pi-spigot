@@ -1,0 +1,9 @@
+asm6809 -dCOCO -3 -l pi-coco.lst pi-dragon-6309.asm -D -o pi-coco-6309.bin
+gawk 'BEGIN{print "s/@ver@/2 (COCO 6309)/;s/@VFREQ@/60/"}
+/@start@/{print "s/@start@/"strtonum("0x"$1)"/\ns/@start1@/"and(0xff00,strtonum("0x"$1))-1"/"}
+/@EOP@/{print "s/@MEM@/"strtonum("0x"substr($2,5))-254"/"}
+/@OUT@/{print "s/@OUT@/"strtonum("0x"$1)+1"/"}
+/@timer@/{print "s/@hitimer@/"strtonum("0x"$1)"/"}
+/@N@/{print "s/@highN@/"strtonum("0x"$1)+1"/\ns/@lowN@/"strtonum("0x"$1)+2"/"}' pi-coco.lst >z.sed
+sed -f z.sed pi-dragon.cbas >pi-coco-6309.asc
+
