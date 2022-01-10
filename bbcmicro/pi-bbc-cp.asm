@@ -285,7 +285,7 @@ exit     ldx #<timer
          jsr pr0000
          lda #"."
          jsr OSWRCH
-         lda remainder  ;*100,*4
+         lda remainder  ;*100,*5
          ldx remainder+1
          asl
          rol remainder+1

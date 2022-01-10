@@ -4,7 +4,7 @@ or
 RUN"PI6309
 for 6309 system.  Use just RUN next time.  Make hardware reset between the usage of PI-DEMO for 6309 and 6809.
 
-It is possible to run the demo without a disk under XROAR emulator.  Just make the next steps
+It is possible to run the demo without a disk under XROAR emulator.  Just make the next steps:
 1. Run PI-DRAGON.ASC (or PI-DRAGON-6309.ASC) using Menu
 2. RUN
 3. Wait until an error message appears

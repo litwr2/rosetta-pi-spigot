@@ -256,7 +256,7 @@ maxnum dw 0
 getnum: xor cx,cx    ;length
         xor bp,bp    ;number
 .l0:    xor ah,ah
-        int 16h 
+        int 16h
         cmp al,13
         je .l5
 

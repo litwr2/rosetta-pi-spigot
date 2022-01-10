@@ -1,0 +1,12 @@
+10 print"number pi calculator v@ver@":ifmem<999then80
+20 poke249,peek(161):poke250,peek(162):clear128,@start@
+30 reada$:r=len(a$):d=1
+40 ifd>=rgoto60
+50 poke(d+f)/2+@start@,asc(mid$(a$,d,1))*16-1105+asc(mid$(a$,d+1,1)):d=d+2:goto40
+60 f=f+r:ifr<>80goto80
+70 goto30
+80 r=int((peek(249)*256+peek(250)-@EOP@)/28)*4
+90 print"number of digits (up to"str$(r)")":inputf:d=(f+3)and-4:ifd<=0ord>rgoto90
+100 iff<>dthen print d;"digits will be printed"
+110 f=d/2*7:poke@highN@,f/256:poke@lowN@,fand255:exec@start@
+120 print(256*peek(@tihi@)+peek(@tilo@))/13.6566
