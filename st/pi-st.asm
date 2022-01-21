@@ -279,7 +279,6 @@ PR0000     ;prints d5
        rts
 
 cv  dc.w 0
-kv  dc.w 0
 time dc.l 0
 ssp dc.l 0
 
@@ -351,7 +350,7 @@ getnum  clr.l d7    ;length
         add.l d7,sp
         rts
 
-msg1  dc.b 27,'vnumber pi calculator v9'
+msg1  dc.b 27,'vnumber pi calculator v10'
   if __VASM&28              ;68030?
       dc.b '(68030)'
   else

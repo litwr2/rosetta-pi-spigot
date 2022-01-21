@@ -1,5 +1,5 @@
 #include <stdio.h>
-main() {
+int main() {
    signed short b[2000], n, i;
    n = fread(b, 2, 1000, stdin);
    for (i = 0; i < n; i++) {
@@ -8,5 +8,6 @@ main() {
       else
           printf(",%d", b[i]);
    }
+   return 0;
 }
 
