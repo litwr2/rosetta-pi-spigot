@@ -1,12 +1,8 @@
-5 if peek_w(163840)<>-11692 then goto 1000
-10 dim a$(80):restore:f=0:print"number pi calculator v@ver@"
-20 s=peek_l(163972):if s=0 then s=respr(@maxm@):poke_l 163972,s:else goto 90
-30 read a$:r=len(a$):d=1
+10 dim a$(81):print"number pi calculator v1":print"Wait":print"********"
+20 s=respr(@maxm@):restore:f=0
+30 read a$:r=len(a$):d=1:print "*";
 40 if d>=r then goto 60
 50 poke(d+f)/2+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 40
-60 f=f+r:if r<>80 then goto 80
+60 f=f+r:if r<>80 then goto 90
 70 goto 30
-90 input "number of digits (up to @maxd@)? ";f:d=(f+3)&&-4:if d<=0 or d>@maxd@ then goto 90
-100 if f<>d then print d;" digits will be printed"
-110 call s,d*7
-120 print#0," ";peek_l(s+@tioff@)/50
+90 call s:print:print"LRUN (or LOAD and RUN) Pi now"

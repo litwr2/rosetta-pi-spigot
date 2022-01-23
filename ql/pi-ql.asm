@@ -65,8 +65,12 @@ div32x16 macro    ;D7=D6/D4, D6=D6%D4
      swap d6
 endm
 
-start    ;move.l #N,d1
-         move.l d1,d6
+start      lea.l define(pc),a1
+           move $110,a2      ;BP.INIT
+           jmp      (a2)
+
+start_pi  ;move.l #N,d1
+         move.l d1,d6   ;@start@
          move.l d6,d3   ;kv = d6
          lea.l ra(pc),a3
 
@@ -165,19 +169,57 @@ start    ;move.l #N,d1
          clr d5
          swap d5
   if IO
-         bsr PR0000
+         bsr.s PR0000
   endif
          sub.w #28,d6
          bne .l0
-
 
          lea.l serve_flag(pc),a0
          moveq.l #$1d,d0   ;MT.RPOLL
          clr.w (a0)+
          trap #1
+         bra.s job_done
 
-         move #0,d0
-         rts
+basini     lea.l start_pi(pc),a1
+           move.l a1,d1
+;*
+;* Convert D1.L into a floating point value (see December QLW)
+;*
+return_fp  move.w   d1,d4           ;D4 will be exponent
+           move.l   d1,d5           ;D5 will be mantissa
+           beq.s    normalised      ;Zero is a trivial case
+
+           move.w   #2079,d4        ;First guess at exponent
+           add.l    d1,d1           ;Already normalised?
+           bvs.s    normalised
+
+           subq.w   #1,d4           ;No, halve exponent weight
+           move.l   d1,d5           ;Double mantissa to match
+           moveq    #16,d0          ;Try a 16 bit shift
+
+normalise  move.l   d5,d1           ;Take copy of mantissa
+           asl.l    d0,d1           ;Shift mantissa D0 places
+           bvs.s    too_far         ;Overflow; must shift less
+
+           sub.w    d0,d4           ;Correct exponent for shift
+           move.l   d1,d5           ;New mantissa is more normal
+too_far    asr.w    #1,d0           ;Halve shift distance
+           bne.s    normalise       ;Try shift of 8, 4, 2 and 1
+;*
+;* Check there's enough space for the result: 6 bytes
+;*
+normalised moveq.l #6,d1           ;No. of bytes needed
+           move $11A,a0         ;BV.CHRIX vector
+           jsr (a0)
+           movea.l $58(a6),a1      ;Get safe A1 value
+           subq.l #6,a1
+           move.l a1,$58(a6)      ;Grab 6 more bytes safely
+
+           move.l d5,2(a1,a6.l)   ;Stack mantissa
+           move d4,0(a1,a6.l)   ;Stack exponent
+           moveq.l #2,d4           ;Floating point result
+job_done   moveq.l #0,d0
+           rts
 
 PR0000     ;prints d5
        lea string(pc),a0
@@ -213,6 +255,11 @@ updtimer
        addq.l #1,(a0)
        rts
 
+define     dc.w     0
+           dc.w     0,1             One function
+           dc.w     basini-*
+           dc.b     5,'PIADR'
+           dc.w     0
 serve_flag dc.w     0	    ;Set if server is on
 serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
