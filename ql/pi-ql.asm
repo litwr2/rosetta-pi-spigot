@@ -37,12 +37,11 @@
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 ;a/b, saimo and modrobert helped to optimize the 68000 code
+;mk79 helped to make the proper QL code
 
      mc68000
-MULUopt = 0   ;1 is much slower for 68000, for 68020 slightly faster with the 68020
+MULUopt = 0   ;1 is much slower for the 68000/08, for the 68020/30 it is slightly faster
 IO = 1
-
-;timer = $4ba
 
 D = 100
 N = 7*D ;D digits, e.g., we need N = 700 bytes for 100 digits
@@ -71,6 +70,10 @@ start      lea.l define(pc),a1
 
 start_pi  ;move.l #N,d1
          move.l d1,d6   ;@start@
+         movea.l $30(a6),a0   ; SB.CHANB
+         lea.l $28(a6,a0),a0  ; CH.LENCH
+         lea.l channel1(pc),a1
+         move.l (a0),(a1)    ; CH.ID
          move.l d6,d3   ;kv = d6
          lea.l ra(pc),a3
 
@@ -121,10 +124,6 @@ start_pi  ;move.l #N,d1
   endif
          move d7,(a3)     ;r[i] <- d%b
          bra.s .enddiv
-
-;  if __VASM&28              ;68020/30?
-;         align 2      ;it seems that this doesn't accelerate
-;  endif
 
 .l2      sub.l d3,d5
          sub.l d7,d5
@@ -228,8 +227,8 @@ PR0000     ;prints d5
        moveq #7,d0    ;print line
        moveq #4,d2    ;length
        moveq #0,d3
-       move.l d3,a0   ;channel
-       trap   #3
+       movea.l channel1(pc),a0
+       trap #3
        rts
 
 .l1    divu #1000,d5
@@ -265,6 +264,7 @@ serve_link dc.l     0       ;Points to server list
 serve_ptr  dc.l     0       ;Points to server code
 timer dc.l 0     ;@timer@
 cv ds.w 1
+channel1 ds.l 1
 string ds.b 4
 
        ;even

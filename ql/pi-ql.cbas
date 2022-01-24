@@ -1,8 +1,11 @@
-10 dim a$(81):print"number pi calculator v1":print"Wait":print"********"
+10 dim a$(81):print"number pi calculator v1"
 20 s=respr(@maxm@):restore:f=0
 30 read a$:r=len(a$):d=1:print "*";
 40 if d>=r then goto 60
 50 poke(d+f)/2+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 40
 60 f=f+r:if r<>80 then goto 90
 70 goto 30
-90 call s:print:print"LRUN (or LOAD and RUN) Pi now"
+90 call s:print
+100 input"device (mdv1 = default)? ";a$:if a$="" then a$="mdv1"
+110 window#1,512,206,0,0:window#2,160,8,0,0:cls#1
+120 lrun a$&"_pi"
