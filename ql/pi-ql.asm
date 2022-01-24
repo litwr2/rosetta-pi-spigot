@@ -66,12 +66,12 @@ endm
 
 start      lea.l define(pc),a1
            move $110,a2      ;BP.INIT
-           jmp      (a2)
+           jmp (a2)
 
 start_pi  ;move.l #N,d1
          move.l d1,d6   ;@start@
          movea.l $30(a6),a0   ; SB.CHANB
-         lea.l $28(a6,a0),a0  ; CH.LENCH
+         lea.l $28(a6,a0.l),a0  ; CH.LENCH
          lea.l channel1(pc),a1
          move.l (a0),(a1)    ; CH.ID
          move.l d6,d3   ;kv = d6
