@@ -255,7 +255,7 @@ updtimer
        rts
 
 define     dc.w     0
-           dc.w     0,1             One function
+           dc.w     0,1             ;One function
            dc.w     basini-*
            dc.b     5,'PIADR'
            dc.w     0
