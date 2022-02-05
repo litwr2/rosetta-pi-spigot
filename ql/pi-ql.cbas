@@ -1,4 +1,4 @@
-10 dim a$(81):print"number pi calculator v1"
+10 dim a$(81):print"number pi calculator v2"
 20 s=respr(@maxm@):restore:f=0
 30 read a$:r=len(a$):d=1:print "*";
 40 if d>=r then goto 60

@@ -74,6 +74,8 @@ start_pi  ;move.l #N,d1
          lea.l $28(a6,a0.l),a0  ; CH.LENCH
          lea.l channel1(pc),a1
          move.l (a0),(a1)    ; CH.ID
+
+         trap #0
          move.l d6,d3   ;kv = d6
          lea.l ra(pc),a3
 
@@ -173,6 +175,7 @@ start_pi  ;move.l #N,d1
          sub.w #28,d6
          bne .l0
 
+         andi #$07ff,sr
          lea.l serve_flag(pc),a0
          moveq.l #$1d,d0   ;MT.RPOLL
          clr.w (a0)+
