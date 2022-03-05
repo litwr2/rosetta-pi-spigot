@@ -5,7 +5,7 @@
 ;it uses Tiki-100 timer, Amstrad CPC firmware, MSX timer,
 ;MSX (optionally) or Amstrad PCW timer interrupt,
 ;Commodore 128 Time of Day of CIA1
-;TRS-80 Model II/12/16 Pickles and Trout CP/M
+;TRS-80 Model II/12/16 Pickles and Trout CP/M, Aton CP/M
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
