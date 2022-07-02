@@ -224,7 +224,7 @@ job_done   moveq.l #0,d0
            rts
 
 PR0000     ;prints d5
-       lea string(pc),a0
+       lea.l string(pc),a0
        movea.l a0,a1
        bsr.s .l1
        moveq #7,d0    ;print line
@@ -235,17 +235,17 @@ PR0000     ;prints d5
        rts
 
 .l1    divu #1000,d5
-       bsr .l0
+       bsr.s .l0
        clr d5
        swap d5
 
        divu #100,d5
-       bsr .l0
+       bsr.s .l0
        clr d5
        swap d5
 
        divu #10,d5
-       bsr .l0
+       bsr.s .l0
        swap d5
 
 .l0    eori.b #'0',d5
