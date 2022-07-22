@@ -1,4 +1,4 @@
-*for IBM/370
+*for IBM/370 VM/SP
 *it calculates pi-number using the next C-algorithm
 *https://crypto.stanford.edu/pbc/notes/pi/code.html
 *
@@ -70,6 +70,7 @@ LINELEN  EQU   80
 &STPT    SETB  0
 *
 BALPI    CSECT
+*
          USING BALPI,12
          STM   14,12,0(13)
          LR    12,15

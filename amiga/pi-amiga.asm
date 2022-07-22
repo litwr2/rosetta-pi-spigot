@@ -38,7 +38,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 ;a/b, saimo, and modrobert helped to optimize the 68k code
-;Don_Adan found some useful tricks for the Amiga 
+;Don_Adan found some useful tricks for the Amiga
 
      mc68000
 MULUopt = 0   ;1 is much slower for 68000, for 68020 it is the same for FS-UAE and slightly faster with the real 68020
