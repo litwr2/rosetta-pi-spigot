@@ -44,6 +44,10 @@ MULUopt equ 0   ;1 is much slower for 68000
 IO equ 1
 M68020 equ 0
 DynaMem equ 1
+
+   if M68020 then
+       machine mc68020
+   endif
    if DynaMem = 0 then
 maxsz equ 32760  ;it is the MPW linker limit
    endif
@@ -73,17 +77,33 @@ maxsz equ 32760  ;it is the MPW linker limit
 
 message equ 2
 keyDown equ 3
+vOff    equ 38
 
          MAIN
 start    PEA -4(A5)
          _InitGraf
          _InitFonts
          _InitWindows
+         MOVE.L #$FFFF,d0
+         _FlushEvents
          _InitCursor
 
+         movea.l GrafGlobals(a5),a0
+         move.l ScreenBits+bounds+4(a0),d0
+         sub.l #$30001,d0
+         lea WindowSize(pc),a0
+         move.l d0,4(a0)
+         clr d0
+         swap d0
+         sub #vOff,d0
+         divu #10,d0
+         addq #1,d0
+         mulu #10,d0
+         lea Ymax(pc),a1
+         move d0,(a1)
          SUBQ #4,SP
          CLR.L -(SP)
-         PEA WindowSize(pc)
+         move.l a0,-(sp)
          PEA WindowName(pc)
          ST -(SP)
          CLR.W -(SP)
@@ -165,7 +185,7 @@ l0       clr.l d5       ;d <- 0
 
 longdiv
   if M68020 then
-         divul d4,d7:d3
+         tdivu d4,d7:d3   ;divul
   else
          swap d3
          move d3,d7
@@ -292,6 +312,7 @@ ExitErr
          _ExitToShell          ;return to Desktop/Shell
 
 PR0000     ;prints d5, uses d1
+       ;_SystemTask
        divu #1000,d5
        bsr.s @p0
        clr d5
@@ -310,37 +331,43 @@ PR0000     ;prints d5, uses d1
        moveq #0,d1
        move.b d5,d1
 
-print1 move.l Yoff(pc),-(sp)   ;prints D1, uses D0, D1, A6
+print1 move.l Yoff(pc),-(sp)   ;prints D1, uses D0, D1, D2, A6
        _MoveTo
-	   move d1,-(sp)
-	   _DrawChar
+       move d1,-(sp)
+       _DrawChar
        clr -(sp)
        move d1,-(sp)
        _CharWidth
+
        move.w Yoff(pc),d0
        move.w Xoff(pc),d1
        add.w (sp)+,d1
-       cmpi.w #503,d1
+       move WindowSize+6(pc),d2
+       subq #8,d2
+       cmp d2,d1
        bcs.s @skip
 
        move.w #0,d1
        add.w #10,d0
-       cmpi.w #310,d0
+       move Ymax(pc),d2
+       cmp d2,d0
        bcs.s @skip
 
+       move d2,-(sp)
        clr.l -(sp)
        _NewRgn
-	   move.l (sp)+,a6
-	   move.l WindPtr(pc),a0
-	   pea PortRect(a0)
-	   move.w #0,-(sp)
-	   move.w #-10,-(sp)
-	   move.l a6,-(sp)
-	   _ScrollRect
-	   move.l a6,-(sp)
-	   _DisposRgn
+       move.l (sp)+,a6
+       move.l WindPtr(pc),a0
+       pea PortRect(a0)
+       move.w #0,-(sp)
+       move.w #-10,-(sp)
+       move.l a6,-(sp)
+       _ScrollRect
+       move.l a6,-(sp)
+       _DisposRgn
        moveq #0,d1
-       move.w #300,d0
+       move (sp)+,d0
+       subi #10,d0
 @skip  lea.l Yoff(pc),a0
        move.w d0,(a0)+
        move.w d1,(a0)
@@ -351,6 +378,7 @@ stime  dc.l 0
 WindPtr    DS.L 1
 Yoff       DC.W 20
 Xoff       DC.W 0
+Ymax       DC.W 0
    if DynaMem = 0 then
 ra         ds.l 0
    endif
@@ -371,7 +399,7 @@ g0      _SystemTask
         move #$ffff,-(sp)
 		pea EventRecord(pc)
         _GetNextEvent
-        tst.b (sp)+
+        btst #0,(sp)+
         beq.s g0
 
         move EventRecord(pc),d0
@@ -446,10 +474,14 @@ g5      tst d7
         add.l d7,sp
         rts
 
-WindowSize DC.W 38,1,339,511
+WindowSize DC.W vOff,1,339,511
 EventRecord ds.b 16
 penLoc     ds.l 0
-WindowName DC.B 'number pi calculator v1'
+   if M68020 then
+WindowName DC.B 'number pi calculator v2 (68020)'
+   else
+WindowName DC.B 'number pi calculator v2'
+   endif
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
 msg3 dc.b ' digits will be printed'
