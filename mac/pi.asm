@@ -124,7 +124,6 @@ start    PEA -4(A5)
    else
          bsr setmaxn    ;d4=maxn
    endif
-
          move.l #$a0000,-(sp)
          _MoveTo
          pea msg4
@@ -133,8 +132,9 @@ start    PEA -4(A5)
          lea penloc(pc),a4
          move.l a4,-(sp)
          _GetPen
-	     move.l (a4),(a6)
-         move.l d4,d5
+         move.l (a4),(a6)
+         clr.l d5
+         move d4,d5
          bsr PR0000
          move.l #$140000,(a6)
          pea msg5
@@ -379,6 +379,7 @@ WindPtr    DS.L 1
 Yoff       DC.W 20
 Xoff       DC.W 0
 Ymax       DC.W 0
+WindowSize DC.W vOff,1,339,511
    if DynaMem = 0 then
 ra         ds.l 0
    endif
@@ -474,13 +475,12 @@ g5      tst d7
         add.l d7,sp
         rts
 
-WindowSize DC.W vOff,1,339,511
 EventRecord ds.b 16
 penLoc     ds.l 0
    if M68020 then
-WindowName DC.B 'number pi calculator v2 (68020)'
+WindowName DC.B 'number pi calculator v3 (68020)'
    else
-WindowName DC.B 'number pi calculator v2'
+WindowName DC.B 'number pi calculator v3'
    endif
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
