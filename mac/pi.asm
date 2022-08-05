@@ -75,8 +75,6 @@ maxsz equ 32760  ;it is the MPW linker limit
          INCLUDE 'SysEqu.a'        ;define ScrnBase
          INCLUDE 'QuickEqu.a'
 
-message equ 2
-keyDown equ 3
 vOff    equ 38
 
          MAIN
@@ -84,8 +82,6 @@ start    PEA -4(A5)
          _InitGraf
          _InitFonts
          _InitWindows
-         MOVE.L #$FFFF,d0
-         _FlushEvents
          _InitCursor
 
          movea.l GrafGlobals(a5),a0
@@ -140,6 +136,8 @@ start    PEA -4(A5)
          pea msg5
          _DrawString
 
+         ;MOVE.L #$FFFF,d0
+         ;_FlushEvents
          bsr getnum
          move d5,d1
 
@@ -299,11 +297,26 @@ l11      add.b #'0',-(a3)
          cmpa.l a6,a3
          bne.s l11
 
-Wait                           ;begin button wait
-         SUBQ #2,SP            ;make room on stack
-         _Button               ;call button trap
-         TST.B (SP)+           ;set z flag accordingly
-         BEQ.S Wait            ;loop if z is set (no press)
+;Wait     _SystemTask           ;begin button wait
+;         SUBQ #2,SP            ;make room on stack
+;         _Button               ;call button trap
+;         TST.B (SP)+           ;set z flag accordingly
+;         BEQ.S Wait            ;loop if z is set (no press)
+
+         MOVE.L #$FFFF,d0
+         _FlushEvents
+Wait    _SystemTask
+        subq #2,sp
+        move #$ffff,-(sp)
+		pea EventRecord(pc)
+        _GetNextEvent
+        btst #0,(sp)+
+        beq.s Wait
+
+        move EventRecord(pc),d0
+        cmpi #mButDwnEvt,d0
+        bne.s Wait
+
     if DynaMem then
          movea.l a2,a0
          _DisposPtr
@@ -395,33 +408,33 @@ drawund  lea penloc(pc),a4
 getnum  clr.l d7    ;length
         clr.l d5    ;number
         bsr.s drawund
-g0      _SystemTask
+@g0     _SystemTask
         subq #2,sp
         move #$ffff,-(sp)
 		pea EventRecord(pc)
         _GetNextEvent
         btst #0,(sp)+
-        beq.s g0
+        beq.s @g0
 
         move EventRecord(pc),d0
-        cmpi #keyDown,d0
-        bne.s g0
+        cmpi #keyDwnEvt,d0
+        bne.s @g0
 
-        move.l EventRecord+message(pc),d0
+        move.l EventRecord+evtMessage(pc),d0
         cmpi.b #13,d0   ;cr
-        beq.s g5
+        beq.s @g5
 
         cmpi.b #8,d0    ;bs
-        beq.s g1
+        beq.s @g1
 
         cmpi.b #'0',d0   ;'0'
-        bcs.s g0
+        bcs.s @g0
 
         cmpi.b #'9',d0   ;'9'
-        bhi.s g0
+        bhi.s @g0
 
         cmpi.b #4,d7
-        beq.s g0
+        beq.s @g0
 
         clr d3
         move.b d0,d3
@@ -442,10 +455,10 @@ g0      _SystemTask
         sub #'0',d3
         mulu #10,d5
         add d3,d5 
-        bra.s g0
+        bra.s @g0
 
-g1      tst d7
-        beq.s g0
+@g1     tst d7
+        beq.s @g0
 
         subq.l #1,d7   ;backspace
         move (sp)+,d5
@@ -458,16 +471,16 @@ g1      tst d7
         _EraseRect
         _MoveTo
         bsr drawund
-        bra g0
+        bra @g0
 
-g5      tst d7
-        beq g0
+@g5     tst d7
+        beq @g0
 
         cmp d4,d5    ;maxn = D4
-        bhi g0
+        bhi @g0
 
         tst d5
-        beq g0
+        beq @g0
 
         add d7,d7
         add.l d7,sp
@@ -478,9 +491,9 @@ g5      tst d7
 EventRecord ds.b 16
 penLoc     ds.l 0
    if M68020 then
-WindowName DC.B 'number pi calculator v3 (68020)'
+WindowName DC.B 'number pi calculator v4 (68020)'
    else
-WindowName DC.B 'number pi calculator v3'
+WindowName DC.B 'number pi calculator v4'
    endif
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
