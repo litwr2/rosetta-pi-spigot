@@ -44,8 +44,8 @@ IO equ 1
 DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
 OPT equ 5       ;5 is a constant for the pi-spigot
 
-D equ 100
-N equ D/2*7   ;8500 digits
+DIG equ 100
+N equ DIG/2*7   ;8500 digits
 
 include "z80-div.s"
 
@@ -368,7 +368,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v10',13,10
+msg1  db 'number ',165,' calculator v11',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'
