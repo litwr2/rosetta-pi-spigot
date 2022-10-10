@@ -7,3 +7,4 @@ gawk '/@start@/{s=strtonum("0x"$2);print "s/@start@-1/"s-1"/;s/@start@-2/"s-2"/;
 /@timer@/{print "s/@tilo@/"strtonum("0x"$2)"/;s/@timi@/"strtonum("0x"$2)+1"/;s/@tihi@/"strtonum("0x"$2)+2"/"}
 /@N2@/{print "s/@N2@+1/"strtonum("0x"$2)+2"/;s/@N2@/"strtonum("0x"$2)+1"/"}' $fn.lst >z.sed
 sed -f z.sed $fn.cbas >$fn.bas
+rm z.sed

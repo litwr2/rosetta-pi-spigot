@@ -1,4 +1,4 @@
-/for PDP-11 Unix 7 as
+/for PDP-11 2.11BSD/Unix7 as
 /it calculates pi-number using the next C-algorithm
 /https://crypto.stanford.edu/pbc/notes/pi/code.html
 /#include <stdio.h>

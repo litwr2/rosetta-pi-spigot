@@ -58,7 +58,7 @@ d = $fa   ;..$fd
 i = $ec   ;$ed
 k = $ee   ;$ef
 
-divisor = $4a     ;$4b, $4c..$4d used for hi-byte and product ($4d is not used if DIV8OPT=0)
+divisor = $4a     ;$4b, $4c..$4d used for hi-bytes and the product
 dividend = $4e	  ;..$51 used for hi-bytes
 remainder = $ce   ;$cf used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
@@ -208,7 +208,7 @@ p6       ldx $c400
          pla
 p2       jmp 0
 
-timeirq  
+timeirq
 p3       jsr 0
          bcs nomouse
 
