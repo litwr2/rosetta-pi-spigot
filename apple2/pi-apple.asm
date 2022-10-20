@@ -308,16 +308,16 @@ p6       ldx $c400
          asl
          tay
          pla
-p2       jmp 0
+p2       jmp $c400
 
-timeirq  
+timeirq
 .ifeq APPLE2C
          tya
          pha
          txa
          pha
 .endif
-p3       jsr 0
+p3       jsr $c400
          bcs nomouse
 
          inc time
@@ -505,6 +505,7 @@ p7       lda $c400+SERVEMOUSE
          sta p3+1
          rts
 
+.if SEEKMOUSE
 mouserr  ldx #0
 loop8    lda msg,x
          beq exiterr
@@ -516,3 +517,4 @@ exiterr  rts
 
 msg .text "can't find a mouse card"
     .byte 0
+.endif

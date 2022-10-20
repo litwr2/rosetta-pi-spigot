@@ -47,7 +47,6 @@ SETMOUSE = $12
 SERVEMOUSE = $13
 INITMOUSE = $19
 
-SEEKMOUSE = 1         ;seek mouse card, 0 means to use the $c400 address
 IO = 1
 OPT = 5               ;it's a constant for the pi-spigot
 
@@ -206,10 +205,10 @@ p6       ldx $c400
          asl
          tay
          pla
-p2       jmp 0
+p2       jmp $c400
 
 timeirq
-p3       jsr 0
+p3       jsr $c400
          bcs nomouse
 
          inc time
@@ -219,8 +218,7 @@ p3       jsr 0
          bne nomouse
 
          inc time+2
-nomouse
-         rti
+nomouse  rti
 
 pr0000 .block  ;prints C = B:A
          sta d+2
@@ -364,49 +362,7 @@ loopt    sta time,x
 
 setmouse lda #$ad   ;opcode for LDA $xxxx
          sta mx
-.if SEEKMOUSE
-         ldx #$c1
-         stx p4+2
-loop3    ldx #4
-loop4    ldy amagic,x
-         lda vmagic,x
-p4       cmp $c000,y
-         beq match
-
-         inc p4+2
-         ldy p4+2
-         cpy #$c8
-         bne loop3
-
-         jsr mouserr
-         pla
-         pla
-         jmp exitprg
-
-amagic .byte 5,7,$b,$c,$fb
-vmagic .byte $38,$18,1,$20,$d6
-
-match    dex
-         bpl loop4
-
-         lda p4+2
-         sta p7+2
-         sta p3+2
-         sta p2+2
-         sta p6+2
-.endif
-p7       lda $c400+SERVEMOUSE
+         lda $c400+SERVEMOUSE
          sta p3+1
          rts
 
-mouserr  ldx #0
-loop8    lda msg,x
-         beq exiterr
-
-         jsr COUT
-         inx
-         bne loop8
-exiterr  rts
-
-msg .text "can't find a mouse card"
-    .byte 0

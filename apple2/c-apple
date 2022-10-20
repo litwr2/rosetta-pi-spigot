@@ -15,3 +15,4 @@ do
   sed -f z.sed $bfn.cbas >$fn.bas
   rm $fn.prg
 done
+rm $bfn-e.asm
