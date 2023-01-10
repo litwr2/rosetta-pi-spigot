@@ -1,10 +1,9 @@
 vasmm68k_mot -m68000 -Fbin -L pi-ql.lst pi-ql.asm -o pi-ql.bin || exit
-gawk 'BEGIN{D=9132;print "s/@maxm@/"D*7+256+32"/;s/@maxd@/"D"/g"}
+gawk 'BEGIN{D=9112;print "s/@maxm@/"D*7+256+32"/;s/@maxd@/"D"/g"}
 /@start@/{getline; o=strtonum("0x"substr($1,5,8))}
 /@timer@/{getline;print "s/@tioff@/"strtonum("0x"substr($1,5,8))-o"/"}' pi-ql.lst >z.sed
 sed -f z.sed pi-ql.cbas >boot
 gcc bin2basic.c -o bin2basic
-dd if=pi-ql.bin of=pi-ql.bin1 bs=1 count=$(ls -l pi-ql.bin | awk '{print $5-20}')
+dd if=pi-ql.bin of=pi-ql.bin1 bs=1 count=$(ls -l pi-ql.bin | awk '{print $5-24}')
 bin2basic <pi-ql.bin1 >>boot
-sed -f z.sed pi-ql2.cbas >pi
 rm bin2basic z.sed pi-ql.bin1

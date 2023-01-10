@@ -1,11 +1,19 @@
-10 dim a$(81):print"number pi calculator v3"
-20 s=respr(@maxm@):restore:f=0
-30 read a$:r=len(a$):d=1:print "*";
-40 if d>=r then goto 60
-50 poke int((d+f)/2)+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 40
-60 f=f+r:if r<>80 then goto 90
-70 goto 30
-90 call s:print
-100 input"device (mdv1 = default)? ";a$:if a$="" then a$="mdv1"
-110 window#1,512,206,0,0:window#2,160,8,0,0:cls#1
-120 lrun a$&"_pi"
+10 e=0
+20 when error
+30 if err_xp then e=1
+40 end when
+50 r=piadr
+200 window#1,512,206,0,0:window#2,160,8,0,0:cls#1
+210 print"number pi calculator v4"
+215 if e=0 then goto 490
+220 s=respr(@maxm@):restore:f=0
+230 read a$:r=len(a$):d=1:print "*";
+240 if d>=r then goto 260
+250 poke int((d+f)/2)+s,code(a$(d))*16-1105+code(a$(d+1)):d=d+2:goto 240
+260 f=f+r:if r<>80 then goto 290
+270 goto 230
+290 call s:print
+490 input"number of digits (up to @maxd@)? ";f:d=(f+3)&&-4:if d<=0 or d>@maxd@ then goto 490
+500 if f<>d then print d;" digits will be printed"
+510 call piadr,d*7
+520 print," ";peek_l(piadr+@tioff@)/50

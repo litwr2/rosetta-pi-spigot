@@ -110,6 +110,8 @@ start    PEA -4(A5)
          lea WindPtr(pc),a6
          move.l (sp),(a6)
          _SetPort
+         move #4,-(sp)   ;Monaco font (monospace)
+         _TextFont
    if DynaMem then
          bsr setmaxn    ;d4=maxn
          _NewPtr
@@ -151,7 +153,7 @@ start    PEA -4(A5)
          pea msg3
 	     _DrawString
          addi.w #10,(a6)+
-		 clr.w (a6)
+	 clr.w (a6)
 
 l7       mulu #7,d6          ;kv = d6
          move.l d6,d3
@@ -491,16 +493,16 @@ getnum  clr.l d7    ;length
 EventRecord ds.b 16
 penLoc     ds.l 0
    if M68020 then
-WindowName DC.B 'number pi calculator v4 (68020)'
+WindowName DC.B 'number pi calculator v5 (68020)'
    else
-WindowName DC.B 'number pi calculator v4'
+WindowName DC.B 'number pi calculator v5'
    endif
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
 msg3 dc.b ' digits will be printed'
    if DynaMem then
 setmaxn move #($10000-12-(*-start))/7**$fffc,d4
-        move.l #$10000-12-(setmaxn-start),d0    
+        move.l #$10000-12-(setmaxn-start),d0
         rts
     else
 setmaxn move #(maxsz-(ra-start))/7**$fffc,d4

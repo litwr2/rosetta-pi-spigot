@@ -283,7 +283,7 @@ tick2 equ PI+12
 tick12 equ PI+14
 savef equ PI+16               *its size is 0x60
 
-sfast: 
+sfast:
 *       mov 2,*3+            *all this code is relocatable
 *       dec 1
 *       jne sfast

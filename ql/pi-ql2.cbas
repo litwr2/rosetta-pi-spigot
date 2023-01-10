@@ -1,4 +1,0 @@
-90 input"number of digits (up to @maxd@)? ";f:d=(f+3)&&-4:if d<=0 or d>@maxd@ then goto 90
-100 if f<>d then print d;" digits will be printed"
-110 call piadr,d*7
-120 print," ";peek_l(piadr+@tioff@)/50
