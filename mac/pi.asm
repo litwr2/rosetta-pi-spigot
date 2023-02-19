@@ -31,16 +31,16 @@
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 ;max number of digits is 9400 due to data types used
 
-;So r[0] is never used.  The program for 680x0 uses r[0] and doesn't use r[N] - does it optimize the memory usage by 2 bytes?
+;So r[0] is never used.  The program for the 680x0 uses r[0] and doesn't use r[N] - does it optimize the memory usage by 2 bytes?
 
-;litwr has written this for 680x0
+;litwr has written this for the 680x0
 ;tricky provided some help
 ;MMS gave some support
 ;Thorham and meynaf helped a lot
 ;a/b, saimo, and modrobert helped to optimize the 68k code
 
-MULUopt equ 0   ;1 is much slower for 68000
-                ;for 68020, it is slightly faster with the real 68020/30
+MULUopt equ 0   ;1 is much slower for the 68000
+                ;for the 68020, it is slightly faster with the real 68020/30
 IO equ 1
 M68020 equ 0
 DynaMem equ 1
@@ -76,6 +76,7 @@ maxsz equ 32760  ;it is the MPW linker limit
          INCLUDE 'QuickEqu.a'
 
 vOff    equ 38
+botOff  equ 30
 
          MAIN
 start    PEA -4(A5)
@@ -86,7 +87,7 @@ start    PEA -4(A5)
 
          movea.l GrafGlobals(a5),a0
          move.l ScreenBits+bounds+4(a0),d0
-         sub.l #$30001,d0
+         sub.l #botOff*$10000+1,d0
          lea WindowSize(pc),a0
          move.l d0,4(a0)
          clr d0
@@ -98,14 +99,14 @@ start    PEA -4(A5)
          lea Ymax(pc),a1
          move d0,(a1)
          SUBQ #4,SP
-         CLR.L -(SP)
-         move.l a0,-(sp)
+         CLR.L -(SP)      ;allocate memory on heap
+         move.l a0,-(sp)  ;bounding box
          PEA WindowName(pc)
-         ST -(SP)
-         CLR.W -(SP)
-         MOVE.L #-1,-(SP)
-         SF -(SP)
-         CLR.L -(SP)
+         ST -(SP)      ;-1 - visible
+         CLR -(SP)   ;0 - window type
+         MOVE.L #-1,-(SP) ;-1 - in front
+         SF -(SP)      ;0 - no close box
+         CLR.L -(SP)   ;user parameters
          _NewWindow
          lea WindPtr(pc),a6
          move.l (sp),(a6)
@@ -134,9 +135,9 @@ start    PEA -4(A5)
          clr.l d5
          move d4,d5
          bsr PR0000
-         move.l #$140000,(a6)
          pea msg5
          _DrawString
+	 move.l #$170000,(a6)    ;$17 = 23 = initial Yoff
 
          ;MOVE.L #$FFFF,d0
          ;_FlushEvents
@@ -152,8 +153,8 @@ start    PEA -4(A5)
          bsr PR0000
          pea msg3
 	     _DrawString
-         addi.w #10,(a6)+
-	 clr.w (a6)
+         addi #10,(a6)+
+	 clr (a6)
 
 l7       mulu #7,d6          ;kv = d6
          move.l d6,d3
@@ -250,7 +251,7 @@ enddiv
   if IO then
          bsr PR0000
   endif
-         sub.w #28,d6   ;kv, this limits to 9360 digits, #14 did not set this limit here
+         sub #28,d6   ;kv, this limits to 9360 digits, #14 did not set this limit here
          bne.s l0
 
          lea stime(pc),a6
@@ -299,12 +300,6 @@ l11      add.b #'0',-(a3)
          cmpa.l a6,a3
          bne.s l11
 
-;Wait     _SystemTask           ;begin button wait
-;         SUBQ #2,SP            ;make room on stack
-;         _Button               ;call button trap
-;         TST.B (SP)+           ;set z flag accordingly
-;         BEQ.S Wait            ;loop if z is set (no press)
-
          MOVE.L #$FFFF,d0
          _FlushEvents
 Wait    _SystemTask
@@ -316,9 +311,12 @@ Wait    _SystemTask
         beq.s Wait
 
         move EventRecord(pc),d0
+        cmpi #keyDwnEvt,d0
+        beq.s @g0
+
         cmpi #mButDwnEvt,d0
         bne.s Wait
-
+@g0
     if DynaMem then
          movea.l a2,a0
          _DisposPtr
@@ -354,28 +352,28 @@ print1 move.l Yoff(pc),-(sp)   ;prints D1, uses D0, D1, D2, A6
        move d1,-(sp)
        _CharWidth
 
-       move.w Yoff(pc),d0
-       move.w Xoff(pc),d1
-       add.w (sp)+,d1
+       move Yoff(pc),d0
+       move Xoff(pc),d1
+       add (sp)+,d1
        move WindowSize+6(pc),d2
        subq #8,d2
        cmp d2,d1
        bcs.s @skip
 
-       move.w #0,d1
-       add.w #10,d0
+       move #0,d1
+       add #10,d0
        move Ymax(pc),d2
        cmp d2,d0
        bcs.s @skip
 
-       move d2,-(sp)
+       move d0,-(sp)
        clr.l -(sp)
-       _NewRgn
+       _NewRgn  ;this is an extra for the later OS
        move.l (sp)+,a6
        move.l WindPtr(pc),a0
        pea PortRect(a0)
-       move.w #0,-(sp)
-       move.w #-10,-(sp)
+       move #0,-(sp)
+       move #-10,-(sp)
        move.l a6,-(sp)
        _ScrollRect
        move.l a6,-(sp)
@@ -384,17 +382,17 @@ print1 move.l Yoff(pc),-(sp)   ;prints D1, uses D0, D1, D2, A6
        move (sp)+,d0
        subi #10,d0
 @skip  lea.l Yoff(pc),a0
-       move.w d0,(a0)+
-       move.w d1,(a0)
+       move d0,(a0)+
+       move d1,(a0)
        rts
 
 cv     dc.w 0
 stime  dc.l 0
 WindPtr    DS.L 1
-Yoff       DC.W 20
+Yoff       DC.W 23
 Xoff       DC.W 0
 Ymax       DC.W 0
-WindowSize DC.W vOff,1,339,511
+WindowSize DC.W vOff,1,342-botOff,511
    if DynaMem = 0 then
 ra         ds.l 0
    endif
@@ -443,7 +441,7 @@ getnum  clr.l d7    ;length
         move.l (a4),d0
         addq #8,d0
         move.l d0,4(a4)
-        clr.w (a4)
+        clr (a4)
         move.l a4,-(sp)
         _EraseRect
         move.l a4,-(sp)
@@ -466,7 +464,7 @@ getnum  clr.l d7    ;length
         move (sp)+,d5
         move.l (sp),d3
         move.l d3,(a4)
-        clr.w (a4)
+        clr (a4)
         addi #16,d3
         move.l d3,4(a4)
         move.l a4,-(sp)
@@ -485,17 +483,17 @@ getnum  clr.l d7    ;length
         beq @g0
 
         add d7,d7
-        add.l d7,sp
-        add.l d7,sp
-        add.l d7,sp
+        adda.l d7,sp
+        adda.l d7,sp
+        adda.l d7,sp
         rts
 
 EventRecord ds.b 16
 penLoc     ds.l 0
    if M68020 then
-WindowName DC.B 'number pi calculator v5 (68020)'
+WindowName DC.B 'number pi calculator v6 (68020)'
    else
-WindowName DC.B 'number pi calculator v5'
+WindowName DC.B 'number pi calculator v6'
    endif
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
