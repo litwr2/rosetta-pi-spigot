@@ -43,13 +43,9 @@ MULUopt equ 0   ;1 is much slower for the 68000
                 ;for the 68020, it is slightly faster with the real 68020/30
 IO equ 1
 M68020 equ 0
-DynaMem equ 1
 
    if M68020 then
        machine mc68020
-   endif
-   if DynaMem = 0 then
-maxsz equ 32760  ;it is the MPW linker limit
    endif
 
      macro
@@ -90,12 +86,8 @@ start    PEA -4(A5)
          sub.l #botOff*$10000+1,d0
          lea WindowSize(pc),a0
          move.l d0,4(a0)
-         clr d0
          swap d0
          sub #vOff,d0
-         divu #10,d0
-         addq #1,d0
-         mulu #10,d0
          lea Ymax(pc),a1
          move d0,(a1)
          SUBQ #4,SP
@@ -111,18 +103,17 @@ start    PEA -4(A5)
          lea WindPtr(pc),a6
          move.l (sp),(a6)
          _SetPort
+		 ;move #10,-(sp)
+         ;_TextSize
          move #4,-(sp)   ;Monaco font (monospace)
          _TextFont
-   if DynaMem then
+
          bsr setmaxn    ;d4=maxn
          _NewPtr
          tst d0
          bne ExitErr
 
          movea.l a0,a2
-   else
-         bsr setmaxn    ;d4=maxn
-   endif
          move.l #$a0000,-(sp)
          _MoveTo
          pea msg4
@@ -152,18 +143,13 @@ start    PEA -4(A5)
 
          bsr PR0000
          pea msg3
-	     _DrawString
+         _DrawString
          addi #10,(a6)+
-	 clr (a6)
+	     clr (a6)
 
 l7       mulu #7,d6          ;kv = d6
          move.l d6,d3
-    if DynaMem then
          movea.l a2,a3
-    else
-         lea.l ra(pc),a3
-    endif
-
          lea stime(pc),a6
          move.l Ticks,(a6)
 
@@ -317,12 +303,10 @@ Wait    _SystemTask
         cmpi #mButDwnEvt,d0
         bne.s Wait
 @g0
-    if DynaMem then
-         movea.l a2,a0
-         _DisposPtr
+        movea.l a2,a0
+		_DisposPtr
 ExitErr
-    endif
-         _ExitToShell          ;return to Desktop/Shell
+        _ExitToShell          ;return to Desktop/Shell
 
 PR0000     ;prints d5, uses d1
        ;_SystemTask
@@ -362,8 +346,7 @@ print1 move.l Yoff(pc),-(sp)   ;prints D1, uses D0, D1, D2, A6
 
        move #0,d1
        add #10,d0
-       move Ymax(pc),d2
-       cmp d2,d0
+       cmp Ymax(pc),d0
        bcs.s @skip
 
        move d0,-(sp)
@@ -393,9 +376,7 @@ Yoff       DC.W 23
 Xoff       DC.W 0
 Ymax       DC.W 0
 WindowSize DC.W vOff,1,342-botOff,511
-   if DynaMem = 0 then
-ra         ds.l 0
-   endif
+
 drawund  lea penloc(pc),a4
 		 move.l a4,-(sp)
 		 _GetPen
@@ -498,16 +479,9 @@ WindowName DC.B 'number pi calculator v6'
 msg4 dc.b 'number of digits (up to '
 msg5 dc.b ')? '
 msg3 dc.b ' digits will be printed'
-   if DynaMem then
+
 setmaxn move #($10000-12-(*-start))/7**$fffc,d4
         move.l #$10000-12-(setmaxn-start),d0
         rts
-    else
-setmaxn move #(maxsz-(ra-start))/7**$fffc,d4
-        rts
-
-     ds.b maxsz-(*-start)
-   endif
 
          END
-
