@@ -103,7 +103,7 @@ start    PEA -4(A5)
          lea WindPtr(pc),a6
          move.l (sp),(a6)
          _SetPort
-		 ;move #10,-(sp)
+         ;move #10,-(sp)
          ;_TextSize
          move #4,-(sp)   ;Monaco font (monospace)
          _TextFont
@@ -128,7 +128,7 @@ start    PEA -4(A5)
          bsr PR0000
          pea msg5
          _DrawString
-	 move.l #$170000,(a6)    ;$17 = 23 = initial Yoff
+         move.l #$170000,(a6)    ;$17 = 23 = initial Yoff
 
          ;MOVE.L #$FFFF,d0
          ;_FlushEvents
@@ -144,8 +144,8 @@ start    PEA -4(A5)
          bsr PR0000
          pea msg3
          _DrawString
-         addi #10,(a6)+
-	     clr (a6)
+         addi #13,(a6)+
+         clr (a6)
 
 l7       mulu #7,d6          ;kv = d6
          move.l d6,d3
@@ -227,13 +227,13 @@ enddiv
   else
          divu d1,d5      ;removed with MULU optimization
   endif
-		 lea cv(pc),a6
+         lea cv(pc),a6
          add (a6),d5    ;c + d/10000
          swap d5      ;c <- d%10000
          move d5,(a6)
          clr d5
          swap d5
-		 ;_Debugger
+	 ;_Debugger
   if IO then
          bsr PR0000
   endif
@@ -243,10 +243,9 @@ enddiv
          lea stime(pc),a6
          move.l Ticks,d5
          sub.l (a6),d5
-		 
          move.b #32,d1  ;space
          bsr print1
-		 
+
          move.l d5,d3
          lsl.l #2,d5     ;60 Hz
          add.l d3,d5
@@ -281,8 +280,8 @@ l12      tst d7
 l11      add.b #'0',-(a3)
          moveq #0,d0
          move.b (a3),d1
-		 bsr.s print1
-		 lea msg4(pc),a6
+         bsr.s print1
+         lea msg4(pc),a6
          cmpa.l a6,a3
          bne.s l11
 
@@ -291,7 +290,7 @@ l11      add.b #'0',-(a3)
 Wait    _SystemTask
         subq #2,sp
         move #$ffff,-(sp)
-		pea EventRecord(pc)
+        pea EventRecord(pc)
         _GetNextEvent
         btst #0,(sp)+
         beq.s Wait
@@ -304,7 +303,7 @@ Wait    _SystemTask
         bne.s Wait
 @g0
         movea.l a2,a0
-		_DisposPtr
+        _DisposPtr
 ExitErr
         _ExitToShell          ;return to Desktop/Shell
 
@@ -378,8 +377,8 @@ Ymax       DC.W 0
 WindowSize DC.W vOff,1,342-botOff,511
 
 drawund  lea penloc(pc),a4
-		 move.l a4,-(sp)
-		 _GetPen
+         move.l a4,-(sp)
+         _GetPen
          move #'_',-(sp)
          _DrawChar
          move.l (a4),-(sp)
@@ -392,7 +391,7 @@ getnum  clr.l d7    ;length
 @g0     _SystemTask
         subq #2,sp
         move #$ffff,-(sp)
-		pea EventRecord(pc)
+        pea EventRecord(pc)
         _GetNextEvent
         btst #0,(sp)+
         beq.s @g0
@@ -420,7 +419,7 @@ getnum  clr.l d7    ;length
         clr d3
         move.b d0,d3
         move.l (a4),d0
-        addq #8,d0
+        addi.l #$10008,d0
         move.l d0,4(a4)
         clr (a4)
         move.l a4,-(sp)
@@ -446,7 +445,7 @@ getnum  clr.l d7    ;length
         move.l (sp),d3
         move.l d3,(a4)
         clr (a4)
-        addi #16,d3
+        addi.l #$10010,d3
         move.l d3,4(a4)
         move.l a4,-(sp)
         _EraseRect
