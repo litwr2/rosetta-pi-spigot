@@ -63,7 +63,7 @@ PPC601: set 0
  			DC.L TOC[tc0]
 		
 		CSECT .&fnName[PR]
-		FUNCTION .&fnName[PR]	
+		FUNCTION .&fnName[PR]
 		
 	ENDM
 	
@@ -85,12 +85,12 @@ spaceToSave:	set linkageArea + CalleesParams + CalleesLocalVars + 4*numGPRs + 8*
 	MakeFunction	pix
 	
 ; PROLOGUE - called routine's responsibilities
-		mflr	r0					; Get link register
+		mflr	r0					; Get link register = 8
 		stw		r0, 0x0008(SP)		; Store the link resgister on the stack
 		stwu	SP, -spaceToSave(SP); skip over the stack space where the caller		
 									; might have saved stuff
 ; FUNCTION BODY  ;r3 = 7*D, D - number of digits
-         mr r9,r3             ;fill r-array, r3 = D*7
+         or r9,r3,r3             ;fill r-array, r3 = D*7
          addi r4,0,2000
          lwz r7,gPimem[TC](RTOC)
          oris r4,r4,2000
@@ -103,22 +103,22 @@ spaceToSave:	set linkageArea + CalleesParams + CalleesLocalVars + 4*numGPRs + 8*
          addi r8,0,0               ;c
 .l0:     addi r6,0,0               ;d = 0
          addi r10,0,10000
-         mr r5,r9              ;i <-k*2
+         or r5,r9,r9              ;i <-k*2
          b .l2
 
 .l4:     subf r6,r3,r6        ;main loop start
          subf r6,r0,r6
          ;mullw r6,r0,r5
-         srwi r6,r6,1
+         rlwinm r6,r6,31,1,31
 .l2:     lhzx r4,r5,r7       ;r[i]
          mullw r0,r10,r4      ;d += r[i]*10000
          add r0,r6,r0
-         mr r6,r0
+         or r6,r0,r0
 
          addi r4,r5,-1     ;b <- 2i-1
    if PPC601
-         divs r0,r0,r4
-		 mfmq r3
+         dc.l 0x7c0022d6   ;divs r0,r0,r4
+         dc.l 0x7c6002a6   ;mfmq r3
    else
          divw  r0,r0,r4    ;r0 <- r0/r1, r3 <- r0%r1; d/b  ;divwu??  ;??601 divs r0,r0,r4
          mullw r3,r4,r0    ;this instruction may execute faster on some implementations if r4 < r0
@@ -149,8 +149,8 @@ spaceToSave:	set linkageArea + CalleesParams + CalleesLocalVars + 4*numGPRs + 8*
 ; EPILOGUE - return sequence		
 		lwz		r0,0x8+spaceToSave(SP)	; Get the saved link register
 		addic	SP,SP,spaceToSave		; Reset the stack pointer
-		mtlr	r0						; Reset the link register
-		blr								; return via the link register
+		mtlr r0
+		blr
 	
 	csect .pix[pr]
 		;dc.b 'The number pi calculator'
