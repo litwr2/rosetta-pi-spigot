@@ -45,19 +45,18 @@ OPT = 5               ;5 is a constant for the pi-spigot
 
 D = 4 ;digits
 N = D*7/2
-;b = $8e   ;$8f
 d = $66   ;..$69
 i = $6a   ;$6b
 k = $6c   ;$6d
 
-divisor = $ed     ;$ee, $ef..$f0 used for hi-byte and product ($1c is not used if DIV8OPT=0)
-dividend = $f1	  ;..$f4 used for hi-bytes
-remainder = $60   ;$61 used for hi-byte
+divisor = $5e     ;$5f, $60..$61 used for hi-byte and product ($1c is not used if DIV8OPT=0)
+dividend = $62    ;..$65 used for hi-bytes
+remainder = $88   ;$89 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $f5 ;$f6
+rbase = $8a ;$8b
 
 osubr .macro
 .if IO
@@ -70,18 +69,18 @@ osubr .macro
          * = $401
          .include "pi-pet.inc"
 .if DIV8OPT
-MAINADJ = $27
+MAINADJ = $17
 DIV32ADJ = 0   ;3
 DIVMIADJ = 0   ;14
 DIV8ADJ = 16
 DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
-MAINADJ = $32
+MAINADJ = $22
 DIV32ADJ = 0
 DIVMIADJ = 0
 .endif
-         * = $4f8 + MAINADJ
+         * = $508 + MAINADJ
          ;sei         ;no interrupts
          ;lda #147    ;clear screen
          ;jsr BSOUT
