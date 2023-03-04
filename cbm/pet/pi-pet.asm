@@ -374,5 +374,5 @@ m10000
 .endif
 .include "6502-div7.s"
 
-r = (* + 0 + 256) & $ff00   ;+0 for vars - check 2b!
+r = (* + 0 + 256) & $ff00   ;+0 for vars
 
