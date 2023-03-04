@@ -45,18 +45,18 @@ OPT = 5               ;5 is a constant for the pi-spigot
 
 D = 4 ;digits
 N = D*7/2
-d = $0a   ;..$0d
-i = $0e   ;$0f
-k = $10   ;$11
+d = $b   ;..$0b
+i = $f   ;$0d
+k = $11   ;$0f
 
-divisor = $12     ;$13, $14..$15 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
-dividend = $16    ;..$19 used for hi-bytes
-remainder = $1a   ;$1b used for hi-byte
+divisor = $13     ;$11, $12..$13 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
+dividend = $17    ;..$17 used for hi-bytes
+remainder = $1b   ;$19 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $1c ;$1d
+rbase = $1d ;$1b
 
 osubr .macro
 .if IO
@@ -68,6 +68,8 @@ osubr .macro
 .endm
          * = $3
          .include "pi-cbm2.inc"
+         
+         * = $1fe
 .if DIV8OPT
 MAINADJ = $17
 DIV32ADJ = 0   ;3
@@ -80,11 +82,6 @@ MAINADJ = $22
 DIV32ADJ = 0
 DIVMIADJ = 0
 .endif
-
-.if DIV8OPT
-.include "6502-div8.s"
-.endif
-.include "6502-divg.s"
 
 pr0000 .block
          sta d+2
@@ -128,14 +125,16 @@ prc      txa
 
 c .byte 0,0
 
+.include "6502-divg.s"
+
          * = $401
 bank15   ldy #15
          sty 0
          nop
          nop
-cb405    nop
+cb407    nop
          lda #$60 ;rts
-         sta cb405
+         sta cb407
          lda #15
          sta 1
          lda #4
@@ -338,7 +337,16 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     lda #15
+exit     lda #$ea ;nop
+         sta cb407
+         ldx #d
+         lda #$31
+ll2      sta 0,x
+         inx
+         cpx #rbase+2
+         bne ll2
+
+         lda #15
          sta 1
          ldy #4
          sty k+1
@@ -404,6 +412,9 @@ m10000
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
 .include "6502-div7.s"
+.if DIV8OPT
+.include "6502-div8.s"
+.endif
 
 r = (* + 0 + 256) & $ff00   ;+0 for vars
 

@@ -1,7 +1,9 @@
+5 goto10:12345678901234567890
 10 printspc(7)"number pi calculator v1":r=int((256-@MAXMEM@)*64/7)*4
 50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:iff<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:bank1:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
 90 bank15:poke1024,169:poke1025,1:poke1026,120:poke1027,133:poke1028,0:poke1029,234
-160 printti$:sys1024:printti$
-190 printf
+160 a$=ti$:sys1024:b$=ti$
+170 f=(val(right$(b$,1))-val(right$(a$,1)))/10+val(mid$(b$,5,2))-val(mid$(a$,5,2))
+190 print f+(val(mid$(b$,3,2))-val(mid$(a$,3,2)))*60+(val(left$(b$,2))-val(left$(a$,2)))*3600
