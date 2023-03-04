@@ -45,18 +45,18 @@ OPT = 5               ;5 is a constant for the pi-spigot
 
 D = 4 ;digits
 N = D*7/2
-d = $66   ;..$69
-i = $6a   ;$6b
-k = $6c   ;$6d
+d = $0a   ;..$0d
+i = $0e   ;$0f
+k = $10   ;$11
 
-divisor = $5e     ;$5f, $60..$61 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
-dividend = $62    ;..$65 used for hi-bytes
-remainder = $88   ;$89 used for hi-byte
+divisor = $12     ;$13, $14..$15 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
+dividend = $16    ;..$19 used for hi-bytes
+remainder = $1a   ;$1b used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $8a ;$8b
+rbase = $1c ;$1d
 
 osubr .macro
 .if IO
@@ -66,8 +66,8 @@ osubr .macro
      lda pr0000
 .endif
 .endm
-         * = $401
-         .include "pi-pet.inc"
+         * = $3
+         .include "pi-cbm2.inc"
 .if DIV8OPT
 MAINADJ = $17
 DIV32ADJ = 0   ;3
@@ -80,8 +80,80 @@ MAINADJ = $22
 DIV32ADJ = 0
 DIVMIADJ = 0
 .endif
-         * = $508 + MAINADJ
-         ;sei         ;no interrupts
+
+.if DIV8OPT
+.include "6502-div8.s"
+.endif
+.include "6502-divg.s"
+
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0
+         lda #10
+         sta d
+         jsr pr0
+         txa
+         tay
+prd      tya
+         eor #$30
+         jmp bank15
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
+c .byte 0,0
+
+         * = $401
+bank15   ldy #15
+         sty 0
+         nop
+         nop
+cb405    nop
+         lda #$60 ;rts
+         sta cb405
+         lda #15
+         sta 1
+         lda #4
+         sta k+1
+         lda #6
+         sta k
+         ldy #0
+cl1      lda bsout15,y
+         sta (k),y
+         iny
+         cpy #bsout15e-bsout15
+         bne cl1
+         lda #1
+         sta 1
+         jmp start
+         
+         * = * + MAINADJ
+start
          ;lda #147    ;clear screen
          ;jsr BSOUT
 
@@ -266,57 +338,19 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit     ;lda #$1b
-         ;sta $d011   ;screen on
-         ;cli         ;interrupts enabled
-
-         ;lda #$37
-         ;sta 1    ;restores Basic ROM
-         rts
-
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp BSOUT
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
-
-.include "6502-divg.s"
-
-c .byte 0,0
+exit     lda #15
+         sta 1
+         ldy #4
+         sty k+1
+         iny
+         sty k
+         lda #$58   ;cli
+         ldy #0
+         sta (k),y
+         lda #$60
+         iny
+         sta (k),y
+         jmp bank15
 
     * = (* + 256) & $ff00
 m10000
@@ -369,10 +403,14 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.if DIV8OPT
-.include "6502-div8.s"
-.endif
 .include "6502-div7.s"
 
 r = (* + 0 + 256) & $ff00   ;+0 for vars
+
+bsout15  nop
+         jsr BSOUT
+         jmp $400
+bsout15e
+
+
 

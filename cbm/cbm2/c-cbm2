@@ -1,0 +1,13 @@
+echo RUN IT TWICE!
+fn=pi-cbm2
+tmpx $fn.asm -l $fn.lst
+gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
+/@EOP@/{print "s/@MAXMEM@/"strtonum("0x"$4)"/"}' $fn.lst >z.sed
+sed -f z.sed $fn.cbas >$fn.bas
+petcat -w40 -l 3 $fn.bas | od -t x1 | awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >$fn.inc
+tmpx $fn.asm -l $fn.lst
+rm z.sed
