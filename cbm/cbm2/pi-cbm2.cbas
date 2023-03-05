@@ -3,6 +3,6 @@
 50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:iff<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:bank1:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
-90 bank15:poke1024,169:poke1025,1:poke1026,120:poke1027,133:poke1028,0:poke1029,234
-160 ti$="0000000":sys1024:b$=ti$
+90 bank15:poke1072,169:poke1073,1:poke1074,120:poke1075,133:poke1076,0:poke1077,234
+160 ti$="0000000":sys1072:b$=ti$
 190 print val(right$(b$,1))/10+val(mid$(b$,5,2))+val(mid$(b$,3,2))*60+val(left$(b$,2))*3600

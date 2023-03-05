@@ -58,6 +58,19 @@ fac1 = dividend
 fac2 = remainder
 rbase = $1a ;$1b
 
+.if DIV8OPT
+MAINADJ = 4
+DIV32ADJ = 4   ;3
+DIVMIADJ = 0   ;14
+DIV8ADJ = 16
+DIV8SADJ = 0
+.endif
+.ifeq DIV8OPT
+MAINADJ = 12
+DIV32ADJ = 0
+DIVMIADJ = 15
+.endif
+
 osubr .macro
 .if IO
      jsr pr0000
@@ -69,33 +82,13 @@ osubr .macro
          * = $3
          .include "pi-cbm2.inc"
          
-         * = $200
-.if DIV8OPT
-MAINADJ = $53
-DIV32ADJ = 0   ;3
-DIVMIADJ = 0   ;14
-DIV8ADJ = 16
-DIV8SADJ = 0
-.endif
-.ifeq DIV8OPT
-MAINADJ = 0
-DIV32ADJ = 0
-DIVMIADJ = 0
-.endif
-
-         * = $401
-bank15   ldy #15
-         sty 0
-         nop
-         nop
-cb407    nop
-         lda #$60 ;rts
-         sta cb407
+golow    lda #$60 ;rts
+         sta cb437
          lda #15
          sta 1
-         lda #4
+         lda #>bank15
          sta k+1
-         lda #6
+         lda #<bank15+5
          sta k
          ldy #0
 cl1      lda bsout15,y
@@ -106,6 +99,19 @@ cl1      lda bsout15,y
          lda #1
          sta 1
          jmp start
+         
+         * = $200
+.if DIV8OPT
+.include "6502-div8.s"
+.endif
+
+         * = $431
+bank15   ldy #15
+         sty 0
+         nop
+         nop
+cb437    nop
+         jmp golow
          
          * = * + MAINADJ
 start    ldy #0
@@ -289,7 +295,7 @@ l11      ora k+1
          jmp loop
 
 exit     lda #$ea ;nop
-         sta cb407
+         sta cb437
          ldx #d
          lda #$31
 ll2      sta 0,x
@@ -299,9 +305,9 @@ ll2      sta 0,x
 
          lda #15
          sta 1
-         ldy #4
+         ldy #>bank15
          sty k+1
-         iny
+         ldy #<bank15+4
          sty k
          lda #$58   ;cli
          ldy #0
@@ -404,15 +410,12 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.if DIV8OPT
-.include "6502-div8.s"
-.endif
 .include "6502-div7.s"
 .include "6502-divg.s"
 
 bsout15  nop
          jsr BSOUT
-         jmp $400
+         jmp bank15-1
 bsout15e
 
 r = (* + 0 + 256) & $ff00   ;+0 for vars
