@@ -45,18 +45,18 @@ OPT = 5               ;5 is a constant for the pi-spigot
 
 D = 4 ;digits
 N = D*7/2
-d = $b   ;..$0b
-i = $f   ;$0d
-k = $11   ;$0f
+d = $8   ;..$0b
+i = $c   ;$0d
+k = $0e   ;$0f
 
-divisor = $13     ;$11, $12..$13 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
-dividend = $17    ;..$17 used for hi-bytes
-remainder = $1b   ;$19 used for hi-byte
+divisor = $10     ;$11, $12..$13 used for hi-byte and product (the last byte is not used if DIV8OPT=0)
+dividend = $14    ;..$17 used for hi-bytes
+remainder = $18   ;$19 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
 product = divisor
 fac1 = dividend
 fac2 = remainder
-rbase = $1d ;$1b
+rbase = $1a ;$1b
 
 osubr .macro
 .if IO
@@ -69,63 +69,19 @@ osubr .macro
          * = $3
          .include "pi-cbm2.inc"
          
-         * = $1fe
+         * = $200
 .if DIV8OPT
-MAINADJ = $17
+MAINADJ = $53
 DIV32ADJ = 0   ;3
 DIVMIADJ = 0   ;14
 DIV8ADJ = 16
 DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
-MAINADJ = $22
+MAINADJ = 0
 DIV32ADJ = 0
 DIVMIADJ = 0
 .endif
-
-pr0000 .block
-         sta d+2
-         lda #<1000
-         sta d
-         lda #>1000
-         sta d+1
-         jsr pr0
-         lda #100
-         sta d
-         lda #0
-         sta d+1
-         jsr pr0
-         lda #10
-         sta d
-         jsr pr0
-         txa
-         tay
-prd      tya
-         eor #$30
-         jmp bank15
-
-pr0      ldy #255
-prn      iny
-         lda d+2
-         cmp d+1
-         bcc prd
-         bne prc
-
-         cpx d
-         bcc prd
-
-prc      txa
-         sbc d
-         tax
-         lda d+2
-         sbc d+1
-         sta d+2
-         bcs prn
-.bend
-
-c .byte 0,0
-
-.include "6502-divg.s"
 
          * = $401
 bank15   ldy #15
@@ -152,11 +108,7 @@ cl1      lda bsout15,y
          jmp start
          
          * = * + MAINADJ
-start
-         ;lda #147    ;clear screen
-         ;jsr BSOUT
-
-         ldy #0 ;@start@
+start    ldy #0
          lda #2
          sta d
          lda #>r            ;@EOP@ - end of program
@@ -195,7 +147,6 @@ lf2      stx c
          sta k
          lda #>N                  ;@highN@
          sta k+1
-
 loop     lda #0          ;d <- 0
          sta d
          sta d+1
@@ -358,7 +309,49 @@ ll2      sta 0,x
          lda #$60
          iny
          sta (k),y
+         jmp bank15   ;always
+
+pr0000 .block
+         sta d+2
+         lda #<1000
+         sta d
+         lda #>1000
+         sta d+1
+         jsr pr0
+         lda #100
+         sta d
+         lda #0
+         sta d+1
+         jsr pr0
+         lda #10
+         sta d
+         jsr pr0
+         txa
+         tay
+prd      tya
+         eor #$30
          jmp bank15
+
+pr0      ldy #255
+prn      iny
+         lda d+2
+         cmp d+1
+         bcc prd
+         bne prc
+
+         cpx d
+         bcc prd
+
+prc      txa
+         sbc d
+         tax
+         lda d+2
+         sbc d+1
+         sta d+2
+         bcs prn
+.bend
+
+c .byte 0,0
 
     * = (* + 256) & $ff00
 m10000
@@ -411,17 +404,20 @@ m10000
  .byte 34,34,34,34,34,34,35,35,35,35,35,35,36,36,36,36
  .byte 36,36,36,37,37,37,37,37,37,37,38,38,38,38,38,38
 
-.include "6502-div7.s"
 .if DIV8OPT
 .include "6502-div8.s"
 .endif
-
-r = (* + 0 + 256) & $ff00   ;+0 for vars
+.include "6502-div7.s"
+.include "6502-divg.s"
 
 bsout15  nop
          jsr BSOUT
          jmp $400
 bsout15e
+
+r = (* + 0 + 256) & $ff00   ;+0 for vars
+
+
 
 
 
