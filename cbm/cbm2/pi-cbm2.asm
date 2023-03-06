@@ -42,6 +42,7 @@ CMOS6502 = 0
 IO = 1
 DIV8OPT = 1           ;1 is slower for 7532 (?) or more digits but faster for 7528 or less
 OPT = 5               ;5 is a constant for the pi-spigot
+PBANK = 0             ;0 for the P-series, 1 for the B-series @pbank@
 
 D = 4 ;digits
 N = D*7/2
@@ -81,7 +82,7 @@ osubr .macro
 .endm
          * = $3
          .include "pi-cbm2.inc"
-         
+
 golow    lda #$60 ;rts
          sta cb437
          lda #15
@@ -96,10 +97,10 @@ cl1      lda bsout15,y
          iny
          cpy #bsout15e-bsout15
          bne cl1
-         lda #1
+         lda #PBANK
          sta 1
          jmp start
-         
+
          * = $200
 .if DIV8OPT
 .include "6502-div8.s"
@@ -112,7 +113,7 @@ bank15   ldy #15
          nop
 cb437    nop
          jmp golow
-         
+
          * = * + MAINADJ
 start    ldy #0
          lda #2
@@ -315,6 +316,8 @@ ll2      sta 0,x
          lda #$60
          iny
          sta (k),y
+         ldy #PBANK
+         sty 1
          jmp bank15   ;always
 
 pr0000 .block

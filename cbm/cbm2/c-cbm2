@@ -1,7 +1,8 @@
 echo RUN IT TWICE!
 fn=pi-cbm2
 tmpx $fn.asm -l $fn.lst
-gawk '/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
+gawk '/@pbank@/{print "s/@pbank@/"$4"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
 /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
 /@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
