@@ -42,7 +42,7 @@ CMOS6502 = 0
 IO = 1
 DIV8OPT = 1           ;1 is slower for 7532 (?) or more digits but faster for 7528 or less
 OPT = 5               ;5 is a constant for the pi-spigot
-PBANK = 0             ;0 for the P-series, 1 for the B-series @pbank@
+PBANK = 1             ;0 for the P-series, 1 for the B-series @pbank@
 
 D = 4 ;digits
 N = D*7/2
@@ -297,12 +297,6 @@ l11      ora k+1
 
 exit     lda #$ea ;nop
          sta cb437
-         ldx #d
-         lda #$31
-ll2      sta 0,x
-         inx
-         cpx #rbase+2
-         bne ll2
 
          lda #15
          sta 1
@@ -316,9 +310,15 @@ ll2      sta 0,x
          lda #$60
          iny
          sta (k),y
+         ldx #d
+         lda #$31
+ll2      sta 0,x
+         inx
+         cpx #rbase+2
+         bne ll2
          ldy #PBANK
          sty 1
-         jmp bank15   ;always
+         jmp bank15
 
 pr0000 .block
          sta d+2
