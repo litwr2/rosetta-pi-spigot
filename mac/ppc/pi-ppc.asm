@@ -98,7 +98,7 @@ spaceToSave:	set linkageArea + CalleesParams + CalleesLocalVars + 4*numGPRs + 8*
          addic r6,r7,-4
 .l8:     stwu r4,4(r6)
          addic. r3,r3,-4
-         bne .l8       ;jump is likely!!  ctr??
+         bne .l8
 
          addi r8,0,0               ;c
 .l0:     addi r6,0,0               ;d = 0
@@ -120,9 +120,9 @@ spaceToSave:	set linkageArea + CalleesParams + CalleesLocalVars + 4*numGPRs + 8*
          dc.l 0x7c0022d6   ;divs r0,r0,r4
          dc.l 0x7c6002a6   ;mfmq r3
    else
-         divw  r0,r0,r4    ;r0 <- r0/r1, r3 <- r0%r1; d/b  ;divwu??  ;??601 divs r0,r0,r4
+         divw  r0,r0,r4    ;r0 <- r0/r1, r3 <- r0%r1; d/b  ;divwu??
          mullw r3,r4,r0    ;this instruction may execute faster on some implementations if r4 < r0
-         subf r3,r3,r6    ;d%b    ;??601 mfmq r3
+         subf r3,r3,r6    ;d%b
    endif
 
          sthx r3,r5,r7
