@@ -43,7 +43,7 @@ IO = 1
 DIVOF = 1  ;use overflow flag after division, it is faster but can have compatibility issues
            ;with some PDP-11, for example, 11/34 and 11/44
 SOUZNEON = 0 ;This computer needs its timer to be corrected, 1.3 factor is used
-             ;actually the 64MHz are used instead of 50MHz, so we need (!) 1.28
+             ;actually the 64Hz are used instead of 50Hz, so we need (!) 1.28
 
       .MCall .exit, .print, .gtim, .ttyin, .ttyout, .ttinr, .settop, .gval
       $JSW =: ^O44
