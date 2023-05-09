@@ -5,12 +5,14 @@ ac=$p/AppleCommander-ac-1.6.0.jar
 bt=$p/bastools-tools-bt-0.3.1.jar
 #java -jar $ac -dos140 $dn
 java -jar $bt -o boot boot.bas
-#java -jar $ac -d $dn PI
+java -jar $ac -d $dn PI
 java -jar $ac -d $dn PIMAIN2C
-#java -jar $ac -d $dn PI2E
+java -jar $ac -d $dn PI2E
 java -jar $ac -d $dn PIMAIN2E
 java -jar $ac -d $dn PIMAIN2GS
-#java -jar $ac -d $dn PI2GS
+java -jar $ac -d $dn PIMAIN2CD
+java -jar $ac -d $dn READER
+java -jar $ac -d $dn PI2GS
 java -jar $ac -d $dn BOOT
 java -jar $ac -p $dn BOOT A <boot
 echo Issue the next commands under an emulator
@@ -27,6 +29,10 @@ java -jar $ac -p $dn PIMAIN2E A <pimain
 java -jar $ac -p $dn PI2GS B 0xa00 <2gs/pi-apple2gs.bin
 java -jar $bt -o pimain 2gs/pi-apple2gs.bas
 java -jar $ac -p $dn PIMAIN2GS A <pimain
+java -jar $bt -o pimain pi-apple-d.bas
+java -jar $ac -p $dn PIMAIN2CD A <pimain
+java -jar $bt -o pimain readfile.bas
+java -jar $ac -p $dn READER A <pimain
 rm pimain boot
 #mess apple2c -flop1 $dn -debug&
 #mess apple2e -flop1 $dn -sl1 mouse -debug&

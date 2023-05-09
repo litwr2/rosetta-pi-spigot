@@ -1,3 +1,4 @@
 Check if timings are shown.  If it is not use POKE addr,8 and run pi-spigot again.
 The addr-value is 6145 for the IIe driver, 6648 the IIc driver, and 4320 for the IIgs driver.
 The IIgs driver uses 8 now, so if timings shown are 0 use POKE4320,9.
+The Apple II stops interrupts when a disk drive is active, so timings are incorrect (they are less than actual) for the version that writes digits to a disk file.
