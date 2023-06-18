@@ -284,7 +284,7 @@ prevtime dw 0
 time dw 0,0   ;@ti0@, @ti1@, @ti2@
 dw 0   ;reserved for Basic h, @varh@
 
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 if R800=0
 include "mul10000.s"
 endif

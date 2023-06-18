@@ -369,11 +369,11 @@ cv dw 0
 kv dw 0
 time dw 0,0
 
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "mul10000.s"
 
 ra
-msg1  db 'number pi calculator v1 for the Model 4/4P',13
+msg1  db 'number pi calculator v2 for the Model 4/4P',13
       db 'number of digits (up to ',0
 msg2  db ')? ',0
 msg3  db ' digits will be printed',13,0

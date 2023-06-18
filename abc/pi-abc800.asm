@@ -262,7 +262,7 @@ cv dw 0
 kv dw 0
 time dw 0,0
 
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "mul10000.s"
 
 ra db 0

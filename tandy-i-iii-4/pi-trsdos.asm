@@ -385,11 +385,11 @@ cv dw 0
 kv dw 0
 time dw 0,0
 
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "mul10000.s"
 
 ra
-msg1  db 'number pi calculator v1 for the Model I'
+msg1  db 'number pi calculator v2 for the Model I'
 if MODEL3
       db 'II'
 endif

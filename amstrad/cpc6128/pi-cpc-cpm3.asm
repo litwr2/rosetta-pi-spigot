@@ -364,11 +364,11 @@ cv dw 0
 kv dw 0
 time dw 0,0
 
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v11',13,10
+msg1  db 'number ',165,' calculator v12',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'

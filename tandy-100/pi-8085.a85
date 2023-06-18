@@ -620,7 +620,7 @@ hours1 db 0
 mins1  db 0
 secs1  db 0
 endif
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "../cpc6128/mul10000.s"
 
 ra
@@ -630,7 +630,7 @@ if GENERIC or TANDY100
       db 'Pi'
 endif
 
-      db ' calculator v1',13,10
+      db ' calculator v2',13,10
       db 'for CP/M 2.2 (8085, '
 
 if GENERIC

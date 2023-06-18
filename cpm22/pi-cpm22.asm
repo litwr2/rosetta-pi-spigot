@@ -836,7 +836,12 @@ lct5  ld a,(ra+1)
       pop af
       call print_bcd
 endif
+if C128
+     ld c,0
+     jp BDOS
+else
         rst 0
+endif
          endp
 
 if CPM3TIMER
@@ -1016,7 +1021,7 @@ hours1 db 0
 mins1  db 0
 secs1  db 0
 endif
-         org ($ + 256) and $ff00
+         org ($ + 255) and $ff00
 include "../cpc6128/mul10000.s"
 
 ra
@@ -1032,7 +1037,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
       db 'Pi'
 endif
 
-      db ' calculator v13',13,10
+      db ' calculator v14',13,10
       db 'for CP/M 2.2 ('
 
 if GENERIC
