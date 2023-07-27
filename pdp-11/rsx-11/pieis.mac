@@ -42,10 +42,10 @@
 ;however its maximum for digits produced is less and it uses its own buffer
 ;to keep all the output which is forbidden by rule #4
 
-	.TITLE	PI - Spigot PI calculator using EIS
+  .TITLE  PI - Spigot PI calculator using EIS
 
-	.MCALL	QIOW$S, EXIT$S, GTIM$, DIR$
-	.MCALL	QIOW$, WTSE$, QIO$
+  .MCALL  QIOW$S, EXIT$S, GTIM$, DIR$
+  .MCALL  QIOW$, WTSE$, QIO$
 
       .radix 10
 
@@ -156,53 +156,53 @@ l1x: asl r1
      br exit
      .endm bdiv
 
-	.PSECT	CODE,I,RW
+  .PSECT  CODE,I,RW
 START:
     mov #msg1m,r5
     mov #MAXD,r2
     call PR0000
-    QIOW$S	#IO.WLB, #5, #5,,,,<#msg1, #msg1m-msg1, #'$>
-    MOV	#msg1m,R0
-	MOV	#7,R1
-	QIOW$S	#IO.RPR,#5,#5,,#IOSB,,<#OBUF,#8,,R0,R1>
-	TSTB	IOSB
-	BPL	10$
+    QIOW$S  #IO.WLB, #5, #5,,,,<#msg1, #msg1m-msg1, #'$>
+    MOV  #msg1m,R0
+  MOV  #7,R1
+  QIOW$S  #IO.RPR,#5,#5,,#IOSB,,<#OBUF,#8,,R0,R1>
+  TSTB  IOSB
+  BPL  10$
 
-    QIOW$S	#IO.WLB, #5, #5,,,,<#msg2, #msg3-msg2, #40>
-	EXIT$S
+    QIOW$S  #IO.WLB, #5, #5,,,,<#msg2, #msg3-msg2, #40>
+  EXIT$S
 
-10$:	MOV	IOSB+2,R0		; Terminate input with NUL.
-	CLRB	OBUF(R0)
+10$:  MOV  IOSB+2,R0    ; Terminate input with NUL.
+  CLRB  OBUF(R0)
 
-	MOV	#OBUF,R0			; Try to parse input as number.
-	CALL	$CDTB
-	TST	R2			; Did we stop at NUL?
-	BEQ	20$			; Yes.
+  MOV  #OBUF,R0      ; Try to parse input as number.
+  CALL  $CDTB
+  TST  R2      ; Did we stop at NUL?
+  BEQ  20$      ; Yes.
 
-	QIOW$S	#IO.WLB, #5, #5,,,,<#msg3, #msg4-msg3, #40>
-	EXIT$S
+  QIOW$S  #IO.WLB, #5, #5,,,,<#msg3, #msg4-msg3, #40>
+  EXIT$S
 
-20$:	CMP	R1,#MAXD		; Check value against max.
-	BLOS	30$
+20$:  CMP  R1,#MAXD    ; Check value against max.
+  BLOS  30$
 
-	QIOW$S	#IO.WLB, #5, #5,,,,<#msg4, #msg5-msg4, #40>
-	EXIT$S
+  QIOW$S  #IO.WLB, #5, #5,,,,<#msg4, #msg5-msg4, #40>
+  EXIT$S
 
 30$:
-	MOV	R1,R0			; Round value to even four.
-	ADD	#3,R0
-	BIC	#3,R0
-	CMP	R0,R1			; Did that cause a change?
-	BEQ	31$
+  MOV  R1,R0      ; Round value to even four.
+  ADD  #3,R0
+  BIC  #3,R0
+  CMP  R0,R1      ; Did that cause a change?
+  BEQ  31$
 
     mov r0,r2
     mov r0,-(sp)
     mov #msg5,r5
     call PR0000
-    QIOW$S	#IO.WLB, #5, #5,,,,<#msg5, #msg6-msg5, #40>
+    QIOW$S  #IO.WLB, #5, #5,,,,<#msg5, #msg6-msg5, #40>
     mov (sp)+,r0
 
-31$:	
+31$:
     QIOW$S  #IO.WLB, #5, #5,,,,<#msg5, #1, #40>
          mov r0,r4
          asr r4
@@ -212,7 +212,7 @@ START:
          mov r4,@#kv
          tst -(sp)
 
-	     DIR$ #TSTART		; Start measure time.
+       DIR$ #TSTART    ; Start measure time.
          mov r4,r0     ;fill r-array
          mov #2000,r1
          mov #ra+2,r2
@@ -259,16 +259,16 @@ exit:
          add @#cv,r2  ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
 
-	     MOV #OBUF,R5
+       MOV #OBUF,R5
          DIR$ #WAIT
-	     call PR0000
-	     DIR$ #WRIT
+       call PR0000
+       DIR$ #WRIT
 .endc
          sub #14,@#kv      ;k <- k - 14
          bne mloop
 
          DIR$ #WAIT
-	     DIR$ #TSTOP
+       DIR$ #TSTOP
          tst (sp)+
 ;
 ; Figure out how many ticks passed, and make this
@@ -278,12 +278,12 @@ exit:
 ;
 ; First part, find out how many ticks...
 ;
-	MOV	T2+12,R4	; Get ticks.
-	SUB	T1+12,R4	; Calculate delta.
-	BCC	2$
+  MOV  T2+12,R4  ; Get ticks.
+  SUB  T1+12,R4  ; Calculate delta.
+  BCC  2$
 
-	ADD	T2+14,R4	; If that was negative, we had wrap. Adjust.
-	DEC	T2+10		; And then we have one less second.
+  ADD  T2+14,R4  ; If that was negative, we had wrap. Adjust.
+  DEC  T2+10    ; And then we have one less second.
 2$:
 ;
 ; Second part. Convert to 1/100s.
@@ -299,39 +299,39 @@ exit:
 ;
 ; Now get minutes passed.
 ;
-	MOV	T2+8,R1	; Get end minute.
-	SUB	T1+8,R1	; Substract start minute.
-	BGE	3$		; If result is >= 0 we're good.
+  MOV  T2+8,R1  ; Get end minute.
+  SUB  T1+8,R1  ; Substract start minute.
+  BGE  3$    ; If result is >= 0 we're good.
 
-	ADD	#60,R1		; It was less. Adjust minutes.
+  ADD  #60,R1    ; It was less. Adjust minutes.
 3$:
 ;
 ; Get seconds passed.
 ;
-	MOV	T2+10,R0	; Get end second.
-	SUB	T1+10,R0	; Substract start second.
-	BGE	4$
+  MOV  T2+10,R0  ; Get end second.
+  SUB  T1+10,R0  ; Substract start second.
+  BGE  4$
 
-	ADD	#60,R0		; If negative, adjust up.
-	DEC	R1		; And one minute less.
+  ADD  #60,R0    ; If negative, adjust up.
+  DEC  R1    ; And one minute less.
 ;
 ; Now make seconds...
 ;
-4$:	mov r0,-(sp)
+4$:  mov r0,-(sp)
     mov #60,r0
     call $mul           ;Minutes to seconds
-	ADD	(sp)+,R1		;Add in seconds
+  ADD  (sp)+,R1    ;Add in seconds
     mov #ra,r0
     MOVB #32,(r0)+      ;a white space
-    MOV #<5*2048>+10,R2	;5 places, base 10
-    CALL	$CBTA
+    MOV #<5*2048>+10,R2  ;5 places, base 10
+    CALL  $CBTA
     movb #'.,(r0)+
-    MOV	R4,R1
-	MOV #<2*2048>+512+10,R2	;2 digits, base 10, with leading 0
-	CALL	$CBTA
+    MOV  R4,R1
+  MOV #<2*2048>+512+10,R2  ;2 digits, base 10, with leading 0
+  CALL  $CBTA
     sub #ra,r0
-    QIOW$S	#IO.WLB,#5, #5,,,,<#ra, r0>
-	EXIT$S
+    QIOW$S  #IO.WLB,#5, #5,,,,<#ra, r0>
+  EXIT$S
 
 ;
 ; Output 4 digits
@@ -341,40 +341,40 @@ exit:
 ;
 PR0000:
     mov #1000,r3
-	CALL @#PRZ
+  CALL @#PRZ
     mov #100,r3
-	CALL @#PRZ
+  CALL @#PRZ
     mov #10,r3
-	CALL @#PRZ
-	mov r2,r0
-PR:	add #48,r0
-   	movb r0,(r5)+
+  CALL @#PRZ
+  mov r2,r0
+PR:  add #48,r0
+     movb r0,(r5)+
     return
 
-PRZ:	mov #65535,r0
-4$:	inc r0
-	cmp r2,r3
-	bcs PR
+PRZ:  mov #65535,r0
+4$:  inc r0
+  cmp r2,r3
+  bcs PR
 
-	sub r3,r2
-	br 4$
+  sub r3,r2
+  br 4$
 
-T1:	.BLKW	8		;Buffers for time stamps
-T2:	.BLKW	8
+T1:  .BLKW  8    ;Buffers for time stamps
+T2:  .BLKW  8
 
-MAXD=<<MEMSZ/7>/4>*8			;Max # of digits we allow
+MAXD=<<MEMSZ/7>/4>*8      ;Max # of digits we allow
 
-cv:	.WORD	0
+cv:  .WORD  0
 kv = kvs + 2
 
-IOSB:	.BLKW	2
-OBUF:	.BLKB	8
+IOSB:  .BLKW  2
+OBUF:  .BLKB  8
 
-TSTART:	GTIM$	T1		;Timer start.
-TSTOP:	GTIM$	T2		;Timer stop.
+TSTART:  GTIM$  T1    ;Timer start.
+TSTOP:  GTIM$  T2    ;Timer stop.
 EVNTFLG = 5
-WRIT:	QIO$	IO.WAL,5,EVNTFLG,,,,<OBUF,4>
-WAIT:	WTSE$	EVNTFLG
+WRIT:  QIO$  IO.WAL,5,EVNTFLG,,,,<OBUF,4>
+WAIT:  WTSE$  EVNTFLG
 
 ra:
 msg1:  .ascii "number pi calculator v2 (EIS"
@@ -392,4 +392,4 @@ msg6:
 memfill: .blkb MEMSZ
        .blkb MEMSZ
 eom:
-	.END	START
+  .END  START

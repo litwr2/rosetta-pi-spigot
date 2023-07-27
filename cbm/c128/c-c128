@@ -1,11 +1,20 @@
-echo RUN IT TWICE!
-tmpx pi-c128.asm -l pi-c128.lst
+b=pi-c128
+f=pi-c128
+sed -r 's/@[^@]+@/7777/g' $b.cbas >$b.bas
+petcat -w70 $b.bas >$b.prg
+s=$(ls -l $b.prg |awk '{print $5}')
+sed 's/PSTART/'$(printf "$%x" $(($s+0x1bff)))'/' $f.asm >$f-x.asm
+tmpx $f-x.asm -l $f.lst
+dd if=$f-x.prg of=$f.bin skip=2 bs=1 status=none
 gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@EOP@/{print "s/@MAXMEM@/"int((192-strtonum("0x"$4))*64/7)*4"/"}
+/@timer@/{v=strtonum("0x"$2); print"s/@t1@/"v"/"; print"s/@t2@/"v+1"/"; print"s/@t3@/"v+2"/"; print"s/@t4@/"v+3"/"}
+/@irq@/{print"s/@irq@/"strtonum("0x"$2)"/"}
 /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
 /@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
-/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}' pi-c128.lst >z.sed
-sed -f z.sed pi-c128.cbas >pi-c128.bas
-petcat -w70 pi-c128.bas | od -t x1 | awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-c128.inc
-tmpx pi-c128.asm -l pi-c128.lst
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}' $f.lst >z.sed
+sed -f z.sed $b.cbas >$b.bas
+petcat -w70 $b.bas | cat - $f.bin >$b.prg
+rm z.sed $f-x.prg $f.bin $f-x.asm $b.bas
+

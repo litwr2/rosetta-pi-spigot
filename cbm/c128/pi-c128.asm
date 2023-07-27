@@ -36,6 +36,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
+CIA1TOD = $DC08
 ;INT2STR = $8e32  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
@@ -69,27 +70,40 @@ osubr .macro
 .endif
 .endm
 
-         * = $1c01
-         .include "pi-c128.inc"
-
 .if DIV8OPT
-MAINADJ = $b1
-DIV32ADJ = 0  ;3
-DIVMIADJ = 0  ;14
+MAINADJ = $cf
+DIV32ADJ = 3
+DIVMIADJ = 1
 DIV8ADJ = 16
 DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
-MAINADJ = $bc
+MAINADJ = $d9
 DIV32ADJ = 0
-DIVMIADJ = 0  ;$12
+DIVMIADJ = 0
 .endif
-         * = $1d69 + MAINADJ
+         * = PSTART
+   .repeat MAINADJ,0
        lda #$e      ;@start@
        sta $ff00    ;sets MMU to use RAM to $C000
-         ;sei         ;no interrupts
+         sei         ;no interrupts @irq@
          ;lda #147    ;clear screen
          ;jsr BSOUT
+
+         lda CIA1TOD+6
+         ora #$80
+         tax
+         lda $a03   ;pal/ntsc
+         lsr
+         txa
+         bcs *+4
+         and #$7f
+         sta CIA1TOD+6
+         lda #0
+         sta CIA1TOD+3       ;start TOD clock
+         sta CIA1TOD+2
+         sta CIA1TOD+1
+         sta CIA1TOD
 
          ldy #0
          lda #2
@@ -272,8 +286,17 @@ l11      ora k+1
          beq exit
          jmp loop
 
-exit
-         ;cli         ;interrupts enabled
+exit     lda CIA1TOD+3
+         and #$7f
+         sta ticks+3
+         lda CIA1TOD+2
+         sta ticks+2
+         lda CIA1TOD+1
+         sta ticks+1
+         lda CIA1TOD
+         and #$f
+         sta ticks
+         cli         ;interrupts enabled
          lda #0
          sta $ff00   ;restores Basic MMU settings
          rts
@@ -318,9 +341,11 @@ prc      txa
          bcs prn
 .bend
 
-.include "6502-divg.s"
-
+ticks .byte 0,0 ;@timer@
+     .byte 0,0
 c .byte 0,0
+
+.include "6502-divg.s"
 
     * = (* + 256) & $ff00
 m10000

@@ -1,8 +1,15 @@
-10 poke@blank@,141:printspc(7)"number ~ calculator v13":r=@MAXMEM@
+10 poke@blank@,141:printspc(7)"number ~ calculator v14":r=@MAXMEM@
+20 deffnz(x)=int(x/16)*10+(xand15)
 50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:iff<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
-90 input"blank screen (5% faster)";r$:ifleft$(r$,1)="n"thenpoke@blank@,173:goto160
+90 poke@irq@,234:d=0:input"interrupts off (0% faster)";r$
+100 ifleft$(r$,1)="n"then130
 110 ifleft$(r$,1)<>"y"then90
-160 f=ti:sys@start@:f=(ti-f)/60:ifd>868thenwait203,64,64
+120 d=1:poke@irq@,120
+130 input"blank screen (5% faster)";r$:ifleft$(r$,1)="n"thenpoke@blank@,173:goto160
+140 ifleft$(r$,1)<>"y"then130
+160 f=ti:sys@start@:f=(ti-f)/60
+170 ifdthenf=peek(@t1@)/10+fnz(peek(@t2@))+fnz(peek(@t3@))*60+fnz(peek(@t4@))*3600
+180 ifd>868thenwait203,64,64
 190 printf

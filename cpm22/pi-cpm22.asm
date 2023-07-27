@@ -130,7 +130,7 @@ endif
 if BIOS_OUTPUT
     pop hl
 else
-    ld hl,(6)
+    ld hl,(BDOS+1)
 endif
     ld sp,hl
     add hl,de
@@ -245,10 +245,9 @@ if MSX and MSX_INTR=1 or AMSTRADPCW
 	LD	(MSX_INTR_VECTOR + 1),HL
 endif
 if C128
-vicsave
     ld bc,$d011    ;VIC-II off
     in a,(c)
-    ld (vicsave),a
+    ld (vicsave+1),a
     ld a,$b
     out (c),a
 
@@ -269,6 +268,7 @@ vicsave
     dec bc
     in a,(c)
     ld (hl),a
+    di
 endif
          pop bc      ;fill r-array
      ld (kv),bc  ;k <- N
@@ -512,7 +512,8 @@ if MSX or AMSTRADPCW
      ld (time),bc
 endif
 if C128
-    ld a,(vicsave)   ;VIC-II on
+vicsave
+    ld a,0   ;VIC-II on
     ld bc,$d011
     out (c),a
 
@@ -653,6 +654,7 @@ if C128
     add hl,bc
     jr nc,$+3
     inc de
+    ei
 endif
 if GENERIC = 0
      ld bc,(time)
@@ -1037,8 +1039,8 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
       db 'Pi'
 endif
 
-      db ' calculator v14',13,10
-      db 'for CP/M 2.2 ('
+      db ' calculator v15',13,10
+      db 'for CP/M 2.2 and 3 ('
 
 if GENERIC
       db 'Generic'

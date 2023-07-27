@@ -41,6 +41,7 @@ BSOUT = $FFD2    ;print char in AC
 
 CMOS6502 = 0
 IO = 1
+ROMIRQ = 0
 DIV8OPT = 1           ;1 is slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;5 is a constant for the pi-spigot
 
@@ -74,14 +75,11 @@ osubr .macro
 .endif
 .endm
 
-         * = $1001
-         .include "pi-plus4.inc"
-
 .if DIV8OPT
-MAINADJ = 7
-DIV32ADJ = 0   ;3
-DIVMIADJ = 0   ;14
-DIV8ADJ = 16
+MAINADJ = 8
+DIV32ADJ = 3
+DIVMIADJ = 1
+DIV8ADJ = $10
 DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
@@ -89,8 +87,12 @@ MAINADJ = 0
 DIV32ADJ = 0
 DIVMIADJ = 0   ;$12
 .endif
-         * = $1210 + MAINADJ
-         ldy #<irqh    ;@start@
+         * = PSTART
+.repeat MAINADJ,0
+         lda #$b  ;@start@
+         lda $ff06   ;screen @blank@
+.ifeq ROMIRQ
+         ldy #<irqh
          ldx #>irqh
          lda $ff07
          and #$40
@@ -98,10 +100,14 @@ DIVMIADJ = 0   ;$12
 
          ldy #<intsc
          ldx #>intsc  ;maybe commented?
-nontsc   sty $fffe
+nontsc
+.endif
+.if ROMIRQ
+         ldy #<irom
+         ldx #>irom
+.endif
+         sty $fffe
          stx $ffff
-         lda #$b
-         lda $ff06   ;screen @blank@
          lda #$48
          lda $ff07   ;@ntsc@ on
          ;sei         ;no interrupts
@@ -302,6 +308,8 @@ exit     sta $ff3e   ;selects ROM
          sta $ff07   ;@ntsc-off@
          ;cli         ;interrupts enabled
          rts
+
+.ifeq ROMIRQ
 irqh
        dec $7fd
        bpl intsc
@@ -325,6 +333,26 @@ uptime inc $a5
        inc $a3
 l1     rts
 .bend
+.endif
+
+.if ROMIRQ
+irom
+.block
+       pha
+       LDA  #>ni
+       PHA
+       LDA  #<ni
+       PHA
+       LDA  #$20
+       PHA
+       STA  $FF3E
+       JMP  ($FFFE)
+
+ni     pla
+       STA  $FF3F
+       RTI
+.bend
+.endif
 
 pr0000 .block
          sta d+2

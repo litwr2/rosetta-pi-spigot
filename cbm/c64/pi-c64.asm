@@ -36,6 +36,7 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
+CIA1TOD = $DC08
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
 
@@ -69,28 +70,43 @@ osubr .macro
      lda pr0000
 .endif
 .endm
-         * = $801
-         .include "pi-c64.inc"
+
 .if DIV8OPT
-MAINADJ = $ad
-DIV32ADJ = 0   ;3
-DIVMIADJ = 0   ;14
-DIV8ADJ = 16
+MAINADJ = $bc
+DIV32ADJ = 3
+DIVMIADJ = 1
+DIV8ADJ = $10
 DIV8SADJ = 0
 .endif
 .ifeq DIV8OPT
-MAINADJ = $b7
+MAINADJ = $c7
 DIV32ADJ = 0
 DIVMIADJ = 0
 .endif
-         * = $96a + MAINADJ
+         * = PSTART
+   .repeat MAINADJ,0
          lda #$36 ;@start@
          sta 1    ;disable Basic ROM, add 12KB to RAM
+         sei         ;no interrupts @irq@
          lda #$b
          lda $d011   ;screen @blank@
-         ;sei         ;no interrupts
          ;lda #147    ;clear screen
          ;jsr BSOUT
+
+         lda CIA1TOD+6
+         ora #$80
+         tax
+         lda $2a6   ;pal/ntsc
+         lsr
+         txa
+         bcs *+4
+         and #$7f
+         sta CIA1TOD+6
+         lda #0
+         sta CIA1TOD+3       ;start TOD clock
+         sta CIA1TOD+2
+         sta CIA1TOD+1
+         sta CIA1TOD
 
          ldy #0
          lda #2
@@ -275,7 +291,17 @@ l11      ora k+1
 
 exit     lda #$1b
          sta $d011   ;screen on
-         ;cli         ;interrupts enabled
+         lda CIA1TOD+3
+         and #$7f
+         sta ticks+3
+         lda CIA1TOD+2
+         sta ticks+2
+         lda CIA1TOD+1
+         sta ticks+1
+         lda CIA1TOD
+         and #$f
+         sta ticks
+         cli         ;interrupts enabled
 
          lda #$37
          sta 1    ;restores Basic ROM
@@ -324,6 +350,8 @@ prc      txa
 .include "6502-divg.s"
 
 c .byte 0,0
+ticks .byte 0,0 ;@timer@
+     .byte 0,0
 
     * = (* + 256) & $ff00
 m10000

@@ -1,0 +1,15 @@
+f=pi-c128-z80
+b=pi-c128-z80
+sed -r 's/@[^@]+@/7777/g' $b.cbas >$b.bas
+petcat -w70 $b.bas >$b.prg
+s=$(ls -l $b.prg |awk '{print $5}')
+sed 's/ORG 0100h/ORG '$(($s+0x1bff))'/' $f.asm >$f-x.asm
+pasmo6 --listing $f.lst $f-x.asm $f.bin
+gawk '/@start@/{print"s/@start@/"strtonum("0x"$1)"/"}
+/@EOP@/{print"s/@MAXMEM@/"int((240*256-strtonum("0x"$1))/28)*4"/"}
+/@timer@/{v=strtonum("0x"$1); print"s/@t1@/"v"/"; print"s/@t2@/"v+1"/"; print"s/@t3@/"v+2"/"; print"s/@t4@/"v+3"/"}
+/@vic@/{print"s/@vic@/"strtonum("0x"$1)"/"}
+/@N@/{v=strtonum("0x"$1)+1; print"s/@lowN@/"v"/"; print"s/@highN@/"v+1"/"}' $f.lst >z.sed
+sed -f z.sed $b.cbas >$b.bas
+petcat -w70 $b.bas | cat - $f.bin >$b.prg
+rm z.sed $f.bin $f-x.asm $b.bas

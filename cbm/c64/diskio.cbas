@@ -1,0 +1,1 @@
+160 open8,8,8,"pi"+str$(d)+",s,w":cmd8:f=ti:sys@start@:f=(ti-f)/60:print#8:close8

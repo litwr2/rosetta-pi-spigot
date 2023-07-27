@@ -1,14 +1,21 @@
-echo RUN IT TWICE!
-fn=pi-c64
-tmpx $fn.asm -l $fn.lst
+b=pi-c64
+f=pi-c64
+sed -r 's/@[^@]+@/7777/g' $b.cbas >$b.bas
+petcat -w2 $b.bas >$b.prg
+s=$(ls -l $b.prg |awk '{print $5}')
+sed 's/PSTART/'$(printf "$%x" $(($s+0x7ff)))'/' $f.asm >$f-x.asm
+tmpx $f-x.asm -l $f.lst
+dd if=$f-x.prg of=$f.bin skip=2 bs=1 status=none
 gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
 /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
 /@high2N@/{print "s/@high2N@/"strtonum("0x"$2)+1"/"}
+/@timer@/{v=strtonum("0x"$2); print"s/@t1@/"v"/"; print"s/@t2@/"v+1"/"; print"s/@t3@/"v+2"/"; print"s/@t4@/"v+3"/"}
+/@irq@/{print"s/@irq@/"strtonum("0x"$2)"/"}
 /@EOP@/{print "s/@MAXMEM@/"int((208-strtonum("0x"$4))*64/7)*4"/"}
-/@blank@/{print "s/@blank@/"strtonum("0x"$2)"/"}' $fn.lst >z.sed
-sed -f z.sed pi-c64.cbas >pi-c64.bas
-petcat -w2 pi-c64.bas | od -t x1 | awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-c64.inc
-tmpx $fn.asm -l $fn.lst
+/@blank@/{print "s/@blank@/"strtonum("0x"$2)"/"}' $f.lst >z.sed
+sed -f z.sed $b.cbas >$b.bas
+petcat -w2 $b.bas | cat - $f.bin >$b.prg
+rm z.sed $f-x.prg $f.bin $f-x.asm $b.bas
 

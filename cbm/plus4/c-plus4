@@ -1,5 +1,11 @@
-echo RUN IT TWICE!
-tmpx pi-plus4.asm -l pi-plus4.lst
+b=pi-plus4
+f=pi-plus4
+sed -r 's/@EOP@/77/;s/@[^@]+@/7777/g' $b.cbas >$b.bas
+petcat -w3 $b.bas >$b.prg
+s=$(ls -l $b.prg |awk '{print $5}')
+sed 's/PSTART/'$(printf "$%x" $(($s+0xfff)))'/' $f.asm >$f-x.asm
+tmpx $f-x.asm -l $f.lst
+dd if=$f-x.prg of=$f.bin skip=2 bs=1 status=none
 gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
@@ -10,9 +16,8 @@ gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@ntsc-off@/{print "s/@ntsc-off@/"strtonum("0x"$2)"/"}
 /@EOP@/{print "s/@EOP@/"strtonum("0x"$4)"/"}
 /@lowinstr@/{print "s/@lowinstr@/"strtonum("0x"$2)+1"/"}
-/@zzq@/{print "s/@zzq@/"strtonum("0x"$2)+2"/"}' pi-plus4.lst >z.sed
-sed -f z.sed pi-plus4.cbas >pi-plus4.bas
-petcat -w3 pi-plus4.bas | od -t x1 | 
-  awk '{if(NF>1){printf " .byte ";b=2;if(NR==1)b=4;for(i=b;i<NF;i++)printf "$%s,",$i;printf "$%s\n",$i}}' >pi-plus4.inc
-tmpx pi-plus4.asm -l pi-plus4.lst
-rm pi-plus4.bas z.sed
+/@zzq@/{print "s/@zzq@/"strtonum("0x"$2)+2"/"}' $f.lst >z.sed
+sed -f z.sed $b.cbas >$b.bas
+petcat -w3 $b.bas | cat - $f.bin >$b.prg
+rm z.sed $f-x.prg $f.bin $f-x.asm $b.bas
+
