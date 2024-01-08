@@ -1,5 +1,5 @@
 ;for pasmo assembler
-;for 8080 CP/M
+;for the 8080 under CP/M  version 2.2 or maybe other versions
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -38,61 +38,62 @@
 ;MMS gave some support
 ;Thorham and meynaf helped too
 
-BIOS_OUTPUT equ 1   ;1 will not support redirection on, for instance, PCW or C128
-CPM3TIMER equ 0
+BIOS_OUTPUT equ 1   ;1 is faster but it does not support redirection on CP/M+
+CPM3TIMER equ 0     ;don't use 1, the supported systems can't use this timer
 IO equ 1
 
-GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
+GENERIC equ 0       ;for generic CP/M, it doesn't use timer - use stopwatch
 KORVET equ 0
 AMSTRADCPC equ 1
+VECTOR06 equ 0
 
-if GENERIC + KORVET + AMSTRADCPC != 1
+if GENERIC + KORVET + AMSTRADCPC + VECTOR06 != 1
 show ERROR
 endif
-if CPM3TIMER > 1
-show ERROR
-endif
-if BIOS_OUTPUT + GENERIC > 1
+if CPM3TIMER + AMSTRADCPC > 1
 show ERROR
 endif
 
 BDOS equ 5
 
-;Amstrad CPC
+if AMSTRADCPC
 ENTER_FIRMWARE equ $BE9B
 KL_TIME_PLEASE equ $BD0D
+endif
 
-;N equ 3500   ;1000 digits
-;N equ 2800  ;800 digits
-N equ 8500/2*7   ;8500 digits
+if VECTOR06
+raz equ rav    ;this allows us to restart under monitor but gives less digits
+else
+raz equ ra
+endif
 
+;N equ 1000/2*7   ;1000 digits
 include "8080-div.s"
 
       ORG 0100h
-start    proc
-         local lf0,loop,l4,loop2,m1,l1
-
+start proc
+    local lf0,loop,l4,loop2,m1,l1,lnc
 if BIOS_OUTPUT
    ld hl,(1) ;BIOS base table
-   push hl    ;subtract 3?
-   ld de,9   ;conout offset
+   ex de,hl
+   ld hl,9   ;conout offset
    add hl,de
    ld (bios4+1),hl
 endif
-if KORVET
-    ld de,-(ra+64)  ;64 bytes for stack
+if BIOS_OUTPUT and VECTOR06=0
+    ex de,hl  ;subtract 3?
 else
-    ld de,-(ra+48)  ;48 bytes for stack
+    ld hl,(BDOS+1)
 endif
-if BIOS_OUTPUT
-    pop hl
-else
-    ld hl,(6)
-endif
+    ld de,-(raz+48)  ;48 bytes for stack
     ld sp,hl
     add hl,de
     ld de,0
     ex de,hl
+if VECTOR06
+    ld (time),hl    ;because the prog for the Vector can restart
+    ld (time+2),hl
+endif
     ld bc,7
     call div32x16r
     ld a,e
@@ -104,7 +105,6 @@ endif
     ld de,msg1
     ld c,9
     call BDOS
-
     pop hl
     call PR0000
 
@@ -147,6 +147,32 @@ l1  ld d,h
     ld l,a
     push hl
 
+if VECTOR06
+    ld hl,($39)  ;start timer
+    ld de,irqe
+    ld a,(hl)
+    ld (de),a
+    di
+    ld (hl),$c3   ;the JP instruction
+    inc hl
+    inc de
+    ld a,(hl)
+    ld (hl),low(irqp)
+    ld (de),a
+    inc hl
+    inc de
+    ld a,(hl)
+    ld (hl),high(irqp)
+    ld (de),a
+    inc hl
+    inc de
+    inc de
+    ex de,hl
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ei
+endif
 if CPM3TIMER
     ld c,69h
     ld de,days1
@@ -160,33 +186,13 @@ if AMSTRADCPC
     ld (time+2),de
 endif
 if KORVET
-    pop bc
-    ld hl,0
-    push hl
-    add hl,sp
-    ld (ssp+1),hl
-    ld (ssp2+1),hl
-    ex de,hl
-    ld hl,(0xf7f1)
-    push hl
-    ld hl,(KINTR+8)
-    push hl
-    ex de,hl
-    push hl
-    ex de,hl
-    ld hl,(KINTR+4)
-    push hl
-    ex de,hl
-    push hl
-    ld hl,(KINTR)
-    push hl
-    ld hl,0
-    add hl,sp
-    ld (0xf7f1),hl
-    push bc
+    ld hl,($f7d0)
+    ld (KL+1),hl
+    ld hl,KINTR
+    ld ($f7d0),hl
 endif
          pop hl      ;fill r-array
-     ld (kv),hl  ;k <- N
+    ld (kv),hl  ;k <- N
          ld b,h
          ld c,l
      dec bc
@@ -197,7 +203,7 @@ endif
      cpl
      ld b,a
          ld de,2000
-         ld hl,ra+2
+         ld hl,raz+2
 
 lf0      ld (hl),e
          inc l
@@ -257,7 +263,7 @@ lnc      ex de,hl
          push bc
          push hl
          push de
-loop2    ld hl,ra
+loop2    ld hl,raz
          add hl,bc
          ld (m1+1),hl
 
@@ -305,7 +311,7 @@ noc      add hl,bc
     inc c
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-    pop af
+         pop af
          jp nz,l4
 
          pop hl
@@ -326,23 +332,6 @@ if IO
          add hl,de   ;c + d/10000
          call PR0000
 endif
-if KORVET
-         ld de,0
-         di
-ssp      ld hl,(0)
-         ex de,hl
-ssp2     ld (0),hl
-         ei
-         ld hl,(time)
-         add hl,de
-         ld (time),hl
-         jp  nc,kl1
-
-         ld hl,(time+2)
-         inc hl
-         ld (time+2),hl
-kl1      
-endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -352,17 +341,15 @@ endif
 
          ld (kv),hl
          jp loop
-
 showtimer
 if BIOS_OUTPUT
         ld c,' '
         call bios4
 else
-        LD  e,' '
+        LD e,' '
         ld c,2
         call BDOS
 endif
-
 if CPM3TIMER
       ld c,69h
       ld de,days2
@@ -403,59 +390,44 @@ lct8  ld (hl),a
 lct9  ld (hl),a
 endif
 if KORVET
+         ld hl,(KL+1)
+         ld ($f7d0),hl
+endif
+if VECTOR06
+    ld hl,($39)  ;stop timer
+    ld de,irqe
     di
-    pop hl
-    pop hl
-    pop hl
-    pop hl
-    pop hl
-    pop hl
-    ld (0xf7f1),hl
-    pop hl
+    ld a,(de)
+    ld (hl),a
+    inc de
+    inc hl
+    ld a,(de)
+    ld (hl),a
+    inc hl
+    inc de
+    ld a,(de)
+    ld (hl),a
     ei
 endif
-if GENERIC = 0
-     ld hl,(time+2)
-     push hl
-     ld hl,(time)
-     push hl
-endif 
+if KORVET or VECTOR06
+         ld hl,(time)
+         ex de,hl
+         ld hl,(time+2)
+     ld bc,50
+endif
 if AMSTRADCPC
     call ENTER_FIRMWARE
     dw KL_TIME_PLEASE
-endif
-if KORVET
-    pop hl
-    pop de
-    ld bc,0
-    push bc
-    push bc
-endif
-if GENERIC = 0
-     pop bc
-     ld a,l
-     sub c
-     ld l,a
-     ld a,h
-     sbc a,b
-     ld h,a
+     ld bc,(time)
+     xor a
+     sbc hl,bc
      ex de,hl
-     pop bc
-     ld a,l
-     sbc a,c
-     ld l,a
-     ld a,h
-     sbc a,b
-     ld h,a
-endif
-if AMSTRADCPC
+     ld bc,(time+2)
+     sbc hl,bc
      ld bc,300
 endif
-if KORVET
-     ld bc,50
-endif
 if GENERIC = 0
-        call div32x16r
+     call div32x16r
 	PUSH HL
 	EX DE,HL
 	call PR00000
@@ -480,13 +452,13 @@ if AMSTRADCPC
         jp c,$+3
         inc de
 endif
-if KORVET
-        ld bc,200    ;10000/50 = 200
+if KORVET or VECTOR06
+	        ld bc,200    ;10000/50 = 200
         call mul16
 endif
                     ;*10000/freq
 if GENERIC = 0
-        ex de,hl
+             ex de,hl
 	call PR0000
 endif
 if CPM3TIMER
@@ -495,11 +467,11 @@ if CPM3TIMER
       call BDOS
 
       ld hl,0
-      ld (ra),hl
-      ld (ra+2),hl
+      ld (raz),hl
+      ld (raz+2),hl
       ld hl,hours1
       ld a,(hl)
-      ld bc,ra+1
+      ld bc,raz+1
 lct2  or a
       jp z,lct1
 
@@ -566,7 +538,7 @@ lct4  inc hl
       jp z,lct5
 
       call print_bcd
-lct5  ld a,(ra+1)
+lct5  ld a,(raz+1)
       push af
       rrca
       rrca
@@ -575,7 +547,7 @@ lct5  ld a,(ra+1)
       call print_bcd
       pop af
       call print_bcd
-      ld a,(ra)
+      ld a,(raz)
       push af
       rrca
       rrca
@@ -585,8 +557,8 @@ lct5  ld a,(ra+1)
       pop af
       call print_bcd
 endif
-        rst 0
-         endp
+      rst 0
+	endp
 
 if CPM3TIMER
 print_bcd
@@ -595,6 +567,28 @@ print_bcd
       ld e,a
       ld c,2
       jp BDOS
+endif
+
+if VECTOR06
+irqp
+    push hl
+    push af
+    ld hl,time
+    inc (hl)
+    jp nz,irqf
+    inc hl
+    inc (hl)
+    jp nz,irqf
+    inc hl
+    inc (hl)
+irqf
+    pop af
+    pop hl
+irqe
+    nop
+    nop
+    nop
+    jp 0
 endif
 
 PR00000 ld de,-10000
@@ -634,7 +628,7 @@ if BIOS_OUTPUT
 bios4   JP 0
 endif
 
-div32x16r proc
+div32x16r proc  ;00de = hlde/bc, hl = hlde%bc
      local t,t0,t1,t2,t3
      call t
      ld bc,0
@@ -659,6 +653,25 @@ t3
      RET
      endp
 
+if KORVET
+KINTR
+     push af
+     push hl
+     ld hl,(time)
+     inc hl
+     ld (time),hl
+     ld a,l
+     or h
+     jp nz,KIE
+
+     ld hl,(time+2)
+     inc hl
+     ld (time+2),hl
+KIE  pop hl
+     pop af
+KL   jp 0
+endif
+
 if GENERIC = 0
 include "8080-mul16.s"
 time dw 0,0
@@ -672,22 +685,18 @@ hours1 db 0
 mins1  db 0
 secs1  db 0
 endif
+
          org ($ + 255) and $ff00
+;include "../amstrad/cpc6128/mul10000.s"
 include "../cpc6128/mul10000.s"
 
 ra
-msg1  db 'number '
-
-if AMSTRADCPC
-      db 165
+msg1  
+if VECTOR06
+      db $f,$d,$a
 endif
-if GENERIC
-      db 'Pi'
-endif
-
-      db ' calculator v4',13,10
+      db 'number Pi calculator v5',13,10
       db 'for CP/M 2.2 (8080, '
-
 if GENERIC
       db 'Generic'
 endif
@@ -696,6 +705,9 @@ if AMSTRADCPC
 endif
 if KORVET
       db 'Korvet'
+endif
+if VECTOR06
+      db 'Vector-06C'
 endif
 if CPM3TIMER
       db ', CP/M+ timer'
@@ -711,16 +723,7 @@ msg3  db ' digits will be printed'
 msg4  db 13,10,'$'
 del   db 8,' ',8,'$'
 maxnum dw 0
-if KORVET
-KINTR
-     push hl
-     ld hl,(KTI)
-     inc hl
-     ld (KTI),hl
-     pop hl
-KL   jp 0
-KTI  ;dw 0
-endif
+
 getnum proc
 local l0,l1,l5,l8
         ld b,0
@@ -815,11 +818,13 @@ l8      pop de
         jp nz,l8
         ret
 endp
+     org ($ + 1) and $fffe
+rav
 if CPM3TIMER
 days2  dw 0
 hours2 db 0
 mins2  db 0
 secs2  db 0
 endif
-   end start
+    end start
 

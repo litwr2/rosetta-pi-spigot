@@ -66,7 +66,7 @@ endif
 if AMSTRADCPC + CPM3TIMER > 1
 show ERROR
 endif
-if BIOS_OUTPUT + GENERIC + TORCHBBCZ80 > 1
+if BIOS_OUTPUT + TORCHBBCZ80 > 1
 show ERROR
 endif
 
@@ -900,7 +900,7 @@ div32x8
 include "z80-div8.s"
 endif
 
-div32x16r proc
+div32x16r proc   ;bcde = hlde/bc, hl = hlde%bc
      local t,t0,t1,t2,t3
      call t
      ld bc,0

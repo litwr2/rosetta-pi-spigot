@@ -150,7 +150,7 @@ restart: mov #msg4,r1
          bcs 71$
 
          mov #140,r0    ;add 12 KB, reduce the screen size
-         emt ^O16 
+         emt ^O16
 71$:     mov r4,r0
          asr r4
          add r0,r4
