@@ -220,10 +220,10 @@ div32x16r proc
 t
      DEC   BC
      LD    A, B
-     CPL 
+     CPL
      LD    B, A
      LD    A, C
-     CPL 
+     CPL
      LD    C, A
      call t0
 t0

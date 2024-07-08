@@ -31,26 +31,25 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
+;ivagor supplied very valuable information
+;the idea of fast 32/16 division for the 8080 was discovered by blackmirror
 ;litwr made the spigot for several the z80 and 8080 based computers
-;bqt helped much with optimization
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped too
+;tricky and BigEd provided some help
 
 BIOS_OUTPUT equ 1   ;1 is faster but it does not support redirection on CP/M+
 CPM3TIMER equ 0     ;don't use 1, the supported systems can't use this timer
 IO equ 1
+PSP equ $100        ;use DTA for the stack
 
 GENERIC equ 0       ;for generic CP/M, it doesn't use timer - use stopwatch
-KORVET equ 0
-AMSTRADCPC equ 1
-VECTOR06 equ 0
+CORVETTE equ 0
+AMSTRADCPC equ 0
+VECTOR06 equ 1
 
-if GENERIC + KORVET + AMSTRADCPC + VECTOR06 != 1
+if GENERIC + CORVETTE + AMSTRADCPC + VECTOR06 != 1
 show ERROR
 endif
-if CPM3TIMER + AMSTRADCPC > 1
+if CPM3TIMER > 0
 show ERROR
 endif
 
@@ -68,11 +67,12 @@ raz equ ra
 endif
 
 ;N equ 1000/2*7   ;1000 digits
+
 include "8080-div.s"
 
       ORG 0100h
 start proc
-    local lf0,loop,l4,loop2,m1,l1,lnc
+    local lf0,loop,l1,l4,loop2,m1
 if BIOS_OUTPUT
    ld hl,(1) ;BIOS base table
    ex de,hl
@@ -85,8 +85,8 @@ if BIOS_OUTPUT and VECTOR06=0
 else
     ld hl,(BDOS+1)
 endif
-    ld de,-(raz+48)  ;48 bytes for stack
-    ld sp,hl
+    ld de,-raz
+    ld sp,PSP
     add hl,de
     ld de,0
     ex de,hl
@@ -185,7 +185,7 @@ if AMSTRADCPC
     ld (time),hl
     ld (time+2),de
 endif
-if KORVET
+if CORVETTE
     ld hl,($f7d0)
     ld (KL+1),hl
     ld hl,KINTR
@@ -193,13 +193,11 @@ if KORVET
 endif
          pop hl      ;fill r-array
     ld (kv),hl  ;k <- N
-         ld b,h
-         ld c,l
-     dec bc
-     ld a,c
+     dec hl
+     ld a,l
      cpl
      ld c,a
-     ld a,b
+     ld a,h
      cpl
      ld b,a
          ld de,2000
@@ -215,25 +213,24 @@ lf0      ld (hl),e
          inc b
          jp nz,lf0
 
-         ld a,b
-         ld (cv),a
-         ld (cv+1),a
+         ld l,b
+         ld h,b
+         ld (cv),hl
 loop     ld hl,(kv)          ;i <-k
          add hl,hl        ;keeps 2*i
-         ld b,h
-         ld c,l
          push hl
-         ld hl,0          ;d <- 0
-         push hl
-         push hl
+         ld bc,raz
+         add hl,bc
+         ld bc,0          ;d <- 0
+         push bc
+         push bc
          jp loop2
 
 l4       add hl,de
-         jp nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
-         pop hl
+         ex de,hl
+svde     ld hl,0
          ld a,l
          sub e
          ld l,a
@@ -241,7 +238,7 @@ lnc      ex de,hl
          sbc a,d
          ld h,a
          ex de,hl
-         pop hl
+svhl     ld hl,0
          ld a,l
          sbc a,c
          ld l,a
@@ -259,63 +256,55 @@ lnc      ex de,hl
          rra
          ld e,a
 
-         pop bc
-         push bc
          push hl
          push de
-loop2    ld hl,raz
-         add hl,bc
-         ld (m1+1),hl
-
-         ld c,(hl)      ;r[i]
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
-
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
          pop hl       ; d <- d + r[i]*10000
          add hl,de
+         ld (svde+1),hl
          ex de,hl
          pop hl
-         jp nc,noc
-
+         jp nc,$+4
          inc hl
-noc      add hl,bc
-
-    pop bc
-    dec bc     ;i <- i - 1
-    dec c      ;bc is odd
-    push bc
-    ld a,c
-    or b
-         push hl
-         push de
-    push af
-    inc c
+         add hl,bc
+         pop bc
+         dec bc     ;i <- i - 1
+         dec c      ;bc is odd
+         push bc
+         ld a,b
+         push af
+         ld (svhl+1),hl
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          pop af
          jp nz,l4
 
-         pop hl
-         pop hl
+         or a
+         jp nz,l4
+
          pop hl
 if IO
          ld h,b
@@ -389,7 +378,7 @@ lct8  ld (hl),a
       sub 76h
 lct9  ld (hl),a
 endif
-if KORVET
+if CORVETTE
          ld hl,(KL+1)
          ld ($f7d0),hl
 endif
@@ -409,7 +398,7 @@ if VECTOR06
     ld (hl),a
     ei
 endif
-if KORVET or VECTOR06
+if CORVETTE or VECTOR06
          ld hl,(time)
          ex de,hl
          ld hl,(time+2)
@@ -452,7 +441,7 @@ if AMSTRADCPC
         jp c,$+3
         inc de
 endif
-if KORVET or VECTOR06
+if CORVETTE or VECTOR06
 	        ld bc,200    ;10000/50 = 200
         call mul16
 endif
@@ -629,7 +618,7 @@ bios4   JP 0
 endif
 
 div32x16r proc  ;00de = hlde/bc, hl = hlde%bc
-     local t,t0,t1,t2,t3
+     local t,t0,t1,t2,t3,t4,l1,l2
      call t
      ld bc,0
      ret
@@ -642,18 +631,32 @@ t
      CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   ex de,hl
+     add hl,hl
+     ex de,hl
+     jp c,l1
+
+     ADD   HL, HL
+l2   jp c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret    NC
+t4
+     ADD   HL,BC
+     inc e
      RET
+l1   add hl,hl
+     inc l
+     jp l2
      endp
 
-if KORVET
+if CORVETTE
 KINTR
      push af
      push hl
@@ -688,14 +691,15 @@ endif
 
          org ($ + 255) and $ff00
 ;include "../amstrad/cpc6128/mul10000.s"
-include "../cpc6128/mul10000.s"
+;include "../cpc6128/mul10000.s"
+include "mul10000.s"
 
 ra
 msg1  
 if VECTOR06
       db $f,$d,$a
 endif
-      db 'number Pi calculator v5',13,10
+      db 'number Pi calculator v6',13,10
       db 'for CP/M 2.2 (8080, '
 if GENERIC
       db 'Generic'
@@ -703,8 +707,8 @@ endif
 if AMSTRADCPC
       db 'Amstrad CPC'
 endif
-if KORVET
-      db 'Korvet'
+if CORVETTE
+      db 'Corvette'
 endif
 if VECTOR06
       db 'Vector-06C'
@@ -742,7 +746,7 @@ l00     ld c,6   ;direct console i/o
         cp 13
         jp z,l5
 
-if KORVET
+if CORVETTE
         cp 8    ;backspace, check the system for this value
 else
         cp 07fh    ;backspace

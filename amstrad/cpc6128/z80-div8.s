@@ -1,15 +1,15 @@
-div8i macro p
+div8i macro px
     local l1
     rla
     cp c
     jr c,l1
 
     sub c
-    inc p
+    inc px
 l1
 endm
 
-div8j macro p
+div8j macro px
       local l1,l2
       rla
       jr c,l1
@@ -18,7 +18,7 @@ div8j macro p
       jr c,l2
 l1
       sub c
-      inc p
+      inc px
 l2
 endm
 

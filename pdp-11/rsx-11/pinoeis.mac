@@ -46,6 +46,7 @@
 IO = 1
 MEMSZ = 31584 ;this is a constant calculated from data in a MAP-file produced
                     ;by a linker, 10500 is enough for 3000 digits
+                    ;31584 for the 11/93 under RSX-11M+, 31400 for the Pro under P/OS
 
 kv = kvs + 2
 

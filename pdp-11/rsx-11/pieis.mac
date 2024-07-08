@@ -52,6 +52,7 @@
 IO = 1
 MEMSZ = 31864       ;this is a constant calculated from data in a MAP-file
                     ;produced by a linker, 10500 is enough for 3000 digits
+                    ;31864 for the 11/93 under RSX-11M+, 31684 for the Pro under P/OS
 
 DIVOF = 1  ;use overflow flag after division, it is faster but can have
            ; compatibility issues with some PDP-11, for example, 11/34 and 11/44
