@@ -37,16 +37,16 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
-;litwr made the spigot for several z80 based computers
-;bqt helped much with optimization
-;tricky provided some help
+;ivagor supplied very valuable information
+;the idea of fast Z80 division was discovered by blackmirror
+;litwr made the spigot for the Amstrad CPC
+;tricky and BigEd provided some help
 ;MMS gave some support
-;Thorham and meynaf helped too
 
-BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
 IO equ 1
+PSP equ $100   ;use DTA for the stack
 
 TIKI100 equ 0
 AMSTRADCPC equ 1
@@ -91,8 +91,6 @@ Afrom6502 equ $FFC6
 SSF equ $40
 
 BDOS equ 5
-DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
-OPT equ 5       ;it's a constant for the pi-spigot
 
 ;N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
@@ -126,13 +124,13 @@ if MSX
       ld (msx_vsync),a
 endif
 
-    ld de,-(ra+48)  ;48 bytes for stack
+    ld de,-ra
 if BIOS_OUTPUT
     pop hl
 else
     ld hl,(BDOS+1)
 endif
-    ld sp,hl
+    ld sp,PSP
     add hl,de
     ld de,0
     ex de,hl
@@ -292,7 +290,7 @@ lf0      ld (hl),e
          inc b
          jr nz,lf0
 
-         ld (cv),bc
+         ;ld (cv),bc
 loop     ld hl,0          ;d <- 0
          push hl
          push hl
@@ -302,13 +300,14 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         ld bc,ra
+         add hl,bc
          jp loop2
 
 l4       add hl,de
-         jr nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
+         ex de,hl
          pop hl
          xor a       ;sets CY=0
          sbc hl,de
@@ -322,34 +321,30 @@ lnc      ex de,hl
 
          push hl
          push de
-loop2    ld c,iyl
-         ld b,iyh
-         ld hl,ra
-         add hl,bc
-         ld (m1+1),hl
-
-         ld c,(hl)      ;r[i]
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
 
          pop hl       ; d <- d + r[i]*10000
          add hl,de
@@ -359,14 +354,16 @@ loop2    ld c,iyl
          dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iyl   ;iy is odd
 
          push hl
          push de
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-         ld a,iyl
-         or iyh
+         dec iyl
+         jp nz,l4
+
+         ld a,iyh
+         or a
          jp nz,l4
 
          pop hl
@@ -855,7 +852,9 @@ print_bcd
       jp BDOS
 endif
 
-PR00000 ld de,-10000
+PR00000 proc
+        local PRD,PR0
+        ld de,-10000
 	CALL PR0
 PR0000  ld de,-1000
 	CALL PR0
@@ -887,21 +886,14 @@ PR0	ld A,$FF
 	ld H,B
 	ld L,C
 	JR PRD
+        endp
 
 if BIOS_OUTPUT
 bios4   JP 0
 endif
 
-if DIV8
-div32x8
-    or c
-    jp m,div32x8e
-
-include "z80-div8.s"
-endif
-
 div32x16r proc   ;bcde = hlde/bc, hl = hlde%bc
-     local t,t0,t1,t2,t3
+     local t,t0,t1,t2,t3,t4
      call t
      ld bc,0
      ret
@@ -914,16 +906,25 @@ t
      CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   sla e
+     rl d
+     ADC   HL, HL
+     jr c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret nc
+t4
+     ADD   HL,BC
+     inc e
      RET
      endp
+
 if GENERIC = 0
 include "mul16.s"
 time dw 0,0
@@ -1039,9 +1040,12 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
       db 'Pi'
 endif
 
-      db ' calculator v15',13,10
-      db 'for CP/M 2.2 and 3 ('
-
+      db ' calculator v16',13,10
+      db 'for CP/M 2.2'
+if AMSTRADCPC=0
+      db 'and 3'
+endif
+      db ' ('
 if GENERIC
       db 'Generic'
 endif
@@ -1088,8 +1092,8 @@ del   db 8,' ',8,'$'
 maxnum dw 0
 getnum proc
 local l0,l1,l5,l8
-        ld b,0
-        ld hl,0
+        ld b,0  ;length
+        ld hl,0 ;number
 l0      push hl
         push bc
 l00     ld c,6   ;direct console i/o

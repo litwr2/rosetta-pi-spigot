@@ -124,8 +124,9 @@ div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC  ;works wrong if BC>$7fff && HL >=
 
      ;longdiv
 
+     ld (svhl),hl
      ld hl,0
-     divxxz svhl+2,svhl+1,mz2+2
+     divxxz svhl+1,svhl,mz2+2
      ld a,e
      ld (mz2+1),a
      xor a
@@ -135,6 +136,8 @@ div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC  ;works wrong if BC>$7fff && HL >=
 mz1  ld d,0
 mz2  ld bc,0
      jp enddivision
+
+svhl db 0,0
 
 div32x8 inc c
         jp m,div32x8e

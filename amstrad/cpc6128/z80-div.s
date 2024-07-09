@@ -1,159 +1,287 @@
-div0 macro
-     local t1,t2
-     sla e
-     rl d
-     ADC   HL, HL
-     jr c,t1
+;DE = 0 - BC, IX is used
+OPT equ 5    ;a max number of leading zeros in the dividend: 0 = min, 8 - max
+DIV8 equ 0   ;1 is faster for 100 digits but slower for 1000 and more
 
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     JR    NC,t2
-t1
-     ADD   HL,BC
-     inc e
-t2
-endm
+;OPT=5 for maxD<=9360
+;OPT=6 for maxD<=7792
+;OPT=7 for maxD<=4072
 
-div1 macro
-     local t1,t2
+divzss macro px
+     adc a,a
      adc hl,hl
-     jr c,t1
-
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     JR    NC,t2
-t1
-     ADD   HL,BC
-     scf
-t2
+     add hl,de
+     jr nc,px
 endm
 
-div2 macro
-     local t2
+divzas macro px
+     adc a,a
      adc hl,hl
-     add hl,bc
-     JR    C,t2
-
-     sbc HL,BC
-t2
+     add HL,BC
+     jr c,px
 endm
 
-divz macro
-   adc a,a
-   div2
+divze macro t
+    local S2,S3,S4,S5,S6,S7,S8,A1,A2,A3,A4,A5,A6,A7,A8,l1
+    divzs##t A1
+    divzs##t A2
+S2: divzs##t A3
+S3: divzs##t A4
+S4: divzs##t A5
+S5: divzs##t A6
+S6: divzs##t A7
+S7: divzs##t A8
+S8: adc a,a
+    jp l1
+
+A1: divza##t S2
+A2: divza##t S3
+A3: divza##t S4
+A4: divza##t S5
+A5: divza##t S6
+A6: divza##t S7
+A7: divza##t S8
+A8: adc a,a
+    add hl,bc
+l1
+    endm
+
+divxx macro t
+    ld a,ixh
+    divze t
+    ld ixh,a
+    ld a,ixl
+    divze t
+    ld e,a
+    ld d,ixh
 endm
 
-divx macro
-   ld a,d
-   add a,a
-   div2
-rept 7
-   divz
-endm
-   adc a,a
-   ld d,a
-   ld a,e
-   add a,a
-   div2
-rept 7
-   divz
-endm
-   adc a,a
-   ld e,a
+divzsx macro px
+    local l1,l2
+    adc a,a
+    adc hl,hl
+    jr c,l1
+
+    add hl,de
+    jr nc,px
+    jp l2
+l1
+    add hl,de
+    scf
+l2
 endm
 
-div32x16 macro  ; BCDE = HLDE/BC, HL = HLDE%BC
-     local DIV320,divminus ;may work wrong if HL>$7fff
-     ;DEC   BC    ;assumes that BC is odd
+divzax macro px
+    local l1,l2
+    adc a,a
+    adc hl,hl
+    jr nc,l1
+
+    add hl,bc
+    jr c,px
+    jp l2
+l1
+    add hl,bc
+    or a
+l2
+endm
+
+div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC
+     local DIV320,divminus,mz1,mz2  ;works wrong if BC>$7fff && HL >= BC
      LD    A, B
      or a         ;CF=0
 if DIV8
      jp z,div32x8
 endif
+     ld ixl,e
+     ld ixh,d
+     CPL
+     LD d,a
+     LD    A, C
+     cpl
      jp m,divminus
 
-     dec c
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
+     inc a
+     LD e,a
 
      ADD   A, L
-     LD    A, B
+     LD    A, D
      ADC   A, H
      JP    NC, DIV320
 
-     PUSH  DE  ;longdiv
+     ;longdiv
 
-if OPT=0
-     xor a  ;sets CF=0
-else if OPT < 3
+     ld a,l
+     ld (mz1+1),a
+if OPT < 3
 rept OPT
      sla h
 endm
-else
+     ld a,h
+     ld hl,0
+endif
+if OPT > 2 && OPT < 8
+     xor a  ;sets CF=0
+     ld l,a
      ld a,h
 rept OPT
      rlca   ;sets CF=0
 endm
+     ld h,l
+endif
+if OPT=8
+     xor a
+     ld l,a
      ld h,a
 endif
-     EX    DE, HL
-     LD    HL, 0
-rept 8-OPT
-     rl d
-     div2
-endm
-     rl d
-rept 8
-     rl e
-     div2
-endm
-     rl e
-     EX    DE, HL
-     EX    (SP), HL
-     EX    DE, HL
+if OPT=0
+     divze s
+endif
+if OPT=1
+     proc
+    local S3,S4,S5,S6,S7,S8,A2,A3,A4,A5,A6,A7,A8,l1
+    divzss A2
+    divzss A3
+S3: divzss A4
+S4: divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
 
-rept 8
-     rl d
-     div2
-endm
-     rl d
-rept 8
-     rl e
-     div2
-endm
-     rl e
-     POP   BC
+A2: divzas S3
+A3: divzas S4
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=2
+     proc
+    local S4,S5,S6,S7,S8,A3,A4,A5,A6,A7,A8,l1
+    divzss A3
+    divzss A4
+S4: divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A3: divzas S4
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=3
+     proc
+    local S5,S6,S7,S8,A4,A5,A6,A7,A8,l1
+    divzss A4
+    divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=4
+     proc
+    local S6,S7,S8,A5,A6,A7,A8,l1
+    divzss A5
+    divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=5
+     proc
+    local S7,S8,A6,A7,A8,l1
+    divzss A6
+    divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=6
+     proc
+    local S8,A7,A8,l1
+    divzss A7
+    divzss A8
+S8: adc a,a
+    jp l1
+
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=7
+     proc
+    local A8,l1
+    divzss A8
+    adc a,a
+    jp l1
+
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=8
+    adc a,a
+endif
+     ld (mz2+2),a
+mz1  ld a,0
+     divze s
+     ld (mz2+1),a
+
+     divxx s
+mz2  ld bc,0
      jp enddivision
 
-divminus
-     dec c
-     CPL
-     LD    B, A
-     LD    A, C
-     CPL
-     LD    C, A
+if DIV8
+div32x8 or c
+        jp m,div32x8e
+include "z80-div8.s"
+endif
 
-rept 8
-     rl d
-     div1
-endm
-     rl d
-rept 8
-     rl e
-     div1
-endm
-     rl e
+divminus      ;hl < bc
+     inc a
+     LD e,a
+;needs additional 16 iterations for hl >= bc
+     divxx x
      jp enddivision1
 
 DIV320
-     divx
+     divxx s
 enddivision1
      LD    BC, 0
 enddivision

@@ -1,5 +1,5 @@
 ;for pasmo assembler
-;it is for CP/M 3 for Amstrad CPC6128, it uses Amstrad CPC6128 firmware
+;it is for CP/M 3 of the Amstrad CPC6128, it uses the Amstrad CPC6128 firmware
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -31,21 +31,19 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for the z80
+;ivagor supplied very valuable information
+;the idea of fast Z80 division was discovered by blackmirror
 ;litwr made the spigot for the Amstrad CPC
-;tricky provided some help
+;tricky and BigEd provided some help
 ;MMS gave some support
-;Thorham and meynaf helped too
 
 kl_time_please equ &bd0d
 BDOS equ 5
 IO equ 1
+PSP equ $140   ;64 bytes for the stack/interrupts
 
-DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
-OPT equ 5       ;5 is a constant for the pi-spigot
-
-DIG equ 100
-N equ DIG/2*7   ;8500 digits
+;DIG equ 100
+;N equ DIG/2*7   ;8500 digits
 
 include "z80-div.s"
 
@@ -58,9 +56,8 @@ start    proc
   add hl,de
   ld (firm_jump+1),hl
 
-    ld de,-(ra+48)  ;48 bytes for stack
-    ld hl,(6)
-    ld sp,hl
+    ld de,-ra
+    ld hl,(BDOS+1)
     add hl,de
     ld de,0
     ex de,hl
@@ -112,6 +109,7 @@ l1  ld d,h
     add hl,de
     srl h
     rr l
+    ld sp,PSP
     push hl
 
     call firm_jump
@@ -124,7 +122,6 @@ l1  ld d,h
         ;call BDOS
 
      pop bc      ;fill r-array
-         ;di         ;no interrupts
      ld (kv),bc  ;k <- N
      dec bc
      ld a,c
@@ -156,13 +153,14 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         ld bc,ra
+         add hl,bc
          jp loop2
 
 l4       add hl,de
-         jr nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
+         ex de,hl
          pop hl
          xor a       ;sets CY=0
          sbc hl,de
@@ -176,56 +174,53 @@ lnc      ex de,hl
 
          push hl
          push de
-loop2    ld c,iyl
-         ld b,iyh
-         ld hl,ra
-         add hl,bc
-         ld (m1+1),hl
-
-         ld c,(hl)      ;r[i]
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
 
          pop hl       ; d <- d + r[i]*10000
          add hl,de
          ex de,hl
          pop hl
          adc hl,bc
-         dec iy
+         dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iyl
 
          push hl
          push de
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-         ld a,iyl
-         or iyh
+         dec iyl
+         jp nz,l4
+
+         ld a,iyh
+         or a
          jp nz,l4
 
          pop hl
          pop hl
-
          ld h,b
          ld l,c
          ld bc,10000
@@ -248,7 +243,6 @@ endif
 
          ld (kv),hl
          jp loop
-
 showtimer
         LD  e,' '
         ld c,2
@@ -296,7 +290,9 @@ showtimer
         rst 0
          endp
 
-PR00000 ld de,-10000
+PR00000 proc
+        local PRD,PR0
+        ld de,-10000
 	CALL PR0
 PR0000  ld de,-1000
 	CALL PR0
@@ -323,17 +319,10 @@ PR0	ld A,$FF
 	ld H,B
 	ld L,C
 	JR PRD
+        endp
 
-if DIV8
-div32x8
-    or c
-    jp m,div32x8e
-
-include "z80-div8.s"
-endif
-
-div32x16r proc
-     local t,t0,t1,t2,t3
+div32x16r proc   ;bcde = hlde/bc, hl = hlde%bc
+     local t,t0,t1,t2,t3,t4
      call t
      ld bc,0
      ret
@@ -346,14 +335,22 @@ t
      CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   sla e
+     rl d
+     ADC   HL, HL
+     jr c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret nc
+t4
+     ADD   HL,BC
+     inc e
      RET
      endp
 
@@ -368,7 +365,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number ',165,' calculator v12',13,10
+msg1  db 'number ',165,' calculator v13',13,10
       db 'it may give 4000 digits in less than an hour!'
       db 13,10,'number of digits (up to $'
 msg2  db ')? $'
@@ -418,7 +415,6 @@ l0      push hl
         pop bc
         pop hl
         push hl
-
         push hl
         add hl,hl
         add hl,hl

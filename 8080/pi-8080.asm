@@ -42,9 +42,9 @@ IO equ 1
 PSP equ $100        ;use DTA for the stack
 
 GENERIC equ 0       ;for generic CP/M, it doesn't use timer - use stopwatch
-CORVETTE equ 0
+CORVETTE equ 1
 AMSTRADCPC equ 0
-VECTOR06 equ 1
+VECTOR06 equ 0
 
 if GENERIC + CORVETTE + AMSTRADCPC + VECTOR06 != 1
 show ERROR
@@ -58,12 +58,6 @@ BDOS equ 5
 if AMSTRADCPC
 ENTER_FIRMWARE equ $BE9B
 KL_TIME_PLEASE equ $BD0D
-endif
-
-if VECTOR06
-raz equ rav    ;this allows us to restart under monitor but gives less digits
-else
-raz equ ra
 endif
 
 ;N equ 1000/2*7   ;1000 digits
@@ -85,15 +79,11 @@ if BIOS_OUTPUT and VECTOR06=0
 else
     ld hl,(BDOS+1)
 endif
-    ld de,-raz
+    ld de,-ra
     ld sp,PSP
     add hl,de
     ld de,0
     ex de,hl
-if VECTOR06
-    ld (time),hl    ;because the prog for the Vector can restart
-    ld (time+2),hl
-endif
     ld bc,7
     call div32x16r
     ld a,e
@@ -201,7 +191,7 @@ endif
      cpl
      ld b,a
          ld de,2000
-         ld hl,raz+2
+         ld hl,ra+2
 
 lf0      ld (hl),e
          inc l
@@ -219,7 +209,7 @@ lf0      ld (hl),e
 loop     ld hl,(kv)          ;i <-k
          add hl,hl        ;keeps 2*i
          push hl
-         ld bc,raz
+         ld bc,ra
          add hl,bc
          ld bc,0          ;d <- 0
          push bc
@@ -238,7 +228,7 @@ svde     ld hl,0
          sbc a,d
          ld h,a
          ex de,hl
-svhl     ld hl,0
+         pop hl
          ld a,l
          sbc a,c
          ld l,a
@@ -295,8 +285,8 @@ loop2    ld (m1+1),hl
          dec c      ;bc is odd
          push bc
          ld a,b
+         push hl
          push af
-         ld (svhl+1),hl
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          pop af
@@ -305,6 +295,7 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          or a
          jp nz,l4
 
+         pop hl
          pop hl
 if IO
          ld h,b
@@ -456,11 +447,11 @@ if CPM3TIMER
       call BDOS
 
       ld hl,0
-      ld (raz),hl
-      ld (raz+2),hl
+      ld (ra),hl
+      ld (ra+2),hl
       ld hl,hours1
       ld a,(hl)
-      ld bc,raz+1
+      ld bc,ra+1
 lct2  or a
       jp z,lct1
 
@@ -527,7 +518,7 @@ lct4  inc hl
       jp z,lct5
 
       call print_bcd
-lct5  ld a,(raz+1)
+lct5  ld a,(ra+1)
       push af
       rrca
       rrca
@@ -536,7 +527,7 @@ lct5  ld a,(raz+1)
       call print_bcd
       pop af
       call print_bcd
-      ld a,(raz)
+      ld a,(ra)
       push af
       rrca
       rrca
@@ -699,7 +690,7 @@ msg1
 if VECTOR06
       db $f,$d,$a
 endif
-      db 'number Pi calculator v6',13,10
+      db 'number Pi calculator v7',13,10
       db 'for CP/M 2.2 (8080, '
 if GENERIC
       db 'Generic'
@@ -823,7 +814,6 @@ l8      pop de
         ret
 endp
      org ($ + 1) and $fffe
-rav
 if CPM3TIMER
 days2  dw 0
 hours2 db 0
