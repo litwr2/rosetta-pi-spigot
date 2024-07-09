@@ -1,10 +1,6 @@
 ;DE = 0 - BC, IX is used
-OPT equ 5    ;a max number of leading zeros in the dividend: 0 = min, 8 - max
+OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5  for the RW-spigot
 DIV8 equ 0   ;1 is faster for 100 digits but slower for 1000 and more
-
-;OPT=5 for maxD<=9360
-;OPT=6 for maxD<=7792
-;OPT=7 for maxD<=4072
 
 divzss macro px
      adc a,a
@@ -88,7 +84,9 @@ endm
 div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC
      local DIV320,divminus,mz1,mz2  ;works wrong if BC>$7fff && HL >= BC
      LD    A, B
-     or a         ;CF=0
+if DIV8=1 or MINUS=1
+     or a
+endif
 if DIV8
      jp z,div32x8
 endif
@@ -98,8 +96,9 @@ endif
      LD d,a
      LD    A, C
      cpl
+if MINUS
      jp m,divminus
-
+endif
      inc a
      LD e,a
 
@@ -273,12 +272,14 @@ div32x8 or c
 include "z80-div8.s"
 endif
 
+if MINUS
 divminus      ;hl < bc
      inc a
      LD e,a
 ;needs additional 16 iterations for hl >= bc
      divxx x
      jp enddivision1
+endif
 
 DIV320
      divxx s

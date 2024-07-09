@@ -1,11 +1,7 @@
 ;the DE complement is not used, IX is not used
-OPT equ 5    ;a max number of leading zeros in the dividend: 0 = min, 8 - max
+OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5 for the RW-spigot
 DIV8 equ 0   ;1 is faster for 100 digits but slower for 1000 and more
-FASTLARGE equ 1
-
-;OPT=5 for maxD<=9360
-;OPT=6 for maxD<=7792
-;OPT=7 for maxD<=4072
+FASTLARGE equ 1  ;works only if dividers are negative
 
 divzss macro px
      adc a,a
@@ -234,14 +230,17 @@ endm
 div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC
      local DIV320,divminus ;works wrong if BC>$7fff && HL >= BC
      LD    A, B
-     or a         ;CF=0
+if DIV8=1 or MINUS=1
+     or a
+endif
 if DIV8
      jp z,div32x8
 endif
+if MINUS
      jp m,divminus
-
+endif
 if 0
-     ld a,l
+     ld a,l   ;no need for LD A,B
      sub c
      LD    A, h
      sbc   A, b
@@ -426,6 +425,7 @@ div32x8 or c
 include "z80-div8.s"
 endif
 
+if MINUS
 divminus      ;hl < bc
 if FASTLARGE
      divxxp
@@ -434,6 +434,7 @@ else
 endif
 ;needs additional 16 iterations for hl >= bc
      jp enddivision1
+endif
 
 DIV320
      divxx s

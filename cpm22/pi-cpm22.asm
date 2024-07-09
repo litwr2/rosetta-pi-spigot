@@ -43,22 +43,23 @@
 ;tricky and BigEd provided some help
 ;MMS gave some support
 
-BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
 IO equ 1
 PSP equ $100   ;use DTA for the stack
+MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 TIKI100 equ 0
 AMSTRADCPC equ 0
 AMSTRADPCW equ 0
 C128 equ 0
-MSX equ 0
-MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
+MSX equ 1
+MSX_INTR equ 1         ;use v-sync interrupt, 0 means the use of timer directly
 ACORNBBCZ80 equ 0
 TORCHBBCZ80 equ 0
 PICKLESANDTROUT equ 0   ;TRS-80 model II/12/16
 ATON equ 0              ;TRS-80 model II/12/16
-GENERIC equ 1       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
+GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 
 if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + PICKLESANDTROUT + ATON + GENERIC != 1
 show ERROR

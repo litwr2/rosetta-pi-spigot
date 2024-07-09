@@ -41,6 +41,7 @@ TXT_OUTPUT equ $BB5A    ;print char in A
 TXT_WR_CHAR equ $bb5d   ;print char in A, corrupts the registers
 
 IO equ 1
+MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 N equ 3500   ;1000 digits
 SA equ $800  ;start address

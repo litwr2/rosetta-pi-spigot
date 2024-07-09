@@ -41,6 +41,7 @@ kl_time_please equ &bd0d
 BDOS equ 5
 IO equ 1
 PSP equ $140   ;64 bytes for the stack/interrupts
+MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 ;DIG equ 100
 ;N equ DIG/2*7   ;8500 digits
