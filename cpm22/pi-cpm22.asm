@@ -49,7 +49,7 @@ IO equ 1
 PSP equ $100   ;use DTA for the stack
 
 TIKI100 equ 0
-AMSTRADCPC equ 1
+AMSTRADCPC equ 0
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
@@ -58,7 +58,7 @@ ACORNBBCZ80 equ 0
 TORCHBBCZ80 equ 0
 PICKLESANDTROUT equ 0   ;TRS-80 model II/12/16
 ATON equ 0              ;TRS-80 model II/12/16
-GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
+GENERIC equ 1       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 
 if TIKI100 + AMSTRADCPC + AMSTRADPCW + MSX + C128 + ACORNBBCZ80 + TORCHBBCZ80 + PICKLESANDTROUT + ATON + GENERIC != 1
 show ERROR
@@ -1041,9 +1041,15 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
 endif
 
       db ' calculator v16',13,10
-      db 'for CP/M 2.2'
+      db 'for CP/M'
+if CPM3TIMER=0
+      db ' 2.2'
+endif
+if CPM3TIMER=0 and AMSTRADCPC=0
+     db ' and'
+endif
 if AMSTRADCPC=0
-      db 'and 3'
+      db ' 3'
 endif
       db ' ('
 if GENERIC
