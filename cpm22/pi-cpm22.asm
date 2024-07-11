@@ -43,19 +43,24 @@
 ;tricky and BigEd provided some help
 ;MMS gave some support
 
-BIOS_OUTPUT equ 0   ;1 will not support redirection on MSX, PCW or C128
+BIOS_OUTPUT equ 1   ;1 will not support redirection on MSX, PCW or C128
 CPM3TIMER equ 0
 IO equ 1
-PSP equ $100   ;use DTA for the stack
 MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
+
+if BIOS_OUTPUT
+PSP equ $100   ;use DTA for the stack
+else
+PSP equ $140   ;64 bytes for the stack/interrupts
+endif
 
 TIKI100 equ 0
 AMSTRADCPC equ 0
 AMSTRADPCW equ 0
 C128 equ 0
-MSX equ 1
-MSX_INTR equ 1         ;use v-sync interrupt, 0 means the use of timer directly
-ACORNBBCZ80 equ 0
+MSX equ 0
+MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
+ACORNBBCZ80 equ 1
 TORCHBBCZ80 equ 0
 PICKLESANDTROUT equ 0   ;TRS-80 model II/12/16
 ATON equ 0              ;TRS-80 model II/12/16
@@ -131,7 +136,6 @@ if BIOS_OUTPUT
 else
     ld hl,(BDOS+1)
 endif
-    ld sp,PSP
     add hl,de
     ld de,0
     ex de,hl
@@ -173,6 +177,7 @@ endif
     ld de,msg3
     ld c,9
     call BDOS
+    ld sp,PSP
     pop hl
 
 l1  ld d,h
@@ -1041,7 +1046,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
       db 'Pi'
 endif
 
-      db ' calculator v16',13,10
+      db ' calculator v17',13,10
       db 'for CP/M'
 if CPM3TIMER=0
       db ' 2.2'
