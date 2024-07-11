@@ -34,5 +34,5 @@ Then press CTRL-BREAK and run the program
 *DISC
 CH."PI-Z80"
 
-To use Torch select proper ROM configuration at first then reboot and type
+To use Torch select the proper ROM configuration at first then reboot and type
 MCP
