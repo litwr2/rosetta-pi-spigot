@@ -4,7 +4,7 @@ FILES
 ARE AT cpm22 FOLDER.  THEY ARE ALSO AT msx.dsk DISK IMAGE.  For turboR, insert disk only after the system boot is finished
 
 
-the next models of OPENMSX had tested:
+the next models of OPENMSX were tested:
 Sanyo MPC-25FD (faster)
 Philips NMS 8250 [msx2 default] (slower)
 Philips NMS 8255 (slower)
@@ -22,7 +22,8 @@ RUN"PI.BAS
 RUN
 LOAD"PI.BAS
 FILES
-WIDTH80
+WIDTH80 or SCREEN0:WIDTH80
+KEY OFF
 
 openMSX:
 Print Screen

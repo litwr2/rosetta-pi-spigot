@@ -1,4 +1,5 @@
 ;for pasmo assembler
+;for MSX ROM Basic
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -26,29 +27,27 @@
 ;   }
 ;}
 
-;the time of the calculation is quadratic, so if T is time to calculate N digits
+;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
-;litwr made the spigot for several z80 based computers
-;bqt helped much with optimization
-;tricky provided some help
+;ivagor supplied very valuable information
+;the idea of fast Z80 division was discovered by blackmirror
+;litwr made the spigot for the Amstrad CPC
+;tricky and BigEd provided some help
 ;MMS gave some support
-;Thorham and meynaf helped too
 
 CHPUT equ $A2    ;print char in A
 
 N equ 3500   ;1000 digits
 ;N equ 2800  ;800 digits
 SA equ $8500  ;start address
-R800 equ 0   ;R800 MULUW is 1 t-state slower than the table multiplication but it saves 781 bytes
+R800 equ 0   ;R800 MULUW is 6/10 (8 on average) t-states slower than the table multiplication but it saves 781 bytes
 
 MSX_TIMER equ $FC9E
 IO equ 1
+MINUS equ 0  ;0 - if dividers are positive, this is ok up to 4680 digits
 
-OPT equ 5       ;it's a constant for the pi-spigot
-DIV8 equ 0      ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
 include "z80-div.s"
 
          org SA-7
@@ -59,7 +58,6 @@ start    proc
          ;call CHPUT
 
          ld bc,N        ;fill r-array
-         ;di            ;no interrupts
          ld (kv),bc     ;k <- N
          dec bc
     ld hl,0
@@ -97,13 +95,14 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         ld bc,ra   ;@EOP@
+         add hl,bc
          jp loop2
 
 l4       add hl,de
-         jr nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
+         ex de,hl
          pop hl
          xor a       ;sets CY=0
          sbc hl,de
@@ -117,12 +116,10 @@ lnc      ex de,hl
 
          push hl
          push de
-loop2    ld c,iyl
-         ld b,iyh
-         ld hl,ra     ;@EOP@
-         add hl,bc
-         ld (m1+1),hl
-
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
 if R800
          ld a,(hl)
          inc l
@@ -135,28 +132,26 @@ if R800
          ex de,hl
          pop bc
 else
-         ld c,(hl)      ;r[i]
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
 
          pop hl       ; d <- d + r[i]*10000
          add hl,de
@@ -167,14 +162,16 @@ endif
          dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iyl
 
          push hl
          push de
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-         ld a,iyl
-         or iyh
+         dec iyl
+         jp nz,l4
+
+         ld a,iyh
+         or a
          jp nz,l4
 
          pop hl
@@ -243,37 +240,38 @@ PR0	ld A,$FF
 	JR PRD
         endp
 
-if DIV8
-div32x8
-    or c
-    jp m,div32x8e
-
-include "z80-div8.s"
-endif
 
 if IO
-div32x16r proc
-     local t,t0,t1,t2,t3
+div32x16r proc   ;bcde = hlde/bc, hl = hlde%bc
+     local t,t0,t1,t2,t3,t4
      call t
      ld bc,0
      ret
 t
      DEC   BC
      LD    A, B
-     CPL 
+     CPL
      LD    B, A
      LD    A, C
-     CPL 
+     CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   sla e
+     rl d
+     ADC   HL, HL
+     jr c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret nc
+t4
+     ADD   HL,BC
+     inc e
      RET
      endp
 endif

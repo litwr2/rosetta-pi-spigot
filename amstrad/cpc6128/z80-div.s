@@ -1,5 +1,5 @@
 ;DE = 0 - BC, IX is used
-OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5  for the RW-spigot
+OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5 for the RW-spigot
 DIV8 equ 0   ;1 is faster for 100 digits but slower for 1000 and more
 
 divzss macro px
