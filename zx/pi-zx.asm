@@ -1,4 +1,5 @@
 ;for pasmo assembler
+;it is for ROM Basic of the ZX Spectrum, it uses the Amstrad CPC6128 firmware
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -30,21 +31,20 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
+;ivagor supplied very valuable information
+;the idea of fast Z80 division was discovered by blackmirror
 ;litwr made the spigot for ZX Spectrum
 ;tricky provided some help
 ;MMS gave some support
-;Thorham and meynaf helped too
 
-;ZX interrupt routine forbids applications to use IY!
+IO equ 1
+MINUS equ 0  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 N equ 3500   ;1000 digits
-;N equ 2800  ;800 digits
 SA equ $8000 ;start address
-OPT equ 5    ;it's a constant for the pi-spigot
-DIV8 equ 0   ;8 bit divisor specialization, it makes faster 100 digits but slower 1000 and 3000
 
-include "z80-div.s"
+;ZX interrupt routine forbids applications to use IX!
+include "z80-div-noix.s"
 
          org SA
 start    proc
@@ -53,15 +53,14 @@ start    proc
          call 5633
 
          ld bc,N        ;fill r-array
-         ;di         ;no interrupts
-         ld (kv),bc  ;k <- N
-    dec bc
-    ld a,c
+     ld (kv),bc  ;k <- N
+     dec bc
+     ld a,c
     cpl
     ld c,a
     ld a,b
-    cpl
-    ld b,a
+     cpl
+     ld b,a
          ld de,2000
          ld hl,ra+2
 
@@ -85,13 +84,14 @@ loop     ld hl,0          ;d <- 0
          ld iyl,a
          ld a,h
          ld iyh,a
+         ld bc,ra
+         add hl,bc
          jp loop2
 
 l4       add hl,de
-         jr nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
+         ex de,hl
          pop hl
          xor a       ;sets CY=0
          sbc hl,de
@@ -105,34 +105,30 @@ lnc      ex de,hl
 
          push hl
          push de
-loop2    ld c,iyl
-         ld b,iyh
-         ld hl,ra
-         add hl,bc
-         ld (m1+1),hl
-
-         ld c,(hl)      ;r[i]
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
 
          pop hl       ; d <- d + r[i]*10000
          add hl,de
@@ -142,14 +138,16 @@ loop2    ld c,iyl
          dec iy    ;i <- i - 1
          ld b,iyh
          ld c,iyl
-         dec iyl
 
          push hl
          push de
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-         ld a,iyl
-         or iyh
+         dec iyl
+         jp nz,l4
+
+         ld a,iyh
+         or a
          jp nz,l4
 
          pop hl
@@ -164,7 +162,9 @@ m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          ld l,c
 
          add hl,de   ;c + d/10000
+if IO
          call PR0000
+endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
          add hl,de
@@ -202,35 +202,36 @@ PR0	ld A,$FF
 	JR PRD
         endp
 
-if DIV8
-div32x8
-        or c
-        jp m,div32x8e
-include "z80-div8.s"
-endif
-
 div32x16r proc
-     local t,t0,t1,t2,t3
+     local t,t0,t1,t2,t3,t4
      call t
      ld bc,0
      ret
 t
      DEC   BC
      LD    A, B
-     CPL 
+     CPL
      LD    B, A
      LD    A, C
-     CPL 
+     CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   sla e
+     rl d
+     ADC   HL, HL
+     jr c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret nc
+t4
+     ADD   HL,BC
+     inc e
      RET
      endp
 

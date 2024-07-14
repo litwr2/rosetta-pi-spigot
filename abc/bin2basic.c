@@ -1,4 +1,5 @@
 #include <stdio.h>
+#define MAXSZ 2200
 char* transf(unsigned char c) {
    static char s[200];
    int hi = c >> 4, lo = c & 15;
@@ -6,10 +7,10 @@ char* transf(unsigned char c) {
    return s;
 }
 int main() {
-   unsigned char b[2000];
+   unsigned char b[MAXSZ];
    int n, i;
    const int L = 40;
-   n = fread(b, 1, 2000, stdin);
+   n = fread(b, 1, MAXSZ, stdin);
    for (i = 0; i < n; i++) {
       if (i%L == 0) {
           if (i != 0) puts("");
@@ -18,7 +19,7 @@ int main() {
       else
           printf("%s", transf(b[i]));
    }
-   for (n = i; n%L != 0; n++) printf("AA");
+   //for (n = i; n%L != 0; n++) printf("AA");
    puts("");
    return 0;
 }

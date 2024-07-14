@@ -6,23 +6,24 @@ ARE IN cpm22 FOLDER.  THEY ARE ALSO AT THE CORRESPONDED DISC IMAGES
    pi-torch-cpn.dsd
 THESE IMAGES ARE BOOTABLE.
 
-To start Torch CP/M (CPN) type (you need also Edit ROM Configuration under BeebEm)
-*CPN
 
-To copy files with Torch CPN use
+Torch CPN
+*CPN   to start (you need also Edit ROM Configuration under BeebEm) or to return from Basic
 COPY src-file TO dst-file
-
-To delete a file with Torch CPN use
 DELETE file
-
-To copy a file with Torch CPN use
-COPY file TO file
+VDU 12   to clear screen
+DEL file
+COPY src-file TO dst-file
+C command-file   to execute a SUB-file
+H   show the command help
 
 To copy files from/to DFS use RWACORN.COM utility from Torch CPN distribution.
 
+To use Torch select the proper ROM configuration at first then reboot and type MCP
+
+
 To copy files from/to DFS use DIP.COM utility from Acorn CP/M distribution:
     DIP PI.COM=:1.$.PIACORN
-
 
 If you have z80-Basic ROM then use it together with Acorn z80 2nd processor and run pi-z80 from Basic by
 CH."PI-Z80"
@@ -34,5 +35,3 @@ Then press CTRL-BREAK and run the program
 *DISC
 CH."PI-Z80"
 
-To use Torch select the proper ROM configuration at first then reboot and type
-MCP

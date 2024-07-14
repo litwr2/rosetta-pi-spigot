@@ -1,12 +1,20 @@
 f=pi-abc800
 pasmo6 --listing $f.lst $f.asm calcpi.bin || exit
-gawk 'BEGIN{s=0xdb00}
+echo \($(ls -l calcpi.bin |awk '{print $5}')+39\)/40-1|bc >tmpsz
+gawk 'BEGIN{s=0xdb00
+   print "s/@steps@/'$(cat tmpsz)'/"}
 /SA *equ/{
    printf "s/@start@/%d/\n", strtonum("0x"$1)
    printf "s/@startlo@/%d/\n", (strtonum("0x"$1)-1)%256
    printf "s/@starthi@/%d/\n", int((strtonum("0x"$1)-1)/256)
-}/BC,N/{
+}
+/BC,N/{
    printf "s/@Nlo@/%d/\n", strtonum("0x"$1)+1
+}
+/8000.*@init/ {
+   t=$3
+   if (length(""$3) == 4) t = substr($3,3)
+   printf "s/@magic@/%d/\n", strtonum("0x"$2)+strtonum("0x"t)*256
 }
 /ra *DB/{
    printf "s/@digi@/%d/g\n", int((s-strtonum("0x"$1))/28)*4
@@ -23,4 +31,8 @@ gawk 'BEGIN{s=0xdb00}
 sed -f z.sed pi.cbas >pi.bas
 gcc bin2basic.c || exit
 ./a.out <calcpi.bin >>pi.bas || exit
-rm a.out calcpi.bin
+echo @@@ Make POKE65292,LO,HI to set MEMTOP. Do this before program loading!!!
+echo '@@@ (0xF186-MEMTOP)*2 must be larger than the bin-file size'
+echo @@@ changing this value also affects values in the compile-script!!!
+echo @@@ the default value is 0xdb00 now: LO=0, HI=219
+rm a.out calcpi.bin tmpsz z.sed
