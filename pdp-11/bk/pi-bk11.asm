@@ -1,4 +1,5 @@
 ;for macro-11 assembler
+;for the BK0011 using the BK0010 ROM emulation
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -30,12 +31,10 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;litwr has written this for BK
+;litwr has written this for the BK
 ;bqt helped much with optimization
 ;Manwe helped with development
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped a lot
+;Thorham and meynaf helped too
 
       .radix 10
       .dsabl gbl
@@ -46,7 +45,6 @@ IO = 1
 ;N = 10500   ;3000 digits
 ;N = 3500   ;1000 digits
 N = 350   ;100 digits
-;N = 2800  ;800 digits
 
 kv = kvs + 2
 
@@ -57,69 +55,123 @@ timerport3 = ^O177712            ;$ffca
 todata     = ^B010101100000000   ;open pages 2 and 3
 toandos    = ^B001110000000000   ;open pages 1 (soft 5) and 4 (AnDOS)
 
-.macro div0 ?l0
-     asl r2
+.macro div0s l0
+     rol r2
      rol r3
-     cmp r3,r1
+     add r5,r3
+     bcc l0
+     .endm
+
+.macro div0a l0
+     rol r2
+     rol r3
+     add r1,r3
      bcs l0
-
-     sub r1,r3
-     inc r2
-l0:
      .endm
 
-.macro div32x16 ?div32 ?exit ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
-                             ;may work wrong if R1>$7fff
+.macro div0z ?S2 ?S3 ?S4 ?S5 ?S6 ?S7 ?S8 ?S9 ?SA ?SB ?SC ?SD ?SE ?SF ?S0 ?A1 ?A2 ?A3 ?A4 ?A5 ?A6 ?A7 ?A8 ?A9 ?AA ?AB ?AC ?AD ?AE ?AF ?A0 ?ll
+     div0s A1
+     div0s A2
+S2:  div0s A3
+S3:  div0s A4
+S4:  div0s A5
+S5:  div0s A6
+S6:  div0s A7
+S7:  div0s A8
+S8:  div0s A9
+S9:  div0s AA
+SA:  div0s AB
+SB:  div0s AC
+SC:  div0s AD
+SD:  div0s AE
+SE:  div0s AF
+SF:  div0s A0
+S0:  rol r2
+     br ll
+
+A1:  div0a S2
+A2:  div0a S3
+A3:  div0a S4
+A4:  div0a S5
+A5:  div0a S6
+A6:  div0a S7
+A7:  div0a S8
+A8:  div0a S9
+A9:  div0a SA
+AA:  div0a SB
+AB:  div0a SC
+AC:  div0a SD
+AD:  div0a SE
+AE:  div0a SF
+AF:  div0a S0
+A0:  rol r2
+     add r1,r3
+ll:
+     .endm
+
+.macro div32x16 ?div32 ?exit ?S7 ?S8 ?S9 ?SA ?SB ?SC ?SD ?SE ?SF ?S0 ?A6 ?A7 ?A8 ?A9 ?AA ?AB ?AC ?AD ?AE ?AF ?A0 ?ll
+                    ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
+                    ;may work wrong if R1>$7fff
      cmp r3,r1
-     bcc div32
+     ;bcc div32
+     bcs .+6
+     jmp @#div32
 
-     .rept 16
-     div0
-     .endm
+     div0z
      clr r4
      jmp @#exit
 
-OPT = 5         ;It's a constant for the pi-spigot
 div32:
      mov r2,r0
-
-     .rept OPT
-     asl r3
-     .endm
-
      mov r3,r2
      clr r3
+;OPT = 5         ;It's a constant for the pi-spigot
+     asl r2
+     asl r2
+     asl r2
+     asl r2
+     asl r2
 
-     .rept 16-OPT
-     div0
-     .endm
+    div0s A6
+    div0s A7
+S7: div0s A8
+S8:  div0s A9
+S9:  div0s AA
+SA:  div0s AB
+SB:  div0s AC
+SC:  div0s AD
+SD:  div0s AE
+SE:  div0s AF
+SF:  div0s A0
+S0:  rol r2
+     br ll
+
+A6: div0a S7
+A7: div0a S8
+A8:  div0a S9
+A9:  div0a SA
+AA:  div0a SB
+AB:  div0a SC
+AC:  div0a SD
+AD:  div0a SE
+AE:  div0a SF
+AF:  div0a S0
+A0:  rol r2
+     add r1,r3
+ll:
+
+     ;div0z   ;OPT=0
 
      mov r2,r4
      mov r0,r2
 
-     .rept 16
-     div0
-     .endm
+     div0z
 exit:
      .endm
 
          .asect
          .=512
-start:   mov #12,r0    ;clear screen
-         emt ^O16
-         mov #21,r1
-         clr r2
-         emt ^O24
-         mov #msg1,r1
-         mov #127,r2
-         emt ^O20
-
-         mov #32768-ra,r2   ;$8000
-         clr r3
-         mov #7,r1
-         call @#div32x16s
-         bic #3,r2
-         mov r2,@#maxnum
+start:   call @#init
 restart: mov #msg4,r1
          mov #127,r2
          emt ^O20
@@ -213,7 +265,11 @@ ivs:
          mov sp,r3
 
          dec r1          ;b <- 2*i-1
+         mov r5,@#17$+2
+         mov r1,r5
+         neg r5
          div32x16
+17$:     mov #0,r5
          mov r3,ra+1(r1)      ;r[i] <- d%b
          dec r1        ;i <- i - 1
          beq 4$
@@ -226,7 +282,6 @@ ivs:
          ror sp
          ror r5
          jmp @#ivs
-
 4$:
 .if ne IO
          mov #512,sp
@@ -246,10 +301,10 @@ ivs:
          add r3,@#time
          adc @#time+2
          sub #14,@#kv      ;k <- k - 14
-         beq 5$
+         beq .+6
          jmp @#mloop
 
-5$:      mov #toandos,@#pageport
+         mov #toandos,@#pageport
          mov #32,r0
          emt ^O16
          mov @#time,r2
@@ -437,12 +492,40 @@ cv: .word 0
 time: .word 0,0
 prevtime: .word 0
 maxnum: .word 0
-msg4: .byte 10,10
+msg4: .byte 10
       .asciz "number of digits (up to "
 msg5:  .asciz ")? "
 msg3: .ascii " digits will be printed"
       .byte 10,0
+      .even
 ra:   .word 0
-msg1: .ascii "number "<160>" calculator v7"<10>
-      .asciz "         it may give 3000 digits in about an hour!"
+
+init:    mov #12,r0    ;clear screen
+         emt ^O16
+         CMPB @#^O177717,#^O200
+         BNE 1$  ;BK0011
+
+         mov #msg2,r1
+         mov #127,r2
+         emt ^O20
+         br .    
+
+1$:      mov #msg1,r1
+         mov #127,r2
+         emt ^O20
+
+         mov #32768-ra,r2   ;$8000
+         clr r3
+         mov #7,r1
+         call @#div32x16s
+         bic #3,r2
+         mov r2,@#maxnum
+         return
+
+msg1: .ascii "number "<160>" calculator v8 ("<226>"K0011, AnDOS or MkDOS"
+.if ne HMUL
+      .ascii ", K1801BM1"<231>
+.endc
+      .asciz ")"
+msg2: .asciz "not "<226>"K0011"
 

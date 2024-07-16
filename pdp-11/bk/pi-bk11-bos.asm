@@ -1,4 +1,5 @@
 ;for macro-11 assembler
+;for the BK0011 using the BK0010 ROM emulation
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -47,9 +48,12 @@ N = 350   ;100 digits
 
 kv = kvs + 2
 
+pageport   = ^O177716            ;$ffce
 timerport1 = ^O177706            ;$ffc6
 timerport2 = ^O177710            ;$ffc8
 timerport3 = ^O177712            ;$ffca
+todata     = ^B010101100000000   ;open pages 2 and 3
+toandos    = ^B001110000000000   ;open pages 1 (soft 5) and 4 (AnDOS)
 
 .macro div0s l0
      rol r2
@@ -166,19 +170,30 @@ exit:
      .endm
 
          .asect
-         .=512
-start:   call @#init
-restart: mov #msg4,r1
-         mov #127,r2
-         emt ^O20
+         .=1536
+start:   emt 0
+    	 mov #27,r0
+         emt ^O63
+         mov #49,r0
+         emt ^O63    ;64 columns
+         mov #msg1,r0
+         emt ^O64
+
+         mov #32768-ra,r2   ;$8000
+         clr r3
+         mov #7,r1
+         call @#div32x16s
+         bic #3,r2
+         mov r2,@#maxnum
+restart: mov #msg4,r0
+         emt ^O64
          mov @#maxnum,r2
          call @#PR0000
-         mov #msg5,r1
-         mov #127,r2
-         emt ^O20
+         mov #msg5,r0
+         emt ^O64
          call @#getnum
-         mov #10,r0
-         emt ^O16
+         mov #eol,r0
+         emt ^O64
 
          mov r2,r4
          add #3,r4
@@ -188,21 +203,10 @@ restart: mov #msg4,r1
 
          mov r4,r2
          call @#PR0000
-         mov #msg3,r1
-         mov #127,r2
-         emt ^O20
+         mov #msg3,r0
+         emt ^O64
 
-7$:      tst @#^O42
-         beq 72$
-
-         mov #140,r0    ;turn to normal screen size
-         emt ^O16
-72$:     cmp r4,#2056+1
-         bcs 71$
-
-         mov #140,r0    ;add 12 KB, reduce the screen size
-         emt ^O16
-71$:     mov r4,r0
+7$:      mov r4,r0
          asr r4
          add r0,r4
          asl r0
@@ -210,6 +214,7 @@ restart: mov #msg4,r1
          mov r4,@#kv
          mov r4,@#100$+2
 
+         mov #todata,@#pageport
          clr @#time
          clr @#time+2
          mov #^B110010,@#timerport3    ;sets timer, /16
@@ -295,7 +300,9 @@ ivs:
          call @#div32x16s
          add @#cv,r2     ;c + d/10000
          mov r3,@#cv     ;c <- d%10000
+         mov #toandos,@#pageport
          call @#PR0000
+         mov #todata,@#pageport
 .endc
          mov @#timerport2,r1
          mov @#prevtime,r3
@@ -307,8 +314,9 @@ ivs:
          beq .+6
          jmp @#mloop
 
+         mov #toandos,@#pageport
          mov #32,r0
-         emt ^O16
+         emt ^O63
          mov @#time,r2
          mov @#time+2,r3
          asl r2     ;*100
@@ -332,10 +340,7 @@ ivs:
          asl r2
          rol r3
 
-         mov #1465,r1             ;3 MHz,3000000/16/128
-         CMPB @#^O177717,#^O200
-         BEQ .+6  ;BK0010
-         mov #1953,r1     ;4 MHz,4000000/16/128
+         mov #1953,r1             ;4 MHz,4000000/16/128
          call @#div32x16s
          call @#printsec
          mtps #0
@@ -383,7 +388,7 @@ PR0000:     ;prints r2
 	CALL @#0$
 	mov r2,r0
 2$:	add #48,r0
-   	emt ^O16
+   	emt ^O63
         return
 
 0$:	mov #65535,r0
@@ -408,12 +413,12 @@ printsec:  ;prints R1:R2/100
         mov #100,r3
         call @#0$
         movb #'.,r0
-        emt ^O16
+        emt ^O63
         mov #10,r3
         call @#0$
         mov r2,r0
 2$:     add #48,r0
-        emt ^O16
+        emt ^O63
         inc r4
 5$:     return
 
@@ -442,7 +447,7 @@ printsec:  ;prints R1:R2/100
 
 getnum: clr r1    ;length
         clr r2    ;number
-0$:     emt 6
+0$:     emt ^O33
         cmp #10,r0
         beq 5$
 
@@ -459,7 +464,7 @@ getnum: clr r1    ;length
         beq 0$
 
         mov r2,-(sp)
-        emt ^O16
+        emt ^O63
         inc r1
         sub #48,r0
         mov r2,r3
@@ -474,7 +479,8 @@ getnum: clr r1    ;length
         beq 0$
 
         dec r1
-        emt ^O16
+        mov #del,r0
+        emt ^O64
 
         mov (sp)+,r2
         br 0$
@@ -497,31 +503,18 @@ cv: .word 0
 time: .word 0,0
 prevtime: .word 0
 maxnum: .word 0
-msg4: .byte 10
-      .asciz "number of digits (up to "
-msg5:  .asciz ")? "
+msg4: .byte 10,13
+      .ascii "number of digits (up to "<128>
+msg5:  .ascii ")? "<128>
 msg3: .ascii " digits will be printed"
-      .byte 10,0
+eol:  .byte 0
+del:  .byte 8,32,8,128
       .even
 ra:   .word 0
-
-init:    mov #12,r0    ;clear screen
-         emt ^O16
-         mov #msg1,r1
-         mov #127,r2
-         emt ^O20
-
-         mov #28672-ra,r2   ;$7000 = 28672
-         clr r3
-         mov #7,r1
-         call @#div32x16s
-         bic #3,r2
-         mov r2,@#maxnum
-         return
-
-msg1: .ascii "number "<160>" calculator v8 ("<226>"K0010"
+msg1: .ascii "number "<180>" calculator v8 ("<226>"K0011, BOS"
 .if ne HMUL
       .ascii ", K1801BM1"<231>
 .endc
-      .asciz ")"
+      .ascii ")"<128>
+msg2: .asciz "not "<226>"K0011"
 
