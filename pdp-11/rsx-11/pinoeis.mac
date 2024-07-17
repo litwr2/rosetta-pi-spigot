@@ -32,6 +32,8 @@
 
 ;litwr has made this code
 ;bqt has made the first RSX-11 version and helped much with optimization
+;the idea of fast division was discovered by blackmirror
+;ivagor gave some useful information
 ;Thorham and meynaf helped too
 
 	.TITLE	PI - Spigot PI calculator not using EIS

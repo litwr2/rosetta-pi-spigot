@@ -32,6 +32,8 @@
 
 ;litwr has written this for RT-11
 ;bqt helped much with optimization
+;the idea of fast division was discovered by blackmirror
+;ivagor gave some useful information
 ;Manwe helped with development
 ;Thorham and meynaf helped too
 

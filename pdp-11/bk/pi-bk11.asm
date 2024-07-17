@@ -33,6 +33,8 @@
 
 ;litwr has written this for the BK
 ;bqt helped much with optimization
+;the idea of fast division was discovered by blackmirror
+;ivagor gave some useful information
 ;Manwe helped with development
 ;Thorham and meynaf helped too
 
