@@ -7,7 +7,7 @@
 ;main() {
 ;   long r[N + 1], i, k, b, c;
 ;   c = 0;
-;   for (i = 1; i <= N; i++)  ;it is fixed! the original was (i = 0; i < N; ...
+;   for (i = 1; i <= N; i++)  ;it is the fixed line!, it was (i = 0; i < N; ...
 ;      r[i] = 2000;
 ;   for (k = N; k > 0; k -= 14) {
 ;      d = 0;
@@ -26,15 +26,13 @@
 ;   }
 ;}
 
-;the time of the calculation is quadratic, so if T is time to calculate
-;N digits then 4*T is required to calculate 2*N digits
+;the time of the calculation is quadratic, so if T is time to calculate N digits
+;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
 ;litwr has made this code
-;bqt has made RSX-11 version and helped much with optimization and this text
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped a lot
+;bqt has made the first RSX-11 version and helped much with optimization
+;Thorham and meynaf helped too
 
 	.TITLE	PI - Spigot PI calculator not using EIS
 
@@ -43,14 +41,125 @@
 
       .radix 10
 
-IO = 1
 MEMSZ = 31584 ;this is a constant calculated from data in a MAP-file produced
-                    ;by a linker, 10500 is enough for 3000 digits
-                    ;31584 for the 11/93 under RSX-11M+, 31400 for the Pro under P/OS
+        ;by a linker, 10500 is enough for 3000 digits
+        ;31584 for the 11/93 under RSX-11M+, 31400 for the Pro under P/OS
+IO = 1
+MINUS = 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 kv = kvs + 2
 
-OPT = 5         ;It's a constant for the pi-spigot
+.macro div0s l0
+     rol r3
+     rol r2
+     add r0,r2
+     bcc l0
+     .endm
+
+.macro div0a l0
+     rol r3
+     rol r2
+     add r1,r2
+     bcs l0
+     .endm
+
+.macro div0z
+     div0s 101$
+     div0s 102$
+202$:  div0s 103$
+203$:  div0s 104$
+204$:  div0s 105$
+205$:  div0s 106$
+206$:  div0s 107$
+207$:  div0s 108$
+208$:  div0s 109$
+209$:  div0s 110$
+210$:  div0s 111$
+211$:  div0s 112$
+212$:  div0s 113$
+213$:  div0s 114$
+214$:  div0s 115$
+215$:  div0s 100$
+200$:  rol r3
+     br 80$
+
+101$:  div0a 202$
+102$:  div0a 203$
+103$:  div0a 204$
+104$:  div0a 205$
+105$:  div0a 206$
+106$:  div0a 207$
+107$:  div0a 208$
+108$:  div0a 209$
+109$:  div0a 210$
+110$:  div0a 211$
+111$:  div0a 212$
+112$:  div0a 213$
+113$:  div0a 214$
+114$:  div0a 215$
+115$:  div0a 200$
+100$:  rol r3
+     add r1,r2
+80$:
+     .endm
+
+.macro div32x16     ;R4:R3 = R2:R3/R1, R2 = R2:R3%R1, used: R0, R2, R3, R4
+                    ;may work wrong if R1>$7fff
+     cmp r2,r1
+     bcs .+6
+     jmp @#divlong
+
+z1:  div0z
+     clr r4
+     .endm
+
+.macro divl32x16
+     mov r3,-(sp)
+;OPT = 5         ;It's a constant for the pi-spigot
+     asl r2
+     asl r2
+     asl r2
+     asl r2
+     asl r2
+
+     mov r2,r3
+     clr r2
+
+    div0s 106$
+    div0s 107$
+207$: div0s 108$
+208$:  div0s 109$
+209$:  div0s 110$
+210$:  div0s 111$
+211$:  div0s 112$
+212$:  div0s 113$
+213$:  div0s 114$
+214$:  div0s 115$
+215$:  div0s 100$
+200$:  rol r3
+     br 70$
+
+106$: div0a 207$
+107$: div0a 208$
+108$:  div0a 209$
+109$:  div0a 210$
+110$:  div0a 211$
+111$:  div0a 212$
+112$:  div0a 213$
+113$:  div0a 214$
+114$:  div0a 215$
+115$:  div0a 200$
+100$:  rol r3
+     add r1,r2
+70$:
+
+;z3:  div0z  ;OPT=0
+
+     mov r3,r4
+     mov (sp)+,r3
+
+z2:  div0z
+     .endm
 
 .macro div0 ?l0 ?l1
      asl r3
@@ -65,7 +174,7 @@ l1:  sub r1,r2
 l0:
      .endm
 
-.macro div32x16 ?div32 ?exit
+.macro divm32x16 ?div32
            ;R4:R3 = R2:R3/R1, R2 = R2:R3%R1, used: R0, R2, R3, R4
      cmp r2,r1
      bcc div32
@@ -74,29 +183,29 @@ l0:
      div0
      .endm
      clr r4
-     jmp @#exit
+     jmp @#enddm
 
 div32:
-     mov r3,r0
+     mov r3,-(sp)
 
-     .rept OPT
+;OPT = 5         ;It's a constant for the pi-spigot
+     .rept 5
      asl r2
      .endm
 
      mov r2,r3
      clr r2
 
-     .rept 16-OPT
+     .rept 16-5  ;OPT=5
      div0
      .endm
 
      mov r3,r4
-     mov r0,r3
+     mov (sp)+,r3
 
      .rept 16
      div0
      .endm
-exit:
      .endm
 
 	.PSECT	CODE,I,RW
@@ -201,7 +310,15 @@ ivs:     mov ra(r1),r0     ;r[i]
          add @sp,r2   ;sets CF=0
          mov r2,@sp
          dec r1          ;b <- 2*i-1, CF=0 for EIS!
+.if ne MINUS
+         bpl .+6
+         jmp @#divminus
+.endc
+
+         mov r1,r0
+         neg r0
          div32x16
+enddm:
          mov r2,ra+1(r1)      ;r[i] <- d%b
          dec r1        ;i <- i - 1
          beq 34$
@@ -301,12 +418,17 @@ ivs:     mov ra(r1),r0     ;r[i]
     QIOW$S	#IO.WLB,#5, #5,,,,<#ra, r0>
 	EXIT$S
 
-;
+.if ne MINUS
+divminus: divm32x16
+          jmp @#enddm
+.endc
+divlong:  divl32x16
+          jmp @#enddm
+
 ; Output 4 digits
 ;
 ; In: R5 - Buffer pointer
 ;     R2 - Value
-;
 PR0000:
     mov #1000,r3
 	CALL @#PRZ
@@ -345,7 +467,7 @@ IOSB:	.BLKW	2
 OBUF:	.BLKB	8
 
 ra:
-msg1:  .ascii "number pi calculator v1 (no EIS)"<10><13>
+msg1:  .ascii "number pi calculator v2 (no EIS)"<10><13>
        .ascii "number of digits (up to "
 msg1m: .ascii "0000)? "
 msg2:  .ascii "Error in read"

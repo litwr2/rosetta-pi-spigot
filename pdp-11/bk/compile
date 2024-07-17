@@ -12,14 +12,15 @@ if [ -s $E ]; then cat $E; rm $E; exit 8; else rm -f $E; fi && \
 dumpobj ${F}z.obj >${F}dump || exit
 bk-obj2bin <${F}dump >${F}bin
 gawk -f $AWKHEX ${F}lst > ${F}hex.lst
-#exit
+if [ $F != pi-bk11-bos. ]; then
 dd if=${F}bin of=${F}com bs=1 skip=4 && \
 sudo mount -t msdos -o loop,fmask=111,dmask=000,rw $D $M && \
 rm $M/${F}com && \
 cp ${F}com $M && \
 touch -t $T /mnt/loop/${F}com && \
-ls $M/${F}com && \
+ls $M/*.com && \
 sudo sync
 sudo umount /mnt/loop
-rm *.obj *.dump ${F}lst
+fi
+rm ${F}z.obj ${F}dump ${F}lst ${F}com
 

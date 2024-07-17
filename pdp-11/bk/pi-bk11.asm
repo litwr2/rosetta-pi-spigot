@@ -58,7 +58,7 @@ toandos    = ^B001110000000000   ;open pages 1 (soft 5) and 4 (AnDOS)
 .macro div0s l0
      rol r2
      rol r3
-     add r5,r3
+     add r0,r3
      bcc l0
      .endm
 
@@ -109,20 +109,19 @@ A0:  rol r2
 ll:
      .endm
 
-.macro div32x16 ?div32 ?exit ?S7 ?S8 ?S9 ?SA ?SB ?SC ?SD ?SE ?SF ?S0 ?A6 ?A7 ?A8 ?A9 ?AA ?AB ?AC ?AD ?AE ?AF ?A0 ?ll
+.macro div32x16
                     ;R4:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0, R1 not changed
                     ;may work wrong if R1>$7fff
      cmp r3,r1
-     ;bcc div32
      bcs .+6
      jmp @#div32
 
      div0z
      clr r4
-     jmp @#exit
+     .endm
 
-div32:
-     mov r2,r0
+.macro divl32x16 ?S7 ?S8 ?S9 ?SA ?SB ?SC ?SD ?SE ?SF ?S0 ?A6 ?A7 ?A8 ?A9 ?AA ?AB ?AC ?AD ?AE ?AF ?A0 ?l ?m1
+     mov r2,@#m1+2
      mov r3,r2
      clr r3
 ;OPT = 5         ;It's a constant for the pi-spigot
@@ -144,7 +143,7 @@ SD:  div0s AE
 SE:  div0s AF
 SF:  div0s A0
 S0:  rol r2
-     br ll
+     br l
 
 A6: div0a S7
 A7: div0a S8
@@ -158,15 +157,13 @@ AE:  div0a SF
 AF:  div0a S0
 A0:  rol r2
      add r1,r3
-ll:
-
+l:
      ;div0z   ;OPT=0
 
      mov r2,r4
-     mov r0,r2
+m1:  mov #0,r2
 
      div0z
-exit:
      .endm
 
          .asect
@@ -265,11 +262,11 @@ ivs:
          mov sp,r3
 
          dec r1          ;b <- 2*i-1
-         mov r5,@#17$+2
-         mov r1,r5
-         neg r5
+
+         mov r1,r0
+         neg r0
          div32x16
-17$:     mov #0,r5
+enddiv:
          mov r3,ra+1(r1)      ;r[i] <- d%b
          dec r1        ;i <- i - 1
          beq 4$
@@ -334,7 +331,17 @@ ivs:
          call @#div32x16s
          call @#printsec
          mtps #0
-         jmp @#restart
+         emt 6
+         bis #32,r0
+         cmp #'c,r0
+         bne 1$
+
+         mov #12,r0    ;clear screen
+         emt ^O16
+1$:      jmp @#restart
+
+div32:  divl32x16
+        jmp @#enddiv
 
 div32x16s: ;R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
            ;compact form - 64 bytes
@@ -522,7 +529,7 @@ init:    mov #12,r0    ;clear screen
          mov r2,@#maxnum
          return
 
-msg1: .ascii "number "<160>" calculator v8 ("<226>"K0011, AnDOS or MkDOS"
+msg1: .ascii "number "<160>" calculator v9 ("<226>"K0011, AnDOS or MkDOS"
 .if ne HMUL
       .ascii ", K1801BM1"<231>
 .endc
