@@ -33,13 +33,18 @@
 /bqt has made an adaptation for 2.11BSD and helped much with optimization
 /tricky provided some help
 /MMS gave some support
-/Thorham and meynaf helped a lot
 
-/#define BSD
-#define IO
-#define DIVOF
+#ifndef BSD
+#define BSD 0
+#endif
+#ifndef IO
+#define IO 1
+#endif
+#ifndef DIVOF
+#define DIVOF 1
+#endif
 
-#ifdef BSD
+#if BSD
 .globl _pistart, _ra, _N, _ver, csv, _write
 #else
 .globl _pistart, _ra, _N, _ver
@@ -48,7 +53,7 @@
 kv = kvs + 2
 
 _pistart:
-#ifdef BSD
+#if BSD
          jsr r5,csv
 #endif
          mov r5,-(sp)  /this is required for Unix system 7
@@ -96,7 +101,7 @@ m202:    add r3,r5
      /tst r1            /R4:R2 = R2:R3/R1, R3 = R2:R3%R1, R1 must be odd
      bmi divm           /for R1 > 0x7fff
 
-#ifndef DIVOF
+#if DIVOF==0
      asl r3
      rol r2
      cmp r2,r1
@@ -106,7 +111,7 @@ m202:    add r3,r5
      ror r3
 #endif
      div r1,r2   /r2(hi):r3(lo)/r1 -> r2 - quotient, r3 - remainder
-#ifdef DIVOF
+#if DIVOF
      bvs div32b
 #endif
 
@@ -115,14 +120,14 @@ exitdiv:
 m6:      mov r3,1(r1)      /r[i] <- d%b
          sob r1,m77
 
-#ifdef IO
+#if IO
          mov r2,r3
          mov r4,r2
          div $10000.,r2
          add *$cv,r2  /c + d/10000
          mov r3,*$cv     /c <- d%10000
          jsr pc,*$PR0000
-#ifdef BSD
+#if BSD
 	 mov $4,-(sp)
 	 mov $buf4,-(sp)
 	 mov $1,-(sp)
@@ -193,7 +198,7 @@ l1x: asl r1
      br exitdiv
 
 div32b:
-#ifdef DIVOF
+#if DIVOF
      asl r3
      rol r2
 #endif
@@ -236,9 +241,9 @@ l0:	inc r0
 .data   /rather not required
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "1","1","(","E","I","S"
-#ifdef DIVOF
-	.byte "-","o","f"
+_ver:   .byte "1","2","-","E","I","S"
+#if DIVOF
+	.byte 47.,"o","f"
 #endif
-	.byte ")",0
+	.byte 0
 

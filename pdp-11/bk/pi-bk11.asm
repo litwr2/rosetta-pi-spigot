@@ -36,7 +36,7 @@
 ;the idea of fast division was discovered by blackmirror
 ;ivagor gave some useful information
 ;Manwe helped with development
-;Thorham and meynaf helped too
+;Thorham and meynaf helped to make fast multiplication by 10000
 
       .radix 10
       .dsabl gbl

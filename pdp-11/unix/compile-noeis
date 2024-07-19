@@ -1,7 +1,0 @@
-FLAGS=-DBSD
-fn=pi-noeis$1
-awk -f sx.awk $fn.sx >$fn.c
-cc $FLAGS -E $fn.c | sed '/^#/d' >$fn.s
-cc -c $fn.s
-cc -o $fn $fn.o pi.o
-

@@ -6,7 +6,7 @@
 /main() {
 /   long r[N + 1], i, k, b, c;
 /   c = 0;
-/   for (i = 1; i <= N; i++)   ;it is the fixed line!, the original was (i = 0; i < N; ...
+/   for (i = 1; i <= N; i++)  ;it is the fixed line!, the original was (i = 0; i < N; ...
 /      r[i] = 2000;
 /   for (k = N; k > 0; k -= 14) {
 /      d = 0;
@@ -30,14 +30,23 @@
 /main loop count is 7*(4+D)*D/16, D - number of digits
 
 /litwr has written this for PDP-11/Unix
-/tricky provided some help
-/MMS gave some support
-/Thorham and meynaf helped a lot
+/the idea of fast division was discovered by blackmirror
+/ivagor gave some useful information
+/bqt provided some help
+/Thorham and meynaf helped to make fast multiplication by 10000
 
-#define IO
-/#define BSD
+#ifndef BSD
+#define BSD 0
+#endif
+#ifndef IO
+#define IO 1
+#endif
+#ifndef MINUS
+#define MINUS 1  /0 - if dividers are positive, this is ok up to 4680 digits
+#endif
+#define DEBUG 0
 
-#ifdef BSD
+#if BSD
 .globl _pistart, _ra, _N, _ver, csv, _write
 #else
 .globl _pistart, _ra, _N, _ver
@@ -46,7 +55,7 @@
 kv = kvs + 2
 
 _pistart:
-#ifdef BSD
+#if BSD
          jsr r5,csv
 #endif
          mov r5,-(sp)  /this is required for Unix system 7
@@ -105,39 +114,22 @@ m5:      mov 2(r1),r0      /r[i]
          add *sp,r2   /sets CF=0
          mov r2,*sp
          dec r1          /b <- 2*i-1, CF=0 for EIS!
-
+#if MINUS
+         bpl .+6
+         jmp *$divminus
+#endif
+         mov r1,r0    /div32x16
+         neg r0
+    /jsr pc,*$showregs
                 /R4:R3 = R2:R3/R1, R2 = R2:R3%R1, used: R0, R2, R3, R4
          cmp r2,r1
-         bcc div32
+         bcs .+6
+         jmp *$divlong
 
-     .rept 16
-     div0
-     .endm
-        clr r4
-        jmp *$exitdiv
-
-div32:
-     mov r3,r0
-
-     .rept 5
-     asl r2
-     .endm
-
-     mov r2,r3
-     clr r2
-
-     .rept 11
-     div0
-     .endm
-
-     mov r3,r4
-     mov r0,r3
-
-     .rept 16
-     div0
-     .endm
+         div0z t1
+         clr r4
 exitdiv:         /end of division
-
+    /jsr pc,*$showregs
 m6:      mov r2,1(r1)      /r[i] <- d%b
          dec r1        /i <- i - 1
          beq m77
@@ -154,7 +146,7 @@ m6:      mov r2,1(r1)      /r[i] <- d%b
          jmp *$m5
 
 m77:
-#ifdef IO
+#if IO
          mov r3,r2
          mov r4,r3
          mov $10000.,r1
@@ -162,7 +154,7 @@ m77:
          add *$cv,r2  /c + d/10000
          mov r3,*$cv     /c <- d%10000
          jsr pc,*$PR0000
-#ifdef BSD
+#if BSD
 	 mov $4,-(sp)
 	 mov $buf4,-(sp)
 	 mov $1,-(sp)
@@ -180,6 +172,119 @@ m77:
 m78:     tst (sp)+       /clear the location for high(d)
          mov (sp)+,r5
          rts pc
+
+#if MINUS
+divminus:   /R4:R3 = R2:R3/R1, R2 = R2:R3%R1, used: R0, R2, R3, R4
+     cmp r2,r1
+     bcc 1f
+
+     div0  /.rept 16
+     div0  /2
+     div0  /3
+     div0  /4
+     div0  /5
+     div0  /6
+     div0  /7
+     div0  /8
+     div0  /9
+     div0  /10
+     div0  /11
+     div0  /12
+     div0  /13
+     div0  /14
+     div0  /15
+     div0  /16
+     clr r4
+     jmp *$exitdiv
+
+1:   mov r3,-(sp)
+
+     asl r2  /OPT = 5, it's a constant for the pi-spigot
+     asl r2
+     asl r2
+     asl r2
+     asl r2
+
+     mov r2,r3
+     clr r2
+
+     div0  /.rept 16-5  ;OPT=5
+     div0  /2
+     div0  /3
+     div0  /4
+     div0  /5
+     div0  /6
+     div0  /7
+     div0  /8
+     div0  /9
+     div0  /10
+     div0  /11
+
+     mov r3,r4
+     mov (sp)+,r3
+
+     div0  /.rept 16
+     div0  /2
+     div0  /3
+     div0  /4
+     div0  /5
+     div0  /6
+     div0  /7
+     div0  /8
+     div0  /9
+     div0  /10
+     div0  /11
+     div0  /12
+     div0  /13
+     div0  /14
+     div0  /15
+     div0  /16
+     jmp *$exitdiv
+#endif
+
+divlong:  /divl32x16
+     mov r3,-(sp)
+     asl r2  /OPT = 5, It's a constant for the pi-spigot
+     asl r2
+     asl r2
+     asl r2
+     asl r2
+
+     mov r2,r3
+     clr r2
+
+    div0s a06
+    div0s a07
+s07: div0s a08
+s08:  div0s a09
+s09:  div0s a10
+s10:  div0s a11
+s11:  div0s a12
+s12:  div0s a13
+s13:  div0s a14
+s14:  div0s a15
+s15:  div0s a00
+s00:  rol r3
+     br e70
+
+a06: div0a s07
+a07: div0a s08
+a08:  div0a s09
+a09:  div0a s10
+a10:  div0a s11
+a11:  div0a s12
+a12:  div0a s13
+a13:  div0a s14
+a14:  div0a s15
+a15:  div0a s00
+a00:  rol r3
+     add r1,r2
+e70:
+     mov r3,r4
+     mov (sp)+,r3
+
+     div0z t2
+     jmp *$exitdiv
 
 div32x16s: /R1:R2 = R3:R2/R1, R3 = R3:R2%R1, used: R0,R4
      cmp r3,r1
@@ -234,8 +339,103 @@ l0:	inc r0
 	sub r3,r2
 	br l0
 
-.data   /rather not required
+#if DEBUG
+bin2hex:  mov r0,-(sp)   /prints r1 to (r5)
+          mov r1,r0
+          swab r0   /sets C=0
+          rorb r0
+          asrb r0
+          asrb r0
+          asrb r0
+          add $48.,r0
+          cmpb r0,$58.
+          bcs 1f
+
+          add $7,r0
+1:        movb r0,(r5)+
+          mov r1,r0
+          swab r0
+          bicb $240.,r0
+          add $48.,r0
+          cmpb r0,$58.
+          bcs 2f
+
+          add $7,r0
+2:        movb r0,(r5)+
+          mov r1,r0
+          clc
+          rorb r0
+          asrb r0
+          asrb r0
+          asrb r0
+          add $48.,r0
+          cmpb r0,$58.
+          bcs 3f
+
+          add $7,r0
+3:        movb r0,(r5)+
+          mov r1,r0
+          bicb $240.,r0
+          add $48.,r0
+          cmpb r0,$58.
+          bcs 4f
+
+          add $7,r0
+4:        movb r0,(r5)+
+          mov (sp)+,r0
+          rts pc
+
+showregs: mov r0,-(sp)
+          mov r1,-(sp)
+          mov r5,-(sp)
+          movb $48.,*$reg  /r0
+          movb $32.,*$[reg+6]
+          mov r0,r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          inc *$reg  /r1
+          mov 2(sp),r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          inc *$reg  /r2
+          mov r2,r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          inc *$reg  /r3
+          mov r3,r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          inc *$reg  /r4
+          mov r4,r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          inc *$reg  /r5
+          movb $10.,*$[reg+6]
+          mov *sp,r1
+          mov $[reg+2],r5
+          jsr pc,*$bin2hex
+          mov $1,r0
+          sys 4;reg;7
+          mov (sp)+,r5
+          mov (sp)+,r1
+          mov (sp)+,r0
+          rts pc
+#endif
+
+.data
 buf4:   .byte 0,0,0,0
 cv:     .byte 0,0
-_ver:   .byte "7","(","N","O","E","I","S",")",0
-
+_ver:   .byte "8","-","N","O","E","I","S",0
+#if DEBUG
+reg:    .byte "0","=","0","0","0","0",10.
+#endif

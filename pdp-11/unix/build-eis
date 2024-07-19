@@ -1,0 +1,6 @@
+FLAGS="-DBSD=0 -DIO=1 -DDIVOF=1"
+sed 's!/.*$!!' pi-eis.sx| cc -E - | sed -f sx.sed >pi-eis.s
+cc $FLAGS -c pi-eis.s
+cc -c pi.c
+cc -o pi-eis pi.o pi-eis.o
+

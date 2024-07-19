@@ -1,0 +1,5 @@
+FLAGS="-DBSD=0 -DIO=1 -DMINUS=1"
+sed 's!/.*$!!' pi-noeis.sx| awk -f sx.awk| awk -f sx.awk | cc -E - | sed -f sx.sed >pi-noeis.s
+cc $FLAGS -c pi-noeis.s
+cc -c pi.c
+cc -o pi-noeis pi.o pi-noeis.o
