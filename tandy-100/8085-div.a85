@@ -1,4 +1,4 @@
-;the DE complement is not used, IX is not used
+;the DE complement is not used
 OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5 for the RW-spigot
 FASTLARGE equ 1  ;works only if dividers are negative
 
@@ -235,6 +235,7 @@ endm
 
 div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC
      local DIV320,divminus ;works wrong if BC>$7fff && HL >= BC
+     inc c
      ;LD    A, B
 if MINUS
      or a

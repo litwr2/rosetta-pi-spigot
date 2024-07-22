@@ -58,7 +58,7 @@ start    proc
     ld (time),hl
     ld (time+2),hl
 
-         ld hl,N        ;fill r-array
+         ld hl,N        ;fill r-array @N@
          ld (kv),hl  ;k <- N
     dec hl
     ld a,l
@@ -176,7 +176,6 @@ endif
          ld a,b
          push hl
          push af
-         inc c
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
          pop af
