@@ -1,5 +1,6 @@
 ;for pasmo assembler and the 8085 preprocessor
-;for 8080 CP/M
+;for 8085 CP/M
+;NOT TESTED!
 ;it calculates pi-number using the next C-algorithm
 ;https://crypto.stanford.edu/pbc/notes/pi/code.html
 
@@ -31,16 +32,15 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for z80
+;ivagor supplied very valuable information
+;the idea of fast 32/16 division for the 8080 was discovered by blackmirror
 ;litwr made the spigot for the 8085
-;bqt helped much with optimization
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped too
 
 BIOS_OUTPUT equ 1   ;1 will not support redirection on, for instance, PCW or C128
 CPM3TIMER equ 0
 IO equ 1
+PSP equ $100        ;use DTA for the stack
+MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 GENERIC equ 0       ;for generic CP/M 2.2, it doesn't use timer - use stopwatch
 TANDY100 equ 1
@@ -57,8 +57,7 @@ endif
 
 BDOS equ 5
 
-;N equ 3500   ;1000 digits
-N equ 8500/2*7   ;8500 digits
+N equ 3500   ;1000 digits
 
 include "8085-div.s"
 
@@ -73,13 +72,13 @@ if BIOS_OUTPUT
    add hl,de
    ld (bios4+1),hl
 endif
-    ld de,-(ra+48)  ;48 bytes for stack
+    ld de,-ra
 if BIOS_OUTPUT
     pop hl
 else
     ld hl,(6)
 endif
-    ld sp,hl
+    ld sp,PSP
     add hl,de
     ld de,0
     ex de,hl
@@ -94,7 +93,6 @@ endif
     ld de,msg1
     ld c,9
     call BDOS
-
     pop hl
     call PR0000
 
@@ -150,14 +148,12 @@ if TANDY100
     ld (3eh),hl
 endif
          pop hl      ;fill r-array
-     ld (kv),hl  ;k <- N
-         ld b,h
-         ld c,l
-     dec bc
-     ld a,c
+    ld (kv),hl  ;k <- N
+     dec hl
+     ld a,l
      cpl
      ld c,a
-     ld a,b
+     ld a,h
      cpl
      ld b,a
          ld de,2000
@@ -173,25 +169,25 @@ lf0      ld (hl),e
          inc b
          jp nz,lf0
 
-         ld a,b
-         ld (cv),a
-         ld (cv+1),a
+         ld l,b
+         ld h,b
+         ld (cv),hl
 loop     ld hl,(kv)          ;i <-k
          add hl,hl        ;keeps 2*i
-         ld b,h
-         ld c,l
          push hl
-         ld hl,0          ;d <- 0
-         push hl
-         push hl
+         ld bc,ra
+         add hl,bc
+         ld bc,0          ;d <- 0
+         push bc
+         push bc
+         ld de,m1+1
          jp loop2
 
 l4       add hl,de
-         jp nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
-         pop hl
+         ex de,hl
+svde     ld hl,0
          ld a,l
          sub e
          ld l,a
@@ -200,79 +196,84 @@ lnc      ex de,hl
          ld h,a
          ex de,hl
          pop hl
+if 1
+         jp nc,$+4
+         dec hl
+         sub hl,bc
+else
          ld a,l
          sbc a,c
          ld l,a
          ld a,h
          sbc a,b
-         rra            ;it assumes no carry
          ld h,a
-         ld a,l
-         rra
-         ld l,a
+endif
+         sra hl
          ld a,d
          rra
          ld d,a
          ld a,e
          rra
          ld e,a
-
-         pop bc
-         push bc
          push hl
          push de
-loop2    ld hl,ra
-         add hl,bc
-         ld (m1+1),hl
 
-         ld c,(hl)      ;r[i]
+if 1
+         ld de,m1+1
+         ld hl,(de)
+         dec hl
+         dec l
+loop2    ld (de),hl
+else
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+endif
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
-
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
          pop hl       ; d <- d + r[i]*10000
          add hl,de
+         ld (svde+1),hl
          ex de,hl
          pop hl
-         jp nc,noc
-
+         jp nc,$+4
          inc hl
-noc      add hl,bc
-
-    pop bc
-    dec bc     ;i <- i - 1
-    dec c      ;bc is odd
-    push bc
-    ld a,c
-    or b
+         add hl,bc
+         pop bc
+         dec bc     ;i <- i - 1
+         dec c      ;bc is odd
+         push bc
+         ld a,b
          push hl
-         push de
-    push af
-    inc c
+         push af
+         inc c
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-    pop af
+         pop af
          jp nz,l4
 
-         pop hl
+         or a
+         jp nz,l4
+
          pop hl
          pop hl
 if IO
@@ -305,7 +306,7 @@ if TANDY100
          ld hl,(time+2)
          inc hl
          ld (time+2),hl
-kl1      
+kl1
 endif
          ld hl,(kv)      ;k <- k - 14
          ld de,-14
@@ -322,7 +323,7 @@ if BIOS_OUTPUT
         ld c,' '
         call bios4
 else
-        LD  e,' '
+        LD e,' '
         ld c,2
         call BDOS
 endif
@@ -483,7 +484,7 @@ lct3  or a
       daa
       ld (hl),a
       dec bc
-      dec bc 
+      dec bc
       jp lct3
 
 lct4  inc hl
@@ -574,8 +575,8 @@ bios4   JP 0
 endif
 
 if GENERIC = 0
-div32x16r proc
-     local t,t0,t1,t2,t3
+div32x16r proc  ;00de = hlde/bc, hl = hlde%bc
+     local t,t0,t1,t2,t3,t4,l1,l2
      call t
      ld bc,0
      ret
@@ -588,15 +589,29 @@ t
      CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   ex de,hl
+     add hl,hl
+     ex de,hl
+     jp c,l1
+
+     ADD   HL, HL
+l2   jp c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret    NC
+t4
+     ADD   HL,BC
+     inc e
      RET
+l1   add hl,hl
+     inc l
+     jp l2
      endp
 
 include "../8080/8080-mul16.s"
@@ -630,7 +645,7 @@ if GENERIC or TANDY100
       db 'Pi'
 endif
 
-      db ' calculator v2',13,10
+      db ' calculator v3',13,10
       db 'for CP/M 2.2 (8085, '
 
 if GENERIC

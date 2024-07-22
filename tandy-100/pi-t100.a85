@@ -30,18 +30,16 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by Ivagor for the z80, 8080
+;ivagor supplied very valuable information
+;the idea of fast 32/16 division for the 8080 was discovered by blackmirror
 ;litwr made the spigot for the Tandy TRS-80 model 100
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped too
 
 DIGITS equ 100
-;N equ 3500   ;1000 digits
 N equ   DIGITS*7/2
 SA equ $8d00 ;start address
-OPT equ 5    ;it's a constant for the pi-spigot
 IO equ 1
+MINUS equ 0  ;0 - if dividers are positive, this is ok up to 4680 digits
+DEBUG equ 0
 
 include "8085-div.s"
 
@@ -60,15 +58,13 @@ start    proc
     ld (time),hl
     ld (time+2),hl
 
-         ld bc,N        ;fill r-array
-         ld h,b
-         ld l,c
+         ld hl,N        ;fill r-array
          ld (kv),hl  ;k <- N
-    dec bc
-    ld a,c
+    dec hl
+    ld a,l
     cpl
     ld c,a
-    ld a,b
+    ld a,h
     cpl
     ld b,a
          ld de,2000
@@ -84,25 +80,25 @@ lf0      ld (hl),e
          inc b
          jp nz,lf0
 
-         ld a,b
-         ld (cv),a
-         ld (cv+1),a
+         ld l,b
+         ld h,b
+         ld (cv),hl
 loop     ld hl,(kv)          ;i <-k
          add hl,hl        ;keeps 2*i
-         ld b,h
-         ld c,l
          push hl
-         ld hl,0          ;d <- 0
-         push hl
-         push hl
+         ld bc,ra
+         add hl,bc
+         ld bc,0          ;d <- 0
+         push bc
+         push bc
+         ld de,m1+1
          jp loop2
 
 l4       add hl,de
-         jp nc,lnc
-
+         jp nc,$+4
          inc bc
-lnc      ex de,hl
-         pop hl
+         ex de,hl
+svde     ld hl,0
          ld a,l
          sub e
          ld l,a
@@ -111,13 +107,18 @@ lnc      ex de,hl
          ld h,a
          ex de,hl
          pop hl
-
+if 1
+         jp nc,$+4
+         dec hl
+         sub hl,bc
+else
          ld a,l
          sbc a,c
          ld l,a
          ld a,h
          sbc a,b
          ld h,a
+endif
          sra hl
          ld a,d
          rra
@@ -125,63 +126,65 @@ lnc      ex de,hl
          ld a,e
          rra
          ld e,a
-
-         pop bc
-         push bc
          push hl
          push de
-loop2    ld hl,ra
-         add hl,bc
-         ld (m1+1),hl
 
-         ld c,(hl)      ;r[i]
+if 1
+         ld de,m1+1
+         ld hl,(de)
+         dec hl
+         dec l
+loop2    ld (de),hl
+else
+         ld hl,(m1+1)
+         dec hl
+         dec l
+loop2    ld (m1+1),hl
+endif
+         ld d,(hl)      ;r[i]
          inc l          ;r is at even addr
+         ld l,(hl)
+         ld h,2+(high(m10000))
          ld b,(hl)
-         ld h,high(m10000)
-         ld l,c
-         ld e,(hl)
-         ld l,b
+         dec h
+         ld c,(hl)
+         dec h
          ld a,(hl)
-         ld l,c
+         ld l,d
+         ld e,(hl)
          inc h
          add a,(hl)
          ld d,a
-         ld l,b
-         ld a,(hl)
-         ld l,c
          inc h
-         adc a,(hl)
-         ld c,a
-         ld l,b
          ld a,(hl)
-         adc a,0
-         ld b,a
-
+         adc a,c
+         ld c,a
+         jp nc,$+4
+         inc b
          pop hl       ; d <- d + r[i]*10000
          add hl,de
+         ld (svde+1),hl
          ex de,hl
          pop hl
-         jp nc,noc
-
+         jp nc,$+4
          inc hl
-noc      add hl,bc
-
-    pop bc
-    dec bc     ;i <- i - 1
-    dec c      ;bc is odd
-    push bc
-    ld a,c
-    or b
+         add hl,bc
+         pop bc
+         dec bc     ;i <- i - 1
+         dec c      ;bc is odd
+         push bc
+         ld a,b
          push hl
-         push de
-    push af
-    inc c
+         push af
+         inc c
          div32x16
 m1       ld (0),hl      ;r[i] <- d%b, d <- d/b
-    pop af
+         pop af
          jp nz,l4
 
-         pop hl
+         or a
+         jp nz,l4
+
          pop hl
          pop hl
 if IO
@@ -229,6 +232,79 @@ finish   ld a,0c9h       ;RET
          ret
          endp
 
+if DEBUG
+bin2hex proc   ;prints hl
+        local hexa,hex,l1,main
+        push af
+        call main
+        pop af
+        ret
+
+main    push hl
+        ld l,h
+        call hexa
+        pop hl
+hexa    ld a,l   ;prints l
+        rrca
+        rrca
+        rrca
+        rrca
+        and 15
+        call hex
+        ld a,l
+        and 0fh
+hex:    add a,'0'
+        cp '9'+1
+        jp c,l1
+
+        add a,'A'-'0'-10
+l1:     jp 4b44h
+        endp
+
+showregs proc   ;AF HL DE BC
+        push hl
+        push hl
+        push af
+        pop hl
+        call bin2hex
+        ld a,32
+        rst 20h
+        pop hl
+        call bin2hex
+        ld a,32
+        rst 20h
+        ex de,hl
+        call bin2hex
+        ex de,hl
+        ld a,32
+        rst 20h
+        ld h,b
+        ld l,c
+        call bin2hex
+        pop hl
+        ld a,13
+        rst 20h
+        ld a,10
+        jp 4b44h
+        endp
+endif
+
+TINTR
+     push hl
+     ld hl,(TTI)
+     inc hl
+     ld (TTI),hl
+     pop hl
+     ret
+TTI  dw 0
+
+         org ($ + 255) and $ff00
+include "../cpc6128/mul10000.s"
+
+cv dw 0
+kv dw 0
+time dw 0,0  ;@time@
+
 PR0000  ld de,-1000
 	CALL PR0
 	ld de,-100
@@ -250,45 +326,45 @@ PR0	ld A,$FF
 	ld L,C
 	Jp PRD
 
-div32x16r proc
-     local t,t0,t1,t2,t3
+div32x16r proc  ;00de = hlde/bc, hl = hlde%bc
+     local t,t0,t1,t2,t3,t4,l1,l2
      call t
      ld bc,0
      ret
 t
      DEC   BC
      LD    A, B
-     CPL 
+     CPL
      LD    B, A
      LD    A, C
-     CPL 
+     CPL
      LD    C, A
      call t0
-t0
-     call t1
-t1
-     call t2
-t2
-     call t3
-t3
-     div0
+t0   call t1
+t1   call t2
+t2   call t3
+t3   ex de,hl
+     add hl,hl
+     ex de,hl
+     jp c,l1
+
+     ADD   HL, HL
+l2   jp c,t4
+
+     LD    A,L
+     ADD   A,C
+     LD    A,H
+     ADC   A,B
+     ret    NC
+t4
+     ADD   HL,BC
+     inc e
      RET
+l1   add hl,hl
+     inc l
+     jp l2
      endp
 
-cv dw 0
-kv dw 0
-time dw 0,0
-
-TINTR
-     push hl
-     ld hl,(TTI)
-     inc hl
-     ld (TTI),hl
-     pop hl
-     ret
-TTI  dw 0
-
-         org ($ + 255) and $ff00
-include "../cpc6128/mul10000.s"
-ra
+     org ($ + 1) and $fffe
+ra    equ $  ;@ra@
   end start

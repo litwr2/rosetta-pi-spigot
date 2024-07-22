@@ -1,114 +1,432 @@
-div0 macro         ;it is used in the main code
-     local t1,t2
-     or a
+;the DE complement is not used, IX is not used
+OPT equ 5    ;a max number of leading zeros in the dividend for the long division, it is always 5 for the RW-spigot
+FASTLARGE equ 1  ;works only if dividers are negative
+
+divzss macro px
+     adc a,a
+     ex de,hl
      rl de
-     ld a,l
-     adc a,l
-     ld l,a
-     ld a,h
-     adc a,h
-     ld h,a
-     jp c,t1
-
-     LD    A,L
-     ADD   A,C
-     LD    A,H
-     ADC   A,B
-     jp nc,t2
-t1
-     ADD   HL,BC
-     inc e
-t2
+     ex de,hl
+     sub HL,BC
+     ccf
+     jp nc,px
 endm
 
-div1 macro
-     local t1,t2
-     ld a,l
+divzas macro px
      adc a,a
-     ld l,a
-     ld a,h
-     adc a,a
-     ld h,a
-     jp c,t1
-
-     ld a,l
-     sub c
-     ld a,h
-     sbc a,b
-     jp c,t2
-t1
-     sub hl,bc
-t2   ccf
+     ex de,hl
+     rl de
+     ex de,hl
+     add HL,BC
+     jp c,px
 endm
 
-divz macro
-    local l2
-    ex de,hl
-    ADD HL,HL
-    rl de
-    EX DE,HL
+divze macro t
+    local S2,S3,S4,S5,S6,S7,S8,A1,A2,A3,A4,A5,A6,A7,A8,l1
+    divzs##t A1
+    divzs##t A2
+S2: divzs##t A3
+S3: divzs##t A4
+S4: divzs##t A5
+S5: divzs##t A6
+S6: divzs##t A7
+S7: divzs##t A8
+S8: adc a,a
+    jp l1
+
+A1: divza##t S2
+A2: divza##t S3
+A3: divza##t S4
+A4: divza##t S5
+A5: divza##t S6
+A6: divza##t S7
+A7: divza##t S8
+A8: adc a,a
+    add hl,bc
+l1
+    endm
+
+divxx macro t
+    ld a,d
+    divze t
+    ld d,a
+    ld a,e
+    divze t
+    ld e,a
+endm
+
+divzsx macro px
+    local l1,l2
+    adc a,a
+    adc hl,hl
+    jp c,l1
 
     sub hl,bc
-    inc e
-    jp nc,l2
-
-    ADD HL,BC
-    dec e
+    ccf
+    jp nc,px
+    jp l2
+l1
+    sub hl,bc
+    ;scf
 l2
 endm
 
-divx macro
-rept 16
-     divz
-endm
+divzax macro px
+    local l1,l2
+    adc a,a
+    ex de,hl
+    rl de
+    ex de,hl
+    jp nc,l1
+
+    add hl,bc
+    jp c,px
+    jp l2
+l1
+    add hl,bc
+    or a
+l2
 endm
 
-div32x16 macro  ; BCDE = HLDE/BC, HL = HLDE%BC
-     local DIV320,divminus ;may work wrong if HL>$7fff
-     LD    A, B
-     or a         ;CF=0
+divzap1 macro px,py,pz
+    pz a,a
+    ex de,hl
+    rl de
+    ex de,hl
+    jp nc,py
+
+    add hl,bc
+    jp c,px
+endm
+
+divzsp1 macro px,py
+    adc a,a
+    ex de,hl
+    rl de
+    ex de,hl
+    jp c,py
+
+    sub hl,bc
+    ccf
+    jp nc,px
+endm
+
+divzap2 macro px,py
+    add hl,bc
+    divzap1 px,py,add
+endm
+
+divzsp2 macro px,py
+    sub hl,bc
+    divzsp1 px,py
+endm
+
+divzsp3 macro
+    adc a,a
+    jp lx
+endm
+
+divzap3 macro
+    adc a,a
+    add hl,bc
+    jp lx
+endm
+
+divzp macro
+    local S2,S3,S4,S5,S6,S7,S8,A1,A2,A3,A4,A5,A6,A7,A8,lx
+    local L1,L2,L3,L4,L5,L6,L7,L9,L10,L11,L12,L13,L14,L15,L16
+    divzsp1 A1,L9
+    divzsp1 A2,L10
+S2: divzsp1 A3,L11
+S3: divzsp1 A4,L12
+S4: divzsp1 A5,L13
+S5: divzsp1 A6,L14
+S6: divzsp1 A7,L15
+S7: divzsp1 A8,L16
+S8: divzsp3
+L9: divzsp2 A2,L10
+    divzsp1 A3,L11
+    divzsp1 A4,L12
+    divzsp1 A5,L13
+    divzsp1 A6,L14
+    divzsp1 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L10:divzsp2 A3,L11
+    divzsp1 A4,L12
+    divzsp1 A5,L13
+    divzsp1 A6,L14
+    divzsp1 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L11:divzsp2 A4,L12
+    divzsp1 A5,L13
+    divzsp1 A6,L14
+    divzsp1 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L12:divzsp2 A5,L13
+    divzsp1 A6,L14
+    divzsp1 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L13:divzsp2 A6,L14
+    divzsp1 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L14:divzsp2 A7,L15
+    divzsp1 A8,L16
+    divzsp3
+L15:divzsp2 A8,L16
+    divzsp3
+L16:sub hl,bc
+    adc a,a
+    jp lx
+
+A1: divzap1 S2,L1
+A2: divzap1 S3,L2
+A3: divzap1 S4,L3
+A4: divzap1 S5,L4
+A5: divzap1 S6,L5
+A6: divzap1 S7,L6
+A7: divzap1 S8,L7
+A8: divzap3
+L1: divzap2 S3,L2
+    divzap1 S4,L3
+    divzap1 S5,L4
+    divzap1 S6,L5
+    divzap1 S7,L6
+    divzap1 S8,L7
+    divzap3
+L2: divzap2 S4,L3
+    divzap1 S5,L4
+    divzap1 S6,L5
+    divzap1 S7,L6
+    divzap1 S8,L7
+    divzap3
+L3: divzap2 S5,L4
+    divzap1 S6,L5
+    divzap1 S7,L6
+    divzap1 S8,L7
+    divzap3
+L4: divzap2 S6,L5
+    divzap1 S7,L6
+    divzap1 S8,L7
+    divzap3
+L5: divzap2 S7,L6
+    divzap1 S8,L7
+    divzap3
+L6: divzap2 S8,L7
+    divzap3
+L7: add hl,bc
+    add a,a
+    add hl,bc
+lx:
+endm
+
+divxxp macro
+    ld a,d
+    divzp
+    ld d,a
+    ld a,e
+    divzp
+    ld e,a
+endm
+
+div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC
+     local DIV320,divminus ;works wrong if BC>$7fff && HL >= BC
+     ;LD    A, B
+if MINUS
+     or a
      jp m,divminus
+endif
+if 0
+     ld a,l   ;no need for LD A,B
+     sub c
+     LD    A, h
+     sbc   A, b
+     JP    C, DIV320
+else
+     proc
+     local l2
+     sub h
+     jp c,l2
+     jp nz,DIV320
 
      ld a,l
      sub c
-     ld a,h
-     sbc a,b
-     jp c,DIV320
+     JP    C, DIV320
+l2:  endp
+endif
+     PUSH  DE  ;longdiv
 
-     PUSH DE    ;longdiv
-	 EX DE,HL
-	 LD HL,0
-	 divx
-	 EX DE,HL
-	 EX (SP),HL
-	 EX DE,HL
-	 divx
-	 POP BC
+if OPT < 8
+     xor a  ;sets CF=0
+     ld d,a
+     ld e,a
+     ld a,h
+rept OPT
+     rlca   ;sets CF=0
+endm
+     ld h,a
+endif
+if OPT=8
+     ld de,0
+endif
+
+     EX    DE, HL
+     ld a,d    ;assert C = 0
+
+if OPT=0
+     divze s
+endif
+if OPT=1
+     proc
+    local S3,S4,S5,S6,S7,S8,A2,A3,A4,A5,A6,A7,A8,l1
+    divzss A2
+    divzss A3
+S3: divzss A4
+S4: divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A2: divzas S3
+A3: divzas S4
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=2
+     proc
+    local S4,S5,S6,S7,S8,A3,A4,A5,A6,A7,A8,l1
+    divzss A3
+    divzss A4
+S4: divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A3: divzas S4
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=3
+     proc
+    local S5,S6,S7,S8,A4,A5,A6,A7,A8,l1
+    divzss A4
+    divzss A5
+S5: divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A4: divzas S5
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=4
+     proc
+    local S6,S7,S8,A5,A6,A7,A8,l1
+    divzss A5
+    divzss A6
+S6: divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A5: divzas S6
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=5
+     proc
+    local S7,S8,A6,A7,A8,l1
+    divzss A6
+    divzss A7
+S7: divzss A8
+S8: adc a,a
+    jp l1
+
+A6: divzas S7
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=6
+     proc
+    local S8,A7,A8,l1
+    divzss A7
+    divzss A8
+S8: adc a,a
+    jp l1
+
+A7: divzas S8
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=7
+     proc
+    local A8,l1
+    divzss A8
+    adc a,a
+    jp l1
+
+A8: adc a,a
+    add hl,bc
+l1: endp
+endif
+if OPT=8
+    adc a,a
+endif
+     ld d,a
+     ld a,e
+     divze s
+     ld e,a
+     EX    DE, HL
+     EX    (SP), HL
+     EX    DE, HL
+
+     divxx s
+     POP   BC
      jp enddivision
 
-divminus
-rept 8
-     ld a,d
-     rla
-     ld d,a
-     div1
-endm
-     ld a,d
-     rla
-     ld d,a
-rept 8
-     ld a,e
-     rla
-     ld e,a
-     div1
-endm
-     ld a,e
-     rla
-     ld e,a
+if MINUS
+divminus      ;hl < bc
+if FASTLARGE
+     divxxp
+else
+     divxx x
+endif
+;needs additional 16 iterations for hl >= bc
      jp enddivision1
+endif
 
 DIV320
-     divx
+     divxx s
 enddivision1
      LD    BC, 0
 enddivision
