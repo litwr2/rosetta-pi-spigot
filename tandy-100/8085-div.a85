@@ -8,11 +8,12 @@ divzss macro px
      rl de
      ex de,hl
      sub HL,BC
-     jp c,px
+     ccf
+     jp nc,px
 endm
 
 divzas macro px
-     add a,a
+     adc a,a
      ex de,hl
      rl de
      ex de,hl
