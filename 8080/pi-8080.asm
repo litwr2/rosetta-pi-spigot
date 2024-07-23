@@ -40,11 +40,12 @@ BIOS_OUTPUT equ 1   ;1 is faster but it does not support redirection on CP/M+
 CPM3TIMER equ 0     ;don't use 1, the supported systems can't use this timer
 IO equ 1
 PSP equ $100        ;use DTA for the stack
+MINUS equ 1  ;0 - if dividers are positive, this is ok up to 4680 digits
 
 GENERIC equ 0       ;for generic CP/M, it doesn't use timer - use stopwatch
-CORVETTE equ 1
+CORVETTE equ 0
 AMSTRADCPC equ 0
-VECTOR06 equ 0
+VECTOR06 equ 1
 
 if GENERIC + CORVETTE + AMSTRADCPC + VECTOR06 != 1
 show ERROR

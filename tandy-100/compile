@@ -1,8 +1,11 @@
-SA=8D00   #for a plain model 100
-#SA=9200   #for a model 100 with REX# (TS-DOS)?
-sed -rf a85-to-z80.sed 8085-div.a85 >8085-div.s
+BS=0x1b0 #size of the Basic code
+BA=0x832a #base address, for the plain model 100, HIMEM-FRE(0)
+CS=2530  #size of CALCPI.CO
+SA=$(printf "%x" $(($BS+$BA+$CS+16)))
+#sed -rf a85-to-z80.sed 8085-div.a85 >8085-div.s
 sed -rf a85-to-z80.sed pi-t100.a85 | sed 's/SA  *equ .*/SA equ \$'$SA'/' >pi-t100.asm
 pasmo6 --listing pi-t100.lst pi-t100.asm calcpi.co
+echo Check and optimize the CALCPI.CO size!
 awk '/@N@/{printf "%d\n", strtonum("0x"$1)+1}
 /@time@/{printf "%d\n", strtonum("0x"$1)+3}
 /@ra@/{printf "%d", strtonum("0x"$1)}' pi-t100.lst >tmp1

@@ -111,7 +111,9 @@ div32x16 macro  ;BCDE = HLDE/BC, HL = HLDE%BC  ;works wrong if BC>$7fff && HL >=
 
      LD    A, C
      cpl
+if MINUS
      jp m,divminus
+endif
 
      LD e,a
      ADD   A, L
@@ -143,6 +145,7 @@ div32x8 inc c
         jp m,div32x8e
 include "8080-div8.s"
 
+if MINUS
 divminus      ;hl < bc
      LD c,a
      LD    A, B
@@ -189,6 +192,7 @@ divminus      ;hl < bc
      div1xs lz5,lw5
      div1xs lz6,lw6
      div1xs lz7,lw7
+endif
 
 DIV320
      divxxz svde+2,svde+1,mz3+1

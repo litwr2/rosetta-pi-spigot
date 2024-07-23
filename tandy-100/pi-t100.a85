@@ -26,7 +26,7 @@
 ;   }
 ;}
 
-;the time of the calculation is quadratic, so if T is time to calculate N digits
+;the time of the calculation is quadratic, so if T is the time to calculate N digits
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
@@ -41,7 +41,7 @@ IO equ 1
 MINUS equ 0  ;0 - if dividers are positive, this is ok up to 4680 digits
 DEBUG equ 0
 
-include "8085-div.s"
+include "8080-div.s"
 
          org SA-6
          dw SA
@@ -126,9 +126,9 @@ endif
          ld a,e
          rra
          ld e,a
+
          push hl
          push de
-
 if 1
          ld de,m1+1
          ld hl,(de)
@@ -288,6 +288,8 @@ showregs proc   ;AF HL DE BC
         endp
 endif
 
+         org ($ + 255) and $ff00
+include "../cpc6128/mul10000.s"
 TINTR
      push hl
      ld hl,(TTI)
@@ -297,33 +299,6 @@ TINTR
      ret
 TTI  dw 0
 
-         org ($ + 255) and $ff00
-include "../cpc6128/mul10000.s"
-
-cv dw 0
-kv dw 0
-time dw 0,0  ;@time@
-
-PR0000  ld de,-1000
-	CALL PR0
-	ld de,-100
-	CALL PR0
-	ld de,-10
-	CALL PR0
-	ld A,L
-PRD	add a,$30
-        jp 4b44h      ;rst 20h
-
-PR0	ld A,$FF
-	ld B,H
-	ld C,L
-	inc A
-	add HL,DE
-	jp C,$-4
-
-	ld H,B
-	ld L,C
-	Jp PRD
 
 div32x16r proc  ;00de = hlde/bc, hl = hlde%bc
      local t,t0,t1,t2,t3,t4,l1,l2
@@ -363,6 +338,31 @@ l1   add hl,hl
      inc l
      jp l2
      endp
+
+PR0000  ld de,-1000
+	CALL PR0
+	ld de,-100
+	CALL PR0
+	ld de,-10
+	CALL PR0
+	ld A,L
+PRD	add a,$30
+        jp 4b44h      ;rst 20h
+
+PR0	ld A,$FF
+	ld B,H
+	ld C,L
+	inc A
+	add HL,DE
+	jp C,$-4
+
+	ld H,B
+	ld L,C
+	Jp PRD
+
+cv dw 0
+kv dw 0
+time dw 0,0  ;@time@
 
      org ($ + 1) and $fffe
 ra    equ $  ;@ra@
