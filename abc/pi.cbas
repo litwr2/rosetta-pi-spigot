@@ -2,7 +2,7 @@
 40 PRINT"WAIT":FOR H%=0 TO @steps@:READ A$
 50 FOR D%=1 TO LEN(A$) STEP 2:POKE@start@+H%*40+INT(D%/2),ASC(MID$(A$,D%,1))*16-1105+ASC(MID$(A$,D%+1,1)):NEXT D%
 60 NEXT H%
-70 PRINT"number Pi calculator v3"
+70 PRINT"number Pi calculator v4"
 80 PRINT"number of digits (up to @digi@)";:INPUT F:D%=INT((F+3)/4)*4:IF D%<=0 OR D%>@digi@ THEN80
 90 IF F<>D% THEN PRINT D%;" digits will be printed"
 110 F=D%/2*7:POKE@Nlo@,F-INT(F/256)*256,INT(F/256)

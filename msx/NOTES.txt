@@ -13,10 +13,12 @@ Panasonic FS-A1GT [turbor default] (max)
 Panasonic FS-A1ST [turbor default] (max)
 
 
-commands:
-BASIC (DOS)
-MODE 80 (DOS)
-CLS (DOS)
+commands DOS:
+BASIC
+MODE 80
+CLS (external)
+
+commands Basic:
 CLS
 RUN"PI.BAS
 RUN
@@ -24,6 +26,7 @@ LOAD"PI.BAS
 FILES
 WIDTH80 or SCREEN0:WIDTH80
 KEY OFF
+
 
 openMSX:
 Print Screen

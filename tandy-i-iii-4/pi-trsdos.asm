@@ -145,11 +145,11 @@ loop     ld hl,0          ;d <- 0
          jp loop2
 
 l4       add hl,de
-         jp nc,$+4
+         jp nc,$+5
          inc bc
+         xor a       ;sets CY=0
          ex de,hl
          pop hl
-         xor a       ;sets CY=0
          sbc hl,de
          ex de,hl
          pop hl
@@ -388,7 +388,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number pi calculator v3 for the Model I'
+msg1  db 'number pi calculator v4 for the Model I'
 if MODEL3
       db 'II'
 endif

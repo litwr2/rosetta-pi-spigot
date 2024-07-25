@@ -88,11 +88,11 @@ loop     ld hl,0          ;d <- 0
          jp loop2
 
 l4       add hl,de
-         jp nc,$+4
+         jp nc,$+5
+         xor a       ;sets CY=0
          inc bc
          ex de,hl
          pop hl
-         xor a       ;sets CY=0
          sbc hl,de
          ex de,hl
          pop hl

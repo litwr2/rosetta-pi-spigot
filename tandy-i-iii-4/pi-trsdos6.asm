@@ -150,11 +150,11 @@ loop     ld hl,0          ;d <- 0
          jp loop2
 
 l4       add hl,de
-         jp nc,$+4
+         jp nc,$+5
          inc bc
+         xor a       ;sets CY=0
          ex de,hl
          pop hl
-         xor a       ;sets CY=0
          sbc hl,de
          ex de,hl
          pop hl
@@ -372,7 +372,7 @@ time dw 0,0
 include "mul10000.s"
 
 ra
-msg1  db 'number pi calculator v3 for the Model 4/4P',13
+msg1  db 'number pi calculator v4 for the Model 4/4P',13
       db 'number of digits (up to ',0
 msg2  db ')? ',0
 msg3  db ' digits will be printed',13,0

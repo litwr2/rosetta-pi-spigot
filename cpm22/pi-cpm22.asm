@@ -55,12 +55,12 @@ PSP equ $140   ;64 bytes for the stack/interrupts
 endif
 
 TIKI100 equ 0
-AMSTRADCPC equ 0
+AMSTRADCPC equ 1
 AMSTRADPCW equ 0
 C128 equ 0
 MSX equ 0
 MSX_INTR equ 0         ;use v-sync interrupt, 0 means the use of timer directly
-ACORNBBCZ80 equ 1
+ACORNBBCZ80 equ 0
 TORCHBBCZ80 equ 0
 PICKLESANDTROUT equ 0   ;TRS-80 model II/12/16
 ATON equ 0              ;TRS-80 model II/12/16
@@ -177,7 +177,6 @@ endif
     ld de,msg3
     ld c,9
     call BDOS
-    ld sp,PSP
     pop hl
 
 l1  ld d,h
@@ -188,6 +187,7 @@ l1  ld d,h
     add hl,de
     srl h
     rr l
+    ld sp,PSP
     push hl
 
 if CPM3TIMER
@@ -311,11 +311,11 @@ loop     ld hl,0          ;d <- 0
          jp loop2
 
 l4       add hl,de
-         jp nc,$+4
+         jp nc,$+5
          inc bc
+         xor a       ;sets CY=0
          ex de,hl
          pop hl
-         xor a       ;sets CY=0
          sbc hl,de
          ex de,hl
          pop hl
@@ -1046,7 +1046,7 @@ if C128 or MSX or AMSTRADPCW or ACORNBBCZ80 or TORCHBBCZ80 or PICKLESANDTROUT or
       db 'Pi'
 endif
 
-      db ' calculator v17',13,10
+      db ' calculator v18',13,10
       db 'for CP/M'
 if CPM3TIMER=0
       db ' 2.2'

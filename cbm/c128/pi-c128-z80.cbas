@@ -1,5 +1,5 @@
 20 deffnz(x)=int(x/16)*10+(xand15)
-30 printspc(7)"number ~ calculator v2/z80":r=@MAXMEM@
+30 printspc(7)"number ~ calculator v3/z80":r=@MAXMEM@
 50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:ifd<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:poke@lowN@,fand255:poke@highN@,f/256
