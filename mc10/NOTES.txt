@@ -1,0 +1,1 @@
+It is possible to run the demo under the XROAR emulator directly.  Just make use the Run menu option and select the ASC-file.

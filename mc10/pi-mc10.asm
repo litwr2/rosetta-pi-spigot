@@ -30,24 +30,21 @@
 ;then 4*T is required to calculate 2*N digits
 ;main loop count is 7*(4+D)*D/16, D - number of digits
 
-;the fast 32/16-bit division was made by blackmirror/ivagor for z80
+;the fast 32/16-bit division was made by blackmirror/ivagor for the z80
 ;litwr converted it to the 6801 and 6809
-;tricky provided some help
-;MMS gave some support
-;Thorham and meynaf helped too
 
-DIV8OPT equ 0      ;1 is slower for 1000 and more digits
+DIV8OPT equ 0      ;1 is slower for 1000 and more digits, and this requires more RAM
 OPT equ 5          ;5 is a constant for the pi-spigot
 DIVNOMINUS equ 1   ;1 limits to 4704 digits, this may slightly shrink size and increase speed
-IO equ 0
+IO equ 1
 
 DIGI equ 100
 N equ DIGI/2*7
 
 OPCHR equ $f9c6    ;print char in AC
 
-         org $4e00 + DIV8OPT*$400 + !DIVNOMINUS*$280
- 
+         org $5000 + DIV8OPT*$400 + !DIVNOMINUS*$280  ;check this addreess if the BASIC code is changed!
+
 divisor = $ba  ;$bb
 neg_divisor = $bc ;$bd
 dividend = $be  ;..$c1
@@ -59,7 +56,7 @@ c = $d8  ;$d9
 t1 = $da  ;$db
 tx = $dc  ;$dd
 timer = $de  ;$df
-     
+
       sei        ;init timer  ;@start@ of the execution
       ldd #0
       std <timer  ;@timer@
@@ -82,7 +79,7 @@ timer = $de  ;$df
          ldd #2000
 lf0      std 0,x
          inx
-         inx         
+         inx
 m1       cmpx #0
          bne lf0
 

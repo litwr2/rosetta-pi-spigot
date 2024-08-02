@@ -16,5 +16,5 @@ gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}' $f.lst >z.sed
 sed -f z.sed $b.cbas >$b.bas
 petcat -w70 $b.bas | cat - $f.bin >$b.prg
-rm z.sed $f-x.prg $f.bin $f-x.asm $b.bas
+rm z.sed $f-x.prg $f.bin $f-x.asm
 

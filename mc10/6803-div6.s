@@ -1,11 +1,41 @@
-div0 macro
-    rolb
+div0s macro
+    rol \1
+       	rolb
 	rola
 	addd <neg_divisor
-        bcs *+4
-
-        subd <neg_divisor
+        bcc \2
      endm
+
+div0a macro
+    rol \1
+       	rolb
+	rola
+	addd <divisor
+        bcs \2
+     endm
+
+div0z macro
+\@  div0s \1,.A1
+    div0s \1,.A2
+.S2  div0s \1,.A3
+.S3  div0s \1,.A4
+.S4  div0s \1,.A5
+.S5  div0s \1,.A6
+.S6  div0s \1,.A7
+.S7  div0s \1,.A8 
+.S8  rol \1
+    jmp .L
+.A1  div0a \1,.S2
+.A2  div0a \1,.S3
+.A3  div0a \1,.S4
+.A4  div0a \1,.S5
+.A5  div0a \1,.S6
+.A6  div0a \1,.S7
+.A7  div0a \1,.S8
+.A8  rol \1
+    addd <divisor
+.L
+    endm
 
 div32x16x     ;D=A:B - divisor (A - high!)
    if DIV8OPT
@@ -36,47 +66,12 @@ todiv8e jmp div32x8e
 
 div16            ;<dividend+2 < divisor
         ldd <dividend
-        asl dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-	rol dividend+2
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
+        div0z dividend+2
+        div0z dividend+3
 enddivision3
-        rol dividend+3
-        ;stx <tx
-        ;ldx #0
-        ;stx dividend
-        ;ldx <tx
         clr dividend
         clr dividend+1
         ;std <remainder
+enddivision2
 enddivision
 

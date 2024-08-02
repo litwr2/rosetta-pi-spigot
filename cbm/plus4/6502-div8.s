@@ -1,7 +1,7 @@
 .if CMOS6502
 divjmp
-   .byte >div32_255
-   .byte <div32_1,>div32_1,<div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f  ;7
+   .byte >div32_255 ;for the NMOS 6502
+   .byte <div32_1,>div32_1,<div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f  ;7 ;##+0=W128
    .byte <div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f ;15
    .byte <div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f ;23
    .byte <div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f,<div32x8f,>div32x8f  ;31

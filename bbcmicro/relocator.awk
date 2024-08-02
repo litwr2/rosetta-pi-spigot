@@ -7,7 +7,7 @@ function auxout(z) {
     if (x == 0) print o; else o = o ","
 }
 BEGIN {p = 0x200}
-$0~/;##.1=./ && index($0,$2)<12 {
+$0~/;##.1=[2H]/ && index($0,$2)<12 {
     if (index($0,";##+1=2")) s = 2; else s = 1
     t = strtonum("0x"$2) + s
     s = t - p
@@ -16,6 +16,22 @@ $0~/;##.1=./ && index($0,$2)<12 {
     if (s > 255) {
         auxout(s%256)
         auxout(int(s/256))
+    }
+}
+$0~/;##.0=W[0-9]+/ && index($0,$2)<12 {
+    s = index($0, ";##+0=W") + 7
+    n = substr($0, s) + 0
+    t = strtonum("0x"$2) + 1
+    s = t - p
+    p = t
+    auxout(s > 255 ? 1 : s)
+    if (s > 255) {
+        auxout(s%256)
+        auxout(int(s/256))
+    }
+    for (i = 1; i < n; i++) {
+        auxout(2)
+        p += 2
     }
 }
 END {

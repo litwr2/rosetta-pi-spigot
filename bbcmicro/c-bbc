@@ -1,10 +1,11 @@
 D=z1.ssd
 A=pi-bbc
-tmpx $A.asm -l $A.lst
-dd if=$A.prg of=PI bs=1 skip=2
+B=pi-bbc-cmos
+tmpx $A.asm -l $A.lst || ! echo ERROR || exit
+dd if=$A.prg of=PI bs=1 skip=2 status=none
 gawk -f relocator.awk $A.lst >reloc-data.s
 tmpx relocator.asm -l relocator.lst
-dd if=relocator.prg of=RELOC bs=1 skip=2
+dd if=relocator.prg of=RELOC bs=1 skip=2 status=none
 cat RELOC PI >PIOBJ
 gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)-511"/"}
@@ -15,24 +16,43 @@ gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
 ls -l PI|awk '{print "s/@PSZ@/"$5"/"}' >>z.sed
 sed -f z.sed $A.cbas >$A.bas
 tr '\n[:lower:]' '\r[:upper:]' >PILOAD <$A.bas
+
+sed 's/CMOS6502 *= *0/CMOS6502 = 1/' $A.asm >$B.asm
+tmpx $B.asm -l $B.lst || ! echo ERROR || exit
+dd if=$B.prg of=PIC bs=1 skip=2 status=none
+gawk -f relocator.awk $B.lst >reloc-data.s
+tmpx relocator.asm -l relocator.lst
+dd if=relocator.prg of=RELOC bs=1 skip=2 status=none
+cat RELOC PIC >PICOBJ
+gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)-511"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)-511"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)-511"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)-511"/"}
+/@EOP@/{print "s/@EOP@/"strtonum("0x"$4"00")-512"/"}' $B.lst >zc.sed
+ls -l PIC|awk '{print "s/@PSZ@/"$5"/"}' >>zc.sed
+sed -f zc.sed $A.cbas | sed -r 's/piobj/picobj/;s/v([0-9]+)"/v\1c"/' >$B.bas
+tr '\n[:lower:]' '\r[:upper:]' <$B.bas >PICLOAD
+
 sed 's/$/\r/' BOOT >'!BOOT'
-beeb delete $D -y !BOOT PIOBJ PILOAD PI
-beeb putfile $D !BOOT PIOBJ PILOAD
+beeb delete $D -y !BOOT PIOBJ PILOAD PICOBJ PIC PICLOAD
+beeb putfile $D !BOOT PIOBJ PILOAD PICOBJ PICLOAD
 beeb opt4 $D 0
 
 if false; then   #distro disc
-R=pi57.ssd
+#if true; then
+R=pi77.ssd
 rm $R
 beeb blank_ssd $R
 beeb putfile $R !BOOT PIOBJ
 beeb opt4 $R 3
 echo exec PILOAD from $D and save it on $R
-~/retro/bbc/b-em-2.2/b-em $R&
-else
-mess bbcb -flop1 $D -debug&
+#~/retro/bbc/b-em-2.2/b-em $R&
+#else
+#mess bbcb -flop1 $D -debug&
 fi
 
-rm *.prg !BOOT PI RELOC z.sed reloc-data.s PIOBJ PILOAD
+rm *.prg !BOOT PI PIC RELOC z.sed reloc-data.s PIOBJ PICOBJ PILOAD PICLOAD
 
-echo PILOAD is a text file and it may be converted into Basic by *EXEC PILOAD and SAVE"PI"
+echo PILOAD/PICLOAD are text files and they may be converted into Basic by *EXEC PILOAD/PICLOAD and SAVE\"PI/PIC\"
 #echo issue OPT4 3 for the correct autoboot, OPT 4 0 to suppress autoboot

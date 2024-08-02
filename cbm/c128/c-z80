@@ -12,4 +12,4 @@ gawk '/@start@/{print"s/@start@/"strtonum("0x"$1)"/"}
 /@N@/{v=strtonum("0x"$1)+1; print"s/@lowN@/"v"/"; print"s/@highN@/"v+1"/"}' $f.lst >z.sed
 sed -f z.sed $b.cbas >$b.bas
 petcat -w70 $b.bas | cat - $f.bin >$b.prg
-rm z.sed $f.bin $f-x.asm $b.bas
+rm z.sed $f.bin $f-x.asm

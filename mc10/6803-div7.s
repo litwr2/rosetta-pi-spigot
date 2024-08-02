@@ -1,3 +1,12 @@
+div0 macro
+       	rolb
+	rola
+	addd <neg_divisor
+        bcs *+4
+
+        subd <neg_divisor
+     endm
+
 div32x16w        ;<dividend < divisor, divisor < $8000
         ;ldd <dividend
         ldx #16
@@ -80,60 +89,10 @@ div32          ;it may be wrong if divisor>$7fff
         clra
         staa <quotient
 
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-	jmp enddivision
+        div0z dividend+1
+        div0z dividend+2
+        div0z dividend+3
+	jmp enddivision2
    else
 div32          ;it may be wrong if divisor>$7fff
         ldd #0
@@ -176,11 +135,15 @@ div32          ;it may be wrong if divisor>$7fff
         div0
    endif
    if OPT==5
-        asl dividend
-        asl dividend
-        asl dividend
-        asl dividend
-        asl dividend
+        psha
+        ldaa dividend
+        asla
+        asla
+        asla
+        asla
+        asla
+        staa dividend
+        pula
    endif
         rol dividend
         div0
@@ -190,59 +153,9 @@ div32          ;it may be wrong if divisor>$7fff
         div0
         rol dividend
 
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-        div0
-        rol dividend+1
-
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-        div0
-        rol dividend+2
-
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-        div0
-        rol dividend+3
-	jmp enddivision
+        div0z dividend+1
+        div0z dividend+2
+        div0z dividend+3
+	jmp enddivision2
    endif
 

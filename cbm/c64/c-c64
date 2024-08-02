@@ -1,12 +1,8 @@
 b=pi-c64
+bd=${b}d
 f=pi-c64
-sed -r 's/@[^@]+@/7777/g' $b.cbas >$b.bas
-petcat -w2 $b.bas >$b.prg
-s=$(ls -l $b.prg |awk '{print $5}')
-sed 's/PSTART/'$(printf "$%x" $(($s+0x7ff)))'/' $f.asm >$f-x.asm
-tmpx $f-x.asm -l $f.lst
-dd if=$f-x.prg of=$f.bin skip=2 bs=1 status=none
-gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
+
+echo '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@lowN@/{print "s/@lowN@/"strtonum("0x"$2)+1"/"}
 /@highN@/{print "s/@highN@/"strtonum("0x"$2)+1"/"}
 /@low2N@/{print "s/@low2N@/"strtonum("0x"$2)+1"/"}
@@ -14,8 +10,28 @@ gawk '/@start@/{print "s/@start@/"strtonum("0x"$2)"/"}
 /@timer@/{v=strtonum("0x"$2); print"s/@t1@/"v"/"; print"s/@t2@/"v+1"/"; print"s/@t3@/"v+2"/"; print"s/@t4@/"v+3"/"}
 /@irq@/{print"s/@irq@/"strtonum("0x"$2)"/"}
 /@EOP@/{print "s/@MAXMEM@/"int((208-strtonum("0x"$4))*64/7)*4"/"}
-/@blank@/{print "s/@blank@/"strtonum("0x"$2)"/"}' $f.lst >z.sed
+/@blank@/{print "s/@blank@/"strtonum("0x"$2)"/"}' >z.awk
+
+sed -r 's/@[^@]+@/7777/g' $b.cbas >$b.bas
+petcat -w2 $b.bas >$b.prg
+s=$(ls -l $b.prg |awk '{print $5}')
+sed 's/PSTART/'$(printf "$%x" $(($s+0x7ff)))'/' $f.asm >$f-x.asm
+tmpx $f-x.asm -l $f.lst || ! echo ERROR! || exit
+dd if=$f-x.prg of=$f.bin skip=2 bs=1 status=none
+gawk -f z.awk $f.lst >z.sed
 sed -f z.sed $b.cbas >$b.bas
 petcat -w2 $b.bas | cat - $f.bin >$b.prg
-rm z.sed $f-x.prg $f.bin $f-x.asm $b.bas
+
+echo 'sI^160.*$I'$(cat diskio.cbas)'I;s/v([0-9]+)"/v\1d"/;/^180/d' >zdx.sed
+sed -rf zdx.sed $b.cbas | sed -r 's/@[^@]+@/7777/g' >$bd.bas
+petcat -w2 $bd.bas >$bd.prg
+s=$(ls -l $bd.prg |awk '{print $5}')
+sed 's/PSTART/'$(printf "$%x" $(($s+0x7ff)))'/;s/^DISK *= *0/DISK = 1/' $f.asm >$f-x.asm
+tmpx $f-x.asm -l ${f}d.lst || ! echo ERROR! || exit
+dd if=$f-x.prg of=${f}d.bin skip=2 bs=1 status=none
+gawk -f z.awk ${f}d.lst >zd.sed
+sed -rf zdx.sed $b.cbas | sed -f zd.sed >$bd.bas
+petcat -w2 $bd.bas | cat - ${f}d.bin >$bd.prg
+
+rm z.awk z.sed zd.sed zdx.sed $f-x.prg $f.bin ${f}d.bin $f-x.asm
 

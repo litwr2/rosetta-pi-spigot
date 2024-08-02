@@ -1,11 +1,12 @@
-vasm6800_oldstyle -m6801 -Fbin -L pi-mc10.lst pi-mc10.asm -o pi-mc10.bin
-gawk 'BEGIN{print "s/@ver@/1/"}
+vasm6800_oldstyle -m6801 -Fbin -L pi-mc10.lst pi-mc10.asm -o pi-mc10.bin || ! echo ERROR || exit
+gawk 'BEGIN{print "s/@ver@/2/"}
 /@start@/{print "s/@start@/"strtonum("0x"substr($1,4,4))"/"}
 /@EOP@/{print "s/@EOP@/"strtonum("0x"substr($2,3,4))"/"}
 /@timer@/{print "s/@tihi@/"strtonum("0x"substr($2,3,2))"/\ns/@tilo@/"strtonum("0x"substr($2,3,2))+1"/"}
 /@N@/{print "s/@highN@/"strtonum("0x"substr($1,4,4))+1"/\ns/@lowN@/"strtonum("0x"substr($1,4,4))+2"/"}' pi-mc10.lst >z.sed
-sed -f z.sed pi-mc10.cbas >pi-mc10.asc
+sed -f z.sed pi-mc10.cbas >pi-mc10.bas
 gcc bin2basic.c -o bin2basic
-bin2basic <pi-mc10.bin >>pi-mc10.asc
+bin2basic <pi-mc10.bin >>pi-mc10.bas
+gawk '{print toupper($0)}' pi-mc10.bas >tmp788;mv tmp788 pi-mc10.asc
 rm bin2basic z.sed
 

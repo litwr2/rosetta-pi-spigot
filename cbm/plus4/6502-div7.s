@@ -115,7 +115,7 @@ cnt  .var cnt-1
         sta remainder+1
 	jmp enddivision7        ;@div32loop@    ;##+1=2
 .endif
-
+.if MINUS
      * = * + DIVMIADJ
 div16minus            ;dividend+2 < divisor, for 4708 or more digits
 	asl dividend+1   ;@divmiloop@
@@ -147,4 +147,4 @@ cnt  .var cnt-1
         sty dividend+2
 	sty dividend+3
 	jmp enddivision7   ;@divmiloop@    ;##+1=2
-
+.endif

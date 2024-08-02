@@ -1,15 +1,15 @@
 20 deffnz(x)=int(x/16)*10+(xand15)
-30 printspc(7)"number ~ calculator v14":r=@MAXMEM@
+30 printspc(7)"number ~ calculator v15":r=@MAXMEM@
 50 print"number of digits (up to"r"{left})";:inputf:d=(f+3)and-4:ifd<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
-90 poke@irq@,234:d=0:input"interrupts off (3% faster)";r$
+90 poke@irq@,234:input"interrupts off (3% faster)";r$
 100 ifleft$(r$,1)="n"then120
-110 ifleft$(r$,1)<>"y"then90:elsed=1:poke@irq@,120
+110 ifleft$(r$,1)<>"y"then90:elsepoke@irq@,120
 120 input"fast mode (110% faster)";r$
 130 ifleft$(r$,1)="n"then160
 140 ifleft$(r$,1)<>"y"then120:elsefast
 160 f=ti:sys@start@:f=(ti-f)/60
-170 slow:ifdthenf=peek(@t1@)/10+fnz(peek(@t2@))+fnz(peek(@t3@))*60+fnz(peek(@t4@))*3600
+170 slow:ifpeek(@irq@)=120thenf=peek(@t1@)/10+fnz(peek(@t2@))+fnz(peek(@t3@))*60+fnz(peek(@t4@))*3600
 180 ifd>868thenwait212,88,88
 190 printf

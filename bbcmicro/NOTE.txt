@@ -1,10 +1,14 @@
 *** 6502 ***
 
+CH."PI"   -- use code for the NMOS 6502
+CH."PIC"  -- use code for the CMOS 6502
+CH."PICP"  -- use code for the 2nd co-pro to get more digits
+
 Use video mode 7 to get maximum number of digits.
 Use *FX16,0 to get them faster.
 Use *SHADOW to get even more digits - this requires additional memory for your system.
 
-A way to get maximum number of digits with disabling the disc driver - video mode 7 is assumed - try this if PAGE is greater than &E00.
+A way to get the maximum number of digits with disabling the disc driver - video mode 7 is assumed - try this if PAGE is greater than &E00.
 
 p.~pa.
 *load pi 5800
@@ -20,3 +24,4 @@ list
 40 d%=&6000
 90 calld%
 run
+

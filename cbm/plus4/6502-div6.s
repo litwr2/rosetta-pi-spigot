@@ -20,10 +20,15 @@ l1
 .endm
 
 div32x16x
-.block
-        cpy #0          ;AC =  dividend+3, YR = divisor + 1, XR = divisor, remainder = dividend+2
+.block  ;AC =  dividend+3, XR = divisor (div32x8 NMOS only), remainder = dividend+2
+.if MINUS
+        ldy divisor+1
         bmi lminus
+.endif
 .if DIV8OPT
+.ifeq MINUS
+        ldy divisor+1
+.endif
         beq div32x8
 .endif
         ;;lda dividend+3
@@ -36,7 +41,9 @@ div32x16x
         cpx divisor
         bcc div16
 lj      jmp div32           ;##+1=2
+.if MINUS
 lminus  jmp div16minus      ;##+1=2
+.endif
 .bend
 
 .if DIV8OPT
@@ -44,7 +51,7 @@ div32x8           ;dividend+3 < divisor
         ;ldx divisor
         sty remainder+1
 .if CMOS6502
-        ;jmp (divjmp,X) ;for CMOS 6502 or 65816, 3 ticks faster,  0.5% faster for 100 digits, 0.01% faster for 3000 - recalculate branches offset!
+        ;jmp (divjmp,X) ;for CMOS 6502, 3 ticks faster,  0.5% faster for 100 digits, 0.01% faster for 3000 - recalculate branches offset!
         .byte $7c           ;##+1=2
         .word divjmp
 .endif
@@ -56,8 +63,8 @@ div32x8           ;dividend+3 < divisor
 .endif
 .endif
 
-div16            ;dividend+2 < divisor, CY = 0
-        rol dividend+1
+div16            ;dividend+2 < divisor
+        asl dividend+1
         #div3
         rol dividend+1
         #div3

@@ -41,6 +41,8 @@ OSWORD = $FFF1
 
 CMOS6502 = 0
 IO = 1
+MINUS = 1
+
 DIV8OPT = 0           ;1 slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
 ;DIV8ADJ = 0
@@ -51,17 +53,15 @@ DIVMIADJ = 0
 D = 100
 N = D/2*7
 d = $70   ;..$73
-i = $74   ;$75
-k = $76   ;$77
+i = $74
+k = $75   ;$76
 
-divisor = $78     ;$79, $7a..$7b used for hi-byte and product ($7b is not used if DIV8OPT=0)
-dividend = $7c	  ;..$7f used for hi-bytes
-remainder = $82   ;$83 used for hi-byte
+divisor = $77     ;$78, $79..$7a used for hi-byte ($7a is not used if DIV8OPT=0)
+dividend = $7b	  ;..$7e used for hi-bytes
+remainder = $81   ;$82 used for hi-byte
 quotient = dividend ;save memory by reusing divident to store the quotient
-product = divisor
-fac1 = dividend
-fac2 = remainder
-rbase = $80 ;$81
+product = $83 ;..$85
+rbase = $7f ;$80
 
 osubr .macro
 .if IO
@@ -128,11 +128,13 @@ loop     lda #0          ;d <- 0
          asl
          sta i
          lda k+1
-         rol       ;sets CY=0
-         sta i+1
-         bcc loop2
+         rol
+         sta divisor+1
+         adc #>r    ;sets CY=0   ;##+1=H
+         sta rbase+1
+         bne loop2  ;always
 
-l8       stx i      ;@mainloop@
+l8       sty i      ;@mainloop@
          lda d      ;d <- (d - r[i] - new_d)/2 = d*i
          sec
          sbc remainder
@@ -165,9 +167,6 @@ tl1      lda d
          ror d+1
          ror d
 loop2    ldy i
-         lda i+1    ; b <- 2*i
-         adc #>r    ;sets CY=0
-         sta rbase+1     ; r[i]
          lda (rbase),y
          tax
          iny
@@ -203,29 +202,28 @@ loop2    ldy i
          sta d+3
          ;sta dividend+3
 
-         ldy i+1
          ldx i             ;b <- b - 1
-         bne l1
-
-         dey
-         sty i+1
-l1       dex
+         bne *+4
+         dec divisor+1
+         dex
          stx divisor
-         sty divisor+1
-         ;jsr div32x16x   ;AC = dividend+3
+         ldy divisor+1
+         ;IN: AC = dividend+3, YR = divisor+1; OUT: AC = remainder
 .include "6502-div6.s"
-         ldy i
-         lda remainder    ;r[i] <- d%b
+         ldy i            ;r[i] <- d%b
          sta (rbase),y
          lda remainder+1
          iny
          sta (rbase),y
-         ldx divisor    ;i <- i - 1
-         dex
+         dey
+         bne *+4
+         dec rbase+1
+         dey   ;i <- i - 1
+         dey
          beq l8n
-         jmp l8
+         jmp l8  ;##+1=2
 
-l8n      lda i+1
+l8n      lda divisor+1
          beq l4
          jmp l8    ;@mainloop@
 

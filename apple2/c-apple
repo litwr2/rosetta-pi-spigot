@@ -15,7 +15,7 @@ do
   sed -f z.sed $bfn.cbas >$fn.bas
   rm $fn.prg
 done
-sed -r 's/V3/V3D/' $bfn.bas >$bfn-d.bas
+sed -r 's/V([0-9]+)/V\1D/' $bfn.bas >$bfn-d.bas
 for fn in $bfn-e $bfn
 do
   sed -r 's/^([0-9]+).*(CALL[^:]*):.*/\1 \2/' $fn.bas >tmp; mv tmp $fn.bas
