@@ -36,6 +36,11 @@
 ;litwr made the spigot for several the z80 and 8080 based computers
 ;tricky and BigEd provided some help
 
+;ivagor made a bit faster (2-3%) pi-spigot implementation for the Vector 06C
+;but this version doesn't use the standard function for the char output
+;and doesn't even support text scrolling
+;https://zx-pk.ru/threads/25783-vychislenie-chisla-pi-na-assemblere.html?p=1201523&viewfull=1#post1201523
+
 BIOS_OUTPUT equ 1   ;1 is faster but it does not support redirection on CP/M+
 CPM3TIMER equ 0     ;don't use 1, the supported systems can't use this timer
 IO equ 1
