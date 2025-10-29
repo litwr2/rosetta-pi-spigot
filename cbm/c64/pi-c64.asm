@@ -216,8 +216,9 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
-         lda (rbase),y
-         tax
+         ;lda (rbase),y
+         ;tax
+         .byte $b3,rbase   ;ldxlda (rbase),y
          iny
          lda (rbase),y
          tay
