@@ -35,6 +35,7 @@
 ;tricky provided some help
 ;MMS gave some support
 
+NTSCFLAG = $2a6
 CIA1TOD = $DC08
 ;INT2STR = $BDCD  ;print unsigned integer in AC:XR
 BSOUT = $FFD2    ;print char in AC
@@ -74,7 +75,7 @@ osubr .macro
 
 .ifeq DISK
 .if DIV8OPT
-MAINADJ = $c3
+MAINADJ = $c4
 DIV32ADJ = 3
 DIVMIADJ = 1
 DIV8ADJ = $10
@@ -89,7 +90,7 @@ DIVMIADJ = 0
 
 .if DISK
 .if DIV8OPT
-MAINADJ = $b5
+MAINADJ = $b8
 DIV32ADJ = 3
 DIVMIADJ = 1
 DIV8ADJ = $10
@@ -113,12 +114,10 @@ DIVMIADJ = 0
          ;lda #147    ;clear screen
          ;jsr BSOUT
 
+         lda NTSCFLAG   ;pal/ntsc
+         lsr
          lda CIA1TOD+6
          ora #$80
-         tax
-         lda $2a6   ;pal/ntsc
-         lsr
-         txa
          bcs *+4
          and #$7f
          sta CIA1TOD+6
