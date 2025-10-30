@@ -70,7 +70,7 @@ osubr .macro
          .include "pi-vic20.inc"
 
 .if DIV8OPT
-MAINADJ = $28
+MAINADJ = $29
 DIV32ADJ = 3
 DIVMIADJ = 0
 DIV8ADJ = $10
@@ -175,8 +175,9 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
-         lda (rbase),y
-         tax
+         ;lda (rbase),y
+         ;tax
+         .byte $b3,rbase  ;ldxlda (rbase),y
          iny
          lda (rbase),y
          tay

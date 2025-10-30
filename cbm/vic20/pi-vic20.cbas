@@ -1,4 +1,4 @@
-10 print"number ~ calculator v4";:r=@MAXMEM@
+10 print"number ~ calculator v5";:r=@MAXMEM@
 50 print"number of digits, up":print"to"r"{left}";:inputf:d=(f+3)and-4:iff<=0ord>rgoto50
 70 iff<>dthenprintd;"digits will be printed"
 80 f=d/2*7:poke@high2N@,f/128:poke@lowN@,fand255:poke@highN@,f/256:poke@low2N@,2*(fand255)and255
