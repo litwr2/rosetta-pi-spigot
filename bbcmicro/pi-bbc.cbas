@@ -5,7 +5,7 @@
 80 i%=(q%and&ff00)+m%:if (q%and 255)>m% then i%=i%+256
 90 calld%:himem=d%+4096
 100 m%=i%div256*256
-130 p.spc(7)"number pi calculator v9":b%=((himem-@EOP@-m%)div7)and-4
+130 p.spc(7)"number pi calculator v10":b%=((himem-@EOP@-m%)div7)and-4
 140 p."number of digits (up to ";b%;:input")? "f%:d%=(f%+3)and-4:ifd%<=0ord%>b%goto140
 150 iff%<>d%thenp.;d%" digits will be printed"
 160 f%=d%div2*7:?(@high2N@+m%)=f%/128:?(@lowN@+m%)=f%and255:?(@highN@+m%)=f%/256:?(@low2N@+m%)=f%*2and255:

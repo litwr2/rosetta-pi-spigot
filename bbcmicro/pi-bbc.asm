@@ -75,7 +75,7 @@ DIV8ADJ = $f
 DIV8SADJ = 0
 .endif
 .ifeq CMOS6502
-MAINADJ = $2a
+MAINADJ = $29
 DIV32ADJ = 3
 DIVMIADJ = 0
 DIV8ADJ = 16
@@ -181,8 +181,13 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
+.if CMOS6502
          lda (rbase),y
          tax
+.endif
+.ifeq CMOS6502
+         .byte $b3,rbase   ;ldxlda (rbase),y
+.endif
          iny
          lda (rbase),y
          tay

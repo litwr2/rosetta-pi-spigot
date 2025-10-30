@@ -76,7 +76,7 @@ osubr .macro
 .endm
 
 .if DIV8OPT
-MAINADJ = 15
+MAINADJ = 16
 DIV32ADJ = 3
 DIVMIADJ = 1
 DIV8ADJ = $10
