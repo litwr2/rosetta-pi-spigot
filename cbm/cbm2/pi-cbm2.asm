@@ -59,7 +59,7 @@ product = zpb + 17  ;+3
 rbase = zpb + 20 ;+2   ;must be the last zp address!
 
 .if DIV8OPT
-MAINADJ = 5
+MAINADJ = 6
 DIV32ADJ = 4
 DIVMIADJ = $d
 DIV8ADJ = $10
@@ -202,8 +202,9 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
-         lda (rbase),y
-         tax
+         ;lda (rbase),y
+         ;tax
+         .byte $b3,rbase  ;ldxlda (rbase),y
          iny
          lda (rbase),y
          tay
