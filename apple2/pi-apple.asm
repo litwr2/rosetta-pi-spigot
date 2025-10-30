@@ -82,14 +82,14 @@ osubr .macro
 
 .if DIV8OPT
 .if CMOS6502
-MAINADJ = $25
+MAINADJ = $27
 DIV8ADJ = $f
 DIV8SADJ = 0
 DIV32ADJ = 0
 DIVMIADJ = $a
 .endif
 .ifeq CMOS6502
-MAINADJ = $23
+MAINADJ = $24
 DIV8ADJ = $10
 DIV8SADJ = 0
 DIV32ADJ = 3
@@ -195,8 +195,13 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
+.if CMOS6502
          lda (rbase),y
          tax
+.endif
+.ifeq CMOS6502
+         .byte $b3,rbase   ;ldxlda (rbase),y
+.endif
          iny
          lda (rbase),y
          tay
