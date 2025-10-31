@@ -1,0 +1,3 @@
+*BASIC
+*SHADOW
+MODE7

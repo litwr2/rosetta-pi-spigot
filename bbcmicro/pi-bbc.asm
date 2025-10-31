@@ -39,6 +39,8 @@
 OSWRCH = $FFEE    ;print char in AC
 
 CMOS6502 = 0
+ILLEGALOPS = 0
+
 IO = 1
 DIV8OPT = 1           ;1 slower for 7532 or more digits but faster for 7528 or less
 OPT = 5               ;it's a constant for the pi-spigot
@@ -66,33 +68,38 @@ osubr .macro
 .endif
 .endm
 
+DIVMIADJ = 0
+
 .if DIV8OPT
+DIV8SADJ = 0
 .if CMOS6502
 MAINADJ = $2f
 DIV32ADJ = 0
-DIVMIADJ = 0
 DIV8ADJ = $f
-DIV8SADJ = 0
 .endif
 .ifeq CMOS6502
+.if ILLEGALOPS
 MAINADJ = $29
 DIV32ADJ = 3
-DIVMIADJ = 0
 DIV8ADJ = 16
-DIV8SADJ = 0
+.endif
+.ifeq ILLEGALOPS
+MAINADJ = $28
+DIV32ADJ = 3
+DIV8ADJ = 16
+.endif
 .endif
 .endif
 .ifeq DIV8OPT
 MAINADJ = 0
 DIV32ADJ = 0
-DIVMIADJ = 0
 .endif
          * = $200+MAINADJ
          ;sei         ;no interrupts
          ;lda #12
-         ;jsr OSWRCH
+         ;jsr OSWRCH  ;clear screen
 
-         ldy #0             ;clear screen, @start@
+         ldy #0             ;@start@
          lda #2
          sta d
          lda #>r            ;@EOP@ - end of program  ;##+1=H
@@ -181,11 +188,11 @@ tl1      lda d
          ror d+1
          ror d    ;sets CY=0
 loop2    ldy i
-.if CMOS6502
+.ifeq ILLEGALOPS
          lda (rbase),y
          tax
 .endif
-.ifeq CMOS6502
+.if ILLEGALOPS
          .byte $b3,rbase   ;ldxlda (rbase),y
 .endif
          iny

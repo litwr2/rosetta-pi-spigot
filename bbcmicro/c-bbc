@@ -1,6 +1,10 @@
 D=z1.ssd
 A=pi-bbc
 B=pi-bbc-cmos
+C=pi-bbc-nmos
+P=pi-bbc-cp
+V=78
+
 tmpx $A.asm -l $A.lst || ! echo ERROR || exit
 dd if=$A.prg of=PI bs=1 skip=2 status=none
 gawk -f relocator.awk $A.lst >reloc-data.s
@@ -15,6 +19,10 @@ gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
 /@EOP@/{print "s/@EOP@/"strtonum("0x"$4"00")-512"/"}' $A.lst >z.sed
 ls -l PI|awk '{print "s/@PSZ@/"$5"/"}' >>z.sed
 sed -f z.sed $A.cbas >$A.bas
+cat <<END >>$A.bas
+save"pi"
+new
+END
 tr '\n[:lower:]' '\r[:upper:]' >PILOAD <$A.bas
 
 sed 's/CMOS6502 *= *0/CMOS6502 = 1/' $A.asm >$B.asm
@@ -32,27 +40,65 @@ gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
 /@EOP@/{print "s/@EOP@/"strtonum("0x"$4"00")-512"/"}' $B.lst >zc.sed
 ls -l PIC|awk '{print "s/@PSZ@/"$5"/"}' >>zc.sed
 sed -f zc.sed $A.cbas | sed -r 's/piobj/picobj/;s/v([0-9]+)"/v\1c"/' >$B.bas
+cat <<END >>$B.bas
+save"pic"
+new
+END
 tr '\n[:lower:]' '\r[:upper:]' <$B.bas >PICLOAD
 
-sed 's/$/\r/' BOOT >'!BOOT'
-beeb delete $D -y !BOOT PIOBJ PILOAD PICOBJ PIC PICLOAD
-beeb putfile $D !BOOT PIOBJ PILOAD PICOBJ PICLOAD
+sed 's/ILLEGALOPS *= *0/ILLEGALOPS = 1/' $A.asm >$C.asm
+tmpx $C.asm -l $C.lst || ! echo ERROR || exit
+dd if=$C.prg of=PIN bs=1 skip=2 status=none
+gawk -f relocator.awk $C.lst >reloc-data.s
+tmpx relocator.asm -l relocator.lst
+dd if=relocator.prg of=RELOC bs=1 skip=2 status=none
+cat RELOC PIN >PINOBJ
+gawk '/@start@/{print "s/@OP@/\\&"substr($2,3)"/"}
+/@lowN@/{print "s/@lowN@/"strtonum("0x"$2)-511"/"}
+/@highN@/{print "s/@highN@/"strtonum("0x"$2)-511"/"}
+/@low2N@/{print "s/@low2N@/"strtonum("0x"$2)-511"/"}
+/@high2N@/{print "s/@high2N@/"strtonum("0x"$2)-511"/"}
+/@EOP@/{print "s/@EOP@/"strtonum("0x"$4"00")-512"/"}' $C.lst >zn.sed
+ls -l PIN|awk '{print "s/@PSZ@/"$5"/"}' >>zn.sed
+sed -f zn.sed $A.cbas | sed -r 's/piobj/pinobj/;s/v([0-9]+)"/v\1n"/' >$C.bas
+cat <<END >>$C.bas
+save"pin"
+new
+END
+tr '\n[:lower:]' '\r[:upper:]' <$C.bas >PINLOAD
+
+tmpx $P.asm -l $P.lst
+gawk '/@start@/{
+s=strtonum("0x"$2)
+printf "$.PIPCODE %x %x",s,s >"PIPCODE.inf"
+}' $P.lst
+dd if=$P.prg of=PIPCODE bs=1 skip=2 status=none
+cp $P.bas tmp-cp.bas
+cat <<END >>tmp-cp.bas
+save"picp"
+new
+END
+tr '\n[:lower:]' '\r[:upper:]' >PIPLOAD <tmp-cp.bas
+
+sed 's/$/\r/' BOOT.txt >'!BOOT'
+sed 's/$/\r/' CONV.txt >'CONV'
+beeb delete $D -y !BOOT PIOBJ PILOAD PICOBJ PIC PICLOAD PINLOAD PINOBJ CONV PIPCODE PIPLOAD PICP
+beeb putfile $D !BOOT PIOBJ PILOAD PICOBJ PICLOAD PINOBJ PINLOAD CONV PIPCODE PIPLOAD
 beeb opt4 $D 0
 
-if false; then   #distro disc
-#if true; then
-R=pi77.ssd
+#distro disc
+R=pi$V.ssd
 rm $R
 beeb blank_ssd $R
-beeb putfile $R !BOOT PIOBJ
+beeb putfile $R !BOOT PIOBJ PICOBJ PINOBJ PIPCODE
 beeb opt4 $R 3
-echo exec PILOAD from $D and save it on $R
-#~/retro/bbc/b-em-2.2/b-em $R&
-#else
-#mess bbcb -flop1 $D -debug&
-fi
 
-rm *.prg !BOOT PI PIC RELOC z.sed reloc-data.s PIOBJ PICOBJ PILOAD PICLOAD
+rm *.prg !BOOT PI PIC PIN RELOC z*.sed reloc-data.s PIOBJ PICOBJ PINOBJ PILOAD PICLOAD PINLOAD PIPCODE PIPLOAD CONV tmp-cp.bas
 
-echo PILOAD/PICLOAD are text files and they may be converted into Basic by *EXEC PILOAD/PICLOAD and SAVE\"PI/PIC\"
+echo PILOAD/PICLOAD/PINLOAD/PIPLOAD are text files, convert them into Basic with *EXEC
+echo then attach $D as disk 0 and $R as disk 1 and use *EXEC CONV
 #echo issue OPT4 3 for the correct autoboot, OPT 4 0 to suppress autoboot
+
+#~/retro/bbc/b-em/b-em $R&
+#mess bbcb -flop1 $D -debug&
+

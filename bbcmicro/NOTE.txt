@@ -1,27 +1,32 @@
 *** 6502 ***
 
-CH."PI"   -- use code for the NMOS 6502
-CH."PIC"  -- use code for the CMOS 6502
-CH."PICP"  -- use code for the 2nd co-pro to get more digits
+CH."PIC"  -- uses code for the CMOS 6502
+CH."PIN"  -- uses code for the NMOS 6502
+CH."PI"   -- uses code that works on the both
+CH."PICP"  -- uses code for the 2nd co-pro to get more digits, this code is slightly less optimized
 
 Use video mode 7 to get maximum number of digits.
-Use *FX16,0 to get them faster.
 Use *SHADOW to get even more digits - this requires additional memory for your system.
+All these options are automatically set during the normal boot process.
 
-A way to get the maximum number of digits with disabling the disc driver - video mode 7 is assumed - try this if PAGE is greater than &E00.
+Cleaning the screen can also slightly improve the results.  Use CLR or Ctrl-L for this.
+
+There is a way to get the maximum number of digits with disabling the disc driver - video mode 7 is assumed - try this if PAGE is greater than &E00.
 
 p.~pa.
 *load pi 5800
-*load piobj 6000
+*load piobj 5c00
 *tape
 pa.=&7000
 new
-fori%=0to511step4:i%!&e00=i%!&5800:n.
+fori%=0to512step4:i%!&e00=i%!&5800:n.
 pa.=&e00
 old
 list
 *fx3,4
-40 d%=&6000
+40 d%=&5c00
 90 calld%
 run
+
+Also use this for PIN/PINOBJ or PIC/PICOBJ.
 
