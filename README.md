@@ -5,4 +5,4 @@ Every program is satisfying four restrictions: 1) it calculates time; 2) it uses
 
 The presented programs claim to be the fastest pi-spigot algorithm implementations for the 8080, 6502, 65C02, 65816, Z80, R800, tms9900, tms9995, 6809, 6309, pdp-11 eis, pdp-11 noeis, vax, ibm/370, 32016, arm1, arm2, arm250, strongarm, 68000, 68010, 68020, 8088, 8086, 80186, 80286, 80386, 80486.
 
-Some results and more details are available at [this site](http://litwr2.atspace.eu/pi/pi-spigot-benchmark.html).
+Some results and more details are available at [this site](https://litwr2.github.io/pi-spigot-benchmark/pi-spigot-benchmark.html).
